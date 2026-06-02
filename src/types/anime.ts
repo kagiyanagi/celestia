@@ -9,7 +9,7 @@ export type AnimeTitle = {
 
 export type Studio = {
   id: number;
-  name: string;
+  name?: string;
 };
 
 export type NextAiringEpisode = {
@@ -20,26 +20,26 @@ export type NextAiringEpisode = {
 
 export type AnimeSummary = {
   id: number;
-  idMal: number | null;
-  title: AnimeTitle;
-  coverImage: string | null;
-  bannerImage: string | null;
-  color: string | null;
-  format: string | null;
-  status: string | null;
-  source: string | null;
-  episodes: number | null;
-  duration: number | null;
-  season: AnimeSeason | null;
-  seasonYear: number | null;
-  averageScore: number | null;
-  meanScore: number | null;
-  popularity: number | null;
-  trending: number | null;
-  favourites: number | null;
-  genres: string[];
-  studios: Studio[];
-  nextAiringEpisode: NextAiringEpisode | null;
+  idMal?: number | null;
+  title?: AnimeTitle | null;
+  coverImage?: string | null;
+  bannerImage?: string | null;
+  color?: string | null;
+  format?: string | null;
+  status?: string | null;
+  source?: string | null;
+  episodes?: number | null;
+  duration?: number | null;
+  season?: AnimeSeason | null;
+  seasonYear?: number | null;
+  averageScore?: number | null;
+  meanScore?: number | null;
+  popularity?: number | null;
+  trending?: number | null;
+  favourites?: number | null;
+  genres?: string[];
+  studios?: Studio[];
+  nextAiringEpisode?: NextAiringEpisode | null;
   description?: string | null;
   airingCount?: number | null;
   dubCount?: number | null;
@@ -55,27 +55,27 @@ export type AiringItem = {
 export type CharacterCredit = {
   id: number;
   name: string;
-  nativeName: string | null;
-  image: string | null;
-  role: string | null;
-  voiceActors: {
-    japanese: {
+  nativeName?: string | null;
+  image?: string | null;
+  role?: string | null;
+  voiceActors?: {
+    japanese?: {
       id: number;
       name: string;
-      image: string | null;
+      image?: string | null;
     } | null;
-    english: {
+    english?: {
       id: number;
       name: string;
-      image: string | null;
+      image?: string | null;
     } | null;
-  };
+  } | null;
 };
 
 export type VoiceActorCredit = {
   id: number;
   name: string;
-  image: string | null;
+  image?: string | null;
 };
 
 export type RelationItem = {
@@ -87,53 +87,53 @@ export type ExternalLink = {
   id: number;
   site: string;
   url: string;
-  type: string | null;
-  language: string | null;
-  color: string | null;
+  type?: string | null;
+  language?: string | null;
+  color?: string | null;
 };
 
 export type StaffCredit = {
   id: number;
   name: string;
   role: string;
-  image: string | null;
+  image?: string | null;
 };
 
 export type AnimeDate = {
-  year: number | null;
-  month: number | null;
-  day: number | null;
+  year?: number | null;
+  month?: number | null;
+  day?: number | null;
 };
 export type AnimeStreamingEpisode = {
   number: number;
-  title: string | null;
-  thumbnail: string | null;
-  url: string | null;
-  site: string | null;
+  title?: string | null;
+  thumbnail?: string | null;
+  url?: string | null;
+  site?: string | null;
   description?: string | null;
 };
 
 export type AnimeDetails = AnimeSummary & {
-  description: string | null;
-  source: string | null;
-  countryOfOrigin: string | null;
-  hashtag: string | null;
-  synonyms: string[];
-  startDate: AnimeDate | null;
-  endDate: AnimeDate | null;
-  streamingEpisodes: AnimeStreamingEpisode[];
-  trailer: {
-    id: string | null;
-    site: string | null;
-    thumbnail: string | null;
+  description?: string | null;
+  source?: string | null;
+  countryOfOrigin?: string | null;
+  hashtag?: string | null;
+  synonyms?: string[];
+  startDate?: AnimeDate | null;
+  endDate?: AnimeDate | null;
+  streamingEpisodes?: AnimeStreamingEpisode[];
+  trailer?: {
+    id?: string | null;
+    site?: string | null;
+    thumbnail?: string | null;
   } | null;
-  tags: string[];
-  rankings: string[];
-  characters: CharacterCredit[];
-  staff: StaffCredit[];
-  relations: RelationItem[];
-  recommendations: AnimeSummary[];
-  externalLinks: ExternalLink[];
+  tags?: string[];
+  rankings?: string[];
+  characters?: CharacterCredit[];
+  staff?: StaffCredit[];
+  relations?: RelationItem[];
+  recommendations?: AnimeSummary[];
+  externalLinks?: ExternalLink[];
 };
 
 export type HomeCollections = {
