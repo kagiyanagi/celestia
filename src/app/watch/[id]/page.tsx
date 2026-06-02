@@ -353,6 +353,7 @@ export default async function WatchPage({
     anime.title?.english,
     anime.title?.userPreferred,
     title,
+    ...(anime.synonyms || []),
   ].filter((value): value is string => Boolean(value));
   const requestedEpisode = getEpisodeValue(ep);
   const episodeOrder = getOrderValue(order);

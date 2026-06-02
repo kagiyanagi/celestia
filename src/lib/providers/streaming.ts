@@ -38,14 +38,49 @@ function toTitleCase(title: string): string {
 
 function getTitleCandidates(title: string | string[]): string[] {
   const titles = Array.isArray(title) ? title : [title];
+
   const candidates = titles.flatMap((item) => {
     const trimmed = item.trim();
+    if (!trimmed) return [];
 
-    if (!trimmed) {
-      return [];
+    const variations = [trimmed];
+
+    // Remove technical suffixes like (TV), (ONA), (Movie)
+    const withoutSuffix = trimmed.replace(
+      /\s*\((TV|ONA|OAV|OVA|Movie|Special|Desktop)\)$/i,
+      "",
+    );
+    if (withoutSuffix !== trimmed) variations.push(withoutSuffix);
+
+    // Handle Season variations
+    // "Season 2" -> "2" and "S2"
+    const withoutSeasonWord = trimmed.replace(/\s+Season\s+(\d+)/i, " $1");
+    if (withoutSeasonWord !== trimmed) {
+      variations.push(withoutSeasonWord);
+      variations.push(trimmed.replace(/\s+Season\s+(\d+)/i, " S$1"));
     }
 
-    return [trimmed, toTitleCase(trimmed)];
+    // "2nd Season" -> "Season 2" and "S2"
+    const ordinalToSeason = trimmed.replace(
+      /(\d+)(st|nd|rd|th)\s+Season/i,
+      "Season $1",
+    );
+    if (ordinalToSeason !== trimmed) {
+      variations.push(ordinalToSeason);
+      variations.push(trimmed.replace(/(\d+)(st|nd|rd|th)\s+Season/i, "S$1"));
+    }
+
+    // Try without subtitle (everything after colon)
+    if (trimmed.includes(":")) {
+      variations.push(trimmed.split(":")[0].trim());
+    }
+
+    // Try without subtitle (everything after dash)
+    if (trimmed.includes(" - ")) {
+      variations.push(trimmed.split(" - ")[0].trim());
+    }
+
+    return variations.flatMap((v) => [v, toTitleCase(v)]);
   });
 
   return Array.from(new Set(candidates));

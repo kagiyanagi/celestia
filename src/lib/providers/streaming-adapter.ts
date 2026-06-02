@@ -88,7 +88,7 @@ function setAudioType(
 async function findAvailability(title: string): Promise<StreamAvailability> {
   const payload = await getJson<StreamingFindResponse>(
     `/api/find/${encodeURIComponent(title)}`,
-    60 * 60 * 6,
+    60 * 60 * 1,
   );
 
   return {
