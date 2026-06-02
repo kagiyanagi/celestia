@@ -68,7 +68,7 @@ type WatchEpisode = {
 
 type EpisodeLimitInput = {
   airingCount?: number | null;
-  status: string | null;
+  status?: string | null;
 };
 
 function getEpisodeValue(value: string | undefined): number {
