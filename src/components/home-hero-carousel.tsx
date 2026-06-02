@@ -14,6 +14,10 @@ type HomeHeroCarouselProps = {
 
 export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isClickPrevented, setIsClickPrevented] = useState(false);
 
   useEffect(() => {
     const activeImage = items[activeIndex]?.bannerImage;
@@ -23,7 +27,9 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
       return;
     }
 
-    const cssImageUrl = activeImage.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
+    const cssImageUrl = activeImage
+      .replaceAll("\\", "\\\\")
+      .replaceAll('"', '\\"');
 
     document.documentElement.style.setProperty(
       "--site-header-image",
@@ -51,19 +57,76 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
     return null;
   }
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    setStartX(e.clientX);
+    setDragOffset(0);
+    setIsClickPrevented(false);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    const currentX = e.clientX;
+    const diff = currentX - startX;
+    setDragOffset(diff);
+
+    // If moved more than 5px, prevent click to avoid accidental navigation while dragging
+    if (Math.abs(diff) > 5) {
+      setIsClickPrevented(true);
+    }
+  };
+
+  const handleMouseUp = () => {
+    if (!isDragging) return;
+
+    const threshold = 100;
+    if (dragOffset > threshold) {
+      setActiveIndex((current) => (current - 1 + items.length) % items.length);
+    } else if (dragOffset < -threshold) {
+      setActiveIndex((current) => (current + 1) % items.length);
+    }
+
+    setIsDragging(false);
+    setDragOffset(0);
+    // Use a small timeout to let the click event be blocked if we dragged
+    setTimeout(() => setIsClickPrevented(false), 0);
+  };
+
+  const handleMouseLeave = () => {
+    if (isDragging) {
+      handleMouseUp();
+    }
+  };
+
+  const handleLinkClick = (e: React.MouseEvent) => {
+    if (isClickPrevented) {
+      e.preventDefault();
+    }
+  };
+
   return (
-    <section className="animetsu-hero">
-      <div className="animetsu-hero-inner">
+    <section
+      className="celestia-hero"
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseLeave}
+      style={{ cursor: isDragging ? "grabbing" : "grab" }}
+    >
+      <div className="celestia-hero-inner">
         <div
-          className="animetsu-hero-track"
-          style={{ transform: `translateX(-${activeIndex * 100}%)` }}
+          className="celestia-hero-track"
+          style={{
+            transform: `translateX(calc(-${activeIndex * 100}% + ${dragOffset}px))`,
+            transition: isDragging ? "none" : "transform 0.5s ease",
+          }}
         >
           {items.map((item, index) => {
             const title = getDisplayTitle(item.title);
 
             return (
               <article
-                className="animetsu-slide"
+                className="celestia-slide"
                 key={item.id}
                 style={
                   {
@@ -78,18 +141,25 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
                     fill
                     priority={index === 0}
                     sizes="100vw"
-                    className="animetsu-hero-backdrop"
+                    className="celestia-hero-backdrop"
+                    draggable={false}
                   />
                 ) : null}
-                <div className="animetsu-hero-shade" />
-                <div className="animetsu-copy">
-                  <div className="animetsu-copy-main">
-                    <h1>{title}</h1>
-                    <p className="animetsu-description">
+                <div className="celestia-hero-shade" />
+                <div className="celestia-copy">
+                  <div className="celestia-copy-main">
+                    <Link
+                      href={`/anime/${item.id}`}
+                      className="celestia-hero-title-link"
+                      onClick={handleLinkClick}
+                    >
+                      <h1>{title}</h1>
+                    </Link>
+                    <p className="celestia-description">
                       {item.genres.slice(0, 3).join(" • ") || "Anime"} with
                       fresh episodes and a simple watch flow.
                     </p>
-                    <div className="animetsu-pills">
+                    <div className="celestia-pills">
                       <span>{item.format || "Anime"}</span>
                       <span>
                         <Captions size={14} aria-hidden />
@@ -103,14 +173,23 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
                     </div>
                   </div>
 
-                  <div className="animetsu-actions">
+                  <div className="celestia-actions">
+                    {item.status === "NOT_YET_RELEASED" ? (
+                      <div className="celestia-watch disabled">Coming Soon</div>
+                    ) : (
+                      <Link
+                        className="celestia-watch"
+                        href={`/watch/${item.id}?ep=1`}
+                        onClick={handleLinkClick}
+                      >
+                        Watch Now
+                      </Link>
+                    )}
                     <Link
-                      className="animetsu-watch"
-                      href={`/watch/${item.id}?ep=1`}
+                      className="celestia-more"
+                      href={`/anime/${item.id}`}
+                      onClick={handleLinkClick}
                     >
-                      Watch Now
-                    </Link>
-                    <Link className="animetsu-more" href={`/anime/${item.id}`}>
                       <Plus size={16} aria-hidden />
                     </Link>
                   </div>
@@ -120,7 +199,7 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
           })}
         </div>
 
-        <div className="animetsu-dots" aria-label="Featured airing anime">
+        <div className="celestia-dots" aria-label="Featured airing anime">
           {items.map((item, index) => (
             <button
               aria-label={`Show ${getDisplayTitle(item.title)}`}

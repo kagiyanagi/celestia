@@ -10,7 +10,7 @@ type LocalTrackingState = {
 
 const defaultState: LocalTrackingState = {
   status: "planning",
-  progress: 0
+  progress: 0,
 };
 
 type LocalTrackerProps = {
@@ -19,7 +19,7 @@ type LocalTrackerProps = {
 };
 
 export function LocalTracker({ animeId, totalEpisodes }: LocalTrackerProps) {
-  const storageKey = `celstia:track:${animeId}`;
+  const storageKey = `celestia:track:${animeId}`;
   const [state, setState] = useState<LocalTrackingState>(() => {
     if (typeof window === "undefined") {
       return defaultState;
@@ -50,19 +50,25 @@ export function LocalTracker({ animeId, totalEpisodes }: LocalTrackerProps) {
     updateState({
       ...state,
       status,
-      progress: status === "completed" && totalEpisodes ? totalEpisodes : state.progress
+      progress:
+        status === "completed" && totalEpisodes
+          ? totalEpisodes
+          : state.progress,
     });
   }
 
   function setProgress(direction: 1 | -1) {
     const nextProgress = Math.max(
       0,
-      Math.min(totalEpisodes || Number.POSITIVE_INFINITY, state.progress + direction)
+      Math.min(
+        totalEpisodes || Number.POSITIVE_INFINITY,
+        state.progress + direction,
+      ),
     );
 
     updateState({
       status: nextProgress > 0 ? "watching" : state.status,
-      progress: nextProgress
+      progress: nextProgress,
     });
   }
 
@@ -73,14 +79,16 @@ export function LocalTracker({ animeId, totalEpisodes }: LocalTrackerProps) {
         watch progress
       </span>
       <h2>Your progress</h2>
-      <p>
-        Save where you are on this device. Account sync comes next.
-      </p>
+      <p>Save where you are on this device. Account sync comes next.</p>
 
       <div className="tracker-status-grid">
         {(["planning", "watching", "completed"] as const).map((status) => (
           <button
-            className={state.status === status ? "tracker-status active" : "tracker-status"}
+            className={
+              state.status === status
+                ? "tracker-status active"
+                : "tracker-status"
+            }
             key={status}
             onClick={() => setStatus(status)}
             type="button"
@@ -91,14 +99,22 @@ export function LocalTracker({ animeId, totalEpisodes }: LocalTrackerProps) {
       </div>
 
       <div className="progress-stepper">
-        <button type="button" onClick={() => setProgress(-1)} aria-label="Decrease episode progress">
+        <button
+          type="button"
+          onClick={() => setProgress(-1)}
+          aria-label="Decrease episode progress"
+        >
           <Minus size={16} aria-hidden />
         </button>
         <strong>
           {state.progress}
           {totalEpisodes ? ` / ${totalEpisodes}` : ""} watched
         </strong>
-        <button type="button" onClick={() => setProgress(1)} aria-label="Increase episode progress">
+        <button
+          type="button"
+          onClick={() => setProgress(1)}
+          aria-label="Increase episode progress"
+        >
           <Plus size={16} aria-hidden />
         </button>
       </div>

@@ -1,12 +1,20 @@
 "use client";
 
-import { Captions, Mic, Search, X } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  CornerDownLeft,
+  Filter,
+  LogOut,
+  Search,
+  X,
+} from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-import { getDisplayTitle, scoreLabel } from "@/lib/format";
+import { getDisplayTitle } from "@/lib/format";
 import type { AnimeSummary } from "@/types/anime";
 
 type SearchModalProps = {
@@ -14,12 +22,52 @@ type SearchModalProps = {
   onClose: () => void;
 };
 
+function formatLabel(value: string | null | undefined): string {
+  switch (value) {
+    case "TV":
+      return "TV Show";
+    case "TV_SHORT":
+      return "TV Short";
+    case "MOVIE":
+      return "Movie";
+    case "SPECIAL":
+      return "Special";
+    case "OVA":
+      return "OVA";
+    case "ONA":
+      return "ONA";
+    case "MUSIC":
+      return "Music";
+    default:
+      return "Anime";
+  }
+}
+
+function episodeCountLabel(value: number | null | undefined): string {
+  if (typeof value !== "number") {
+    return "Episodes TBA";
+  }
+
+  return value === 1 ? "1 Episode" : `${value} Episodes`;
+}
+
+function seasonLabel(anime: AnimeSummary): string | null {
+  if (!anime.season && !anime.seasonYear) {
+    return null;
+  }
+
+  return [anime.season, anime.seasonYear].filter(Boolean).join(" ");
+}
+
 export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<AnimeSummary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const resultItemRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -34,6 +82,15 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   }, [isOpen]);
 
   useEffect(() => {
+    if (selectedIndex >= 0 && resultItemRefs.current[selectedIndex]) {
+      resultItemRefs.current[selectedIndex]?.scrollIntoView({
+        block: "nearest",
+        behavior: "smooth",
+      });
+    }
+  }, [selectedIndex]);
+
+  useEffect(() => {
     if (debounceTimer.current) {
       clearTimeout(debounceTimer.current);
     }
@@ -44,10 +101,13 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
     debounceTimer.current = setTimeout(async () => {
       try {
-        const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const response = await fetch(
+          `/api/search?q=${encodeURIComponent(query)}`,
+        );
         if (response.ok) {
           const data = await response.json();
           setResults(data);
+          setSelectedIndex(data.length > 0 ? 0 : -1);
         }
       } catch (error) {
         console.error("Live search failed:", error);
@@ -65,6 +125,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
     setQuery("");
     setResults([]);
     setIsLoading(false);
+    setSelectedIndex(-1);
     onClose();
   };
 
@@ -76,6 +137,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
     if (nextQuery.length < 2) {
       setResults([]);
       setIsLoading(false);
+      setSelectedIndex(-1);
       return;
     }
 
@@ -83,11 +145,26 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && query.trim()) {
-      closeModal();
-      router.push(`/search?q=${encodeURIComponent(query)}`);
+    if (e.key === "Enter") {
+      if (selectedIndex >= 0 && results[selectedIndex]) {
+        closeModal();
+        router.push(`/anime/${results[selectedIndex].id}`);
+      } else if (query.trim()) {
+        closeModal();
+        router.push(`/search?q=${encodeURIComponent(query)}`);
+      }
     } else if (e.key === "Escape") {
       closeModal();
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSelectedIndex((prev) =>
+        results.length > 0 ? (prev + 1) % results.length : -1,
+      );
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSelectedIndex((prev) =>
+        results.length > 0 ? (prev - 1 + results.length) % results.length : -1,
+      );
     }
   };
 
@@ -95,6 +172,15 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
 
   return (
     <div className="search-overlay" onClick={closeModal}>
+      <button
+        className="search-modal-close"
+        type="button"
+        aria-label="Close search"
+        onClick={closeModal}
+      >
+        <X size={24} />
+      </button>
+
       <div className="search-modal" onClick={(e) => e.stopPropagation()}>
         <div className="search-modal-header">
           <Search size={20} className="search-modal-icon" />
@@ -106,53 +192,102 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
             onChange={handleQueryChange}
             onKeyDown={handleKeyDown}
           />
-          <button className="search-modal-close" onClick={closeModal}>
-            <X size={20} />
-          </button>
+          <Link
+            href={query ? `/search?q=${encodeURIComponent(query)}` : "/search"}
+            className="search-modal-filter"
+            onClick={closeModal}
+            aria-label="Advanced search"
+          >
+            <Filter size={20} aria-hidden />
+          </Link>
         </div>
 
-        <div className="search-modal-results">
+        <div className="search-modal-results" ref={resultsRef}>
+          {!query && (
+            <div className="search-modal-status">
+              <div>What do you wanna watch today?</div>
+              <p className="search-modal-tip">
+                Tip: Press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> to
+                quickly open search from anywhere.
+              </p>
+            </div>
+          )}
+
           {isLoading && query.length >= 2 && (
             <div className="search-modal-status">Searching...</div>
           )}
 
           {!isLoading && query.length >= 2 && results.length === 0 && (
-            <div className="search-modal-status">No results found for {query}</div>
+            <div className="search-modal-status">
+              No results found for {query}
+            </div>
           )}
 
-          {results.map((anime) => (
+          {results.map((anime, index) => (
             <Link
               key={anime.id}
+              ref={(el) => {
+                resultItemRefs.current[index] = el;
+              }}
               href={`/anime/${anime.id}`}
-              className="search-result-item"
+              className={`search-result-item ${index === selectedIndex ? "is-active" : ""}`}
               onClick={closeModal}
+              onMouseEnter={() => setSelectedIndex(index)}
             >
               <div className="search-result-poster">
                 {anime.coverImage && (
-                  <Image src={anime.coverImage} alt="" fill sizes="60px" />
+                  <Image src={anime.coverImage} alt="" fill sizes="72px" />
                 )}
               </div>
               <div className="search-result-info">
-                <div className="search-result-top">
-                  <span className="search-result-format">{anime.format || "Anime"}</span>
-                  <span className="search-result-year">{anime.seasonYear}</span>
-                  <span className="search-result-score">{scoreLabel(anime.averageScore)}</span>
+                <strong className="search-result-title">
+                  {getDisplayTitle(anime.title)}
+                </strong>
+                <div className="search-result-meta">
+                  <span>{formatLabel(anime.format)}</span>
+                  <span>{episodeCountLabel(anime.episodes)}</span>
+                  <span>{anime.status || "UNKNOWN"}</span>
                 </div>
-                <strong className="search-result-title">{getDisplayTitle(anime.title)}</strong>
-                <div className="search-result-stats">
-                  <span><Captions size={12} /> {anime.airingCount || 0}</span>
-                  <span><Mic size={12} /> {anime.dubCount || 0}</span>
-                </div>
+                {seasonLabel(anime) && (
+                  <span className="search-result-season">
+                    {seasonLabel(anime)}
+                  </span>
+                )}
               </div>
             </Link>
           ))}
         </div>
 
-        {query.length >= 2 && (
-          <div className="search-modal-footer">
-            Press <span>Enter</span> for all results
+        <div className="search-modal-footer">
+          <div className="search-modal-keybinds">
+            <span className="keybind-item">
+              <span className="keybind-icons">
+                <ArrowUp size={12} />
+                <ArrowDown size={12} />
+              </span>
+              to navigate
+            </span>
+            <span className="keybind-item">
+              <span className="keybind-icons">
+                <CornerDownLeft size={12} />
+              </span>
+              to select
+            </span>
+            <span className="keybind-item">
+              <span className="keybind-icons">
+                <LogOut size={12} />
+              </span>
+              Esc to exit
+            </span>
           </div>
-        )}
+          <Link
+            href={query ? `/search?q=${encodeURIComponent(query)}` : "/search"}
+            className="search-modal-view-all"
+            onClick={closeModal}
+          >
+            VIEW ALL <CornerDownLeft size={14} />
+          </Link>
+        </div>
       </div>
     </div>
   );

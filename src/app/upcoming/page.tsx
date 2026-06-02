@@ -1,23 +1,27 @@
 import type { Metadata } from "next";
 
 import { BrowsePageShell } from "@/components/browse-page-shell";
-import { parsePageParam, type PaginationSearchParams } from "@/lib/pagination";
-import { getBrowseCollection } from "@/lib/providers/anilist";
+import { parseBrowseParams, type BrowseSearchParams } from "@/lib/browse-filters";
+import {
+  getBrowseCollection,
+  getBrowseFilterOptions,
+} from "@/lib/providers/anilist";
 
 export const metadata: Metadata = {
   title: "Upcoming"
 };
 
 type UpcomingPageProps = {
-  searchParams?: Promise<PaginationSearchParams>;
+  searchParams?: Promise<BrowseSearchParams>;
 };
 
 export default async function UpcomingPage({ searchParams }: UpcomingPageProps) {
   const params = searchParams ? await searchParams : {};
-  const collection = await getBrowseCollection(
-    "upcoming",
-    parsePageParam(params.page),
-  );
+  const { filters, page } = parseBrowseParams(params);
+  const [collection, filterOptions] = await Promise.all([
+    getBrowseCollection("upcoming", page, filters),
+    getBrowseFilterOptions(),
+  ]);
 
   return (
     <BrowsePageShell
@@ -27,6 +31,9 @@ export default async function UpcomingPage({ searchParams }: UpcomingPageProps) 
       items={collection.items}
       pageInfo={collection.pageInfo}
       basePath="/upcoming"
+      section="upcoming"
+      filters={filters}
+      filterOptions={filterOptions}
     />
   );
 }

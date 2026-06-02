@@ -1,8 +1,9 @@
 import type {
+  StreamAudioType,
   StreamAvailability,
   StreamEpisode,
   StreamingProvider,
-  StreamSource
+  StreamSource,
 } from "@/types/streaming";
 
 const STREAMING_PROVIDER_BASE_URL = process.env.STREAMING_PROVIDER_BASE_URL || "https://streaming-provider.xyz";
@@ -23,6 +24,8 @@ type Streaming ProviderEpisodeResponse = {
     }>;
   };
 };
+
+const AUDIO_OPTIONS: StreamAudioType[] = ["sub", "dub"];
 
 function isStreamingEnabled(): boolean {
   return (process.env.STREAMING_PROVIDER || "streaming-provider") === "streaming-provider";
@@ -58,6 +61,25 @@ function cleanStreamLink(value: string | null | undefined): string | null {
   return null;
 }
 
+function detectAudioType(value: string | null | undefined): StreamAudioType | null {
+  const match = cleanStreamLink(value)?.match(/\/(sub|dub)(?:[/?#]|$)/i);
+
+  return match ? (match[1].toLowerCase() as StreamAudioType) : null;
+}
+
+function setAudioType(
+  value: string | null | undefined,
+  audio: StreamAudioType | null | undefined,
+): string | null {
+  const link = cleanStreamLink(value);
+
+  if (!link || !audio) {
+    return link;
+  }
+
+  return link.replace(/\/(sub|dub)(?=[/?#]|$)/i, `/${audio}`);
+}
+
 async function findStreaming ProviderAvailability(title: string): Promise<StreamAvailability> {
   const payload = await getJson<Streaming ProviderFindResponse>(
     `/api/find/${encodeURIComponent(title)}`,
@@ -91,12 +113,15 @@ function toEpisodeList(payload: Streaming ProviderEpisodeResponse | null): Strea
   return [...firstEpisode, ...rest];
 }
 
-function getEpisodeLink(payload: Streaming ProviderEpisodeResponse | null, episode: number): string | null {
+function getRawEpisodeLink(
+  payload: Streaming ProviderEpisodeResponse | null,
+  episode: number,
+): string | null | undefined {
   if (episode === 1) {
-    return cleanStreamLink(payload?.local?.link);
+    return payload?.local?.link;
   }
 
-  return cleanStreamLink(payload?.local?.ep?.[episode - 2]?.link);
+  return payload?.local?.ep?.[episode - 2]?.link;
 }
 
 function clampEpisode(episode: number): number {
@@ -115,6 +140,7 @@ async function getStreaming ProviderSource(input: {
   animeTitle: string;
   providerAnimeId?: number | null;
   episode: number;
+  audio?: StreamAudioType | null;
 }): Promise<StreamSource | null> {
   const providerAnimeId =
     input.providerAnimeId ||
@@ -126,13 +152,21 @@ async function getStreaming ProviderSource(input: {
 
   const episode = clampEpisode(input.episode);
   const episodesPayload = await getEpisodesPayload(providerAnimeId);
+  const rawEpisodeLink = getRawEpisodeLink(episodesPayload, episode);
+  const detectedAudio = detectAudioType(rawEpisodeLink);
+  const audio = input.audio || detectedAudio;
+  const embedUrl = setAudioType(rawEpisodeLink, audio);
+  const availableAudio = detectedAudio ? AUDIO_OPTIONS : [];
 
   return {
+    providerId: streaming-providerProvider.id,
     provider: streaming-providerProvider.label,
     animeId: providerAnimeId,
     episode,
-    embedUrl: getEpisodeLink(episodesPayload, episode),
-    episodes: toEpisodeList(episodesPayload)
+    audio,
+    availableAudio,
+    embedUrl,
+    episodes: toEpisodeList(episodesPayload),
   };
 }
 

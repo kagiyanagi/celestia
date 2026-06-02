@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Captions, Mic } from "lucide-react";
+import { ArrowRight, Captions, Mic, Radio } from "lucide-react";
 
 import { getDisplayTitle } from "@/lib/format";
 import type { AnimeSummary } from "@/types/anime";
@@ -56,7 +56,11 @@ export function HomeTrendingRail({ items }: HomeTrendingRailProps) {
               <span>{anime.seasonYear || "Now"}</span>
             </span>
             <span className="trending-title">
-              <i />
+              {anime.status === "RELEASING" ? (
+                <Radio size={14} className="trending-airing-icon" aria-hidden />
+              ) : (
+                <i />
+              )}
               {getDisplayTitle(anime.title)}
             </span>
           </Link>

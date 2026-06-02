@@ -58,11 +58,24 @@ export type CharacterCredit = {
   nativeName: string | null;
   image: string | null;
   role: string | null;
-  voiceActor: {
-    id: number;
-    name: string;
-    image: string | null;
-  } | null;
+  voiceActors: {
+    japanese: {
+      id: number;
+      name: string;
+      image: string | null;
+    } | null;
+    english: {
+      id: number;
+      name: string;
+      image: string | null;
+    } | null;
+  };
+};
+
+export type VoiceActorCredit = {
+  id: number;
+  name: string;
+  image: string | null;
 };
 
 export type RelationItem = {
@@ -79,11 +92,36 @@ export type ExternalLink = {
   color: string | null;
 };
 
+export type StaffCredit = {
+  id: number;
+  name: string;
+  role: string;
+  image: string | null;
+};
+
+export type AnimeDate = {
+  year: number | null;
+  month: number | null;
+  day: number | null;
+};
+export type AnimeStreamingEpisode = {
+  number: number;
+  title: string | null;
+  thumbnail: string | null;
+  url: string | null;
+  site: string | null;
+  description?: string | null;
+};
+
 export type AnimeDetails = AnimeSummary & {
   description: string | null;
   source: string | null;
   countryOfOrigin: string | null;
   hashtag: string | null;
+  synonyms: string[];
+  startDate: AnimeDate | null;
+  endDate: AnimeDate | null;
+  streamingEpisodes: AnimeStreamingEpisode[];
   trailer: {
     id: string | null;
     site: string | null;
@@ -92,6 +130,7 @@ export type AnimeDetails = AnimeSummary & {
   tags: string[];
   rankings: string[];
   characters: CharacterCredit[];
+  staff: StaffCredit[];
   relations: RelationItem[];
   recommendations: AnimeSummary[];
   externalLinks: ExternalLink[];
@@ -112,7 +151,8 @@ export type BrowseSectionKey =
   | "trending"
   | "upcoming"
   | "finished"
-  | "movies";
+  | "movies"
+  | "search";
 
 export type BrowsePageInfo = {
   total: number | null;
@@ -120,6 +160,29 @@ export type BrowsePageInfo = {
   lastPage: number | null;
   hasNextPage: boolean;
   perPage: number;
+};
+
+export type BrowseFilters = {
+  q: string;
+  genre: string;
+  format: string;
+  year: string;
+  sort: string;
+  season: string;
+  status: string;
+  tag: string;
+  country: string;
+  source: string;
+};
+
+export type BrowseFilterOption = {
+  value: string;
+  label: string;
+};
+
+export type BrowseFilterOptions = {
+  genres: BrowseFilterOption[];
+  tags: BrowseFilterOption[];
 };
 
 export type BrowseCollection = {
