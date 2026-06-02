@@ -138,8 +138,8 @@ export type AniListDetailsMedia = AniListMedia & {
   } | null;
 };
 
-export function transformAnimeSummary(media: any): AnimeSummary {
-  const m = media as Partial<AniListMedia>;
+export function transformAnimeSummary(media: Partial<AniListMedia>): AnimeSummary {
+  const m = media;
   const isFinished = m.status === "FINISHED";
   const isReleasing = m.status === "RELEASING";
 

@@ -25,6 +25,10 @@ Copy `.env.example` to `.env.local` when credentials are available.
 
 ```bash
 ANILIST_GRAPHQL_ENDPOINT=https://graphql.anilist.co
+ANILIST_CLIENT_ID=
+ANILIST_CLIENT_SECRET=
+ANILIST_REDIRECT_URI=http://localhost:3000/api/auth/callback/anilist
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 # Streaming Configuration (Bring your own API)
 STREAMING_PROVIDER_URL=https://your-api.com
