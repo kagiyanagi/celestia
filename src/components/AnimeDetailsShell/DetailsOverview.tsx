@@ -19,8 +19,8 @@ export function DetailsOverview({
           <Clock size={16} />
           Next ep airing{" "}
           <span className="highlight">
-            in{" "}
-            {Math.floor(anime.nextAiringEpisode.timeUntilAiring / 86400)} days
+            in {Math.floor(anime.nextAiringEpisode.timeUntilAiring / 86400)}{" "}
+            days
           </span>
         </div>
       )}
@@ -83,7 +83,7 @@ export function DetailsOverview({
         </div>
         <div className="fact-item">
           <span>Native Title:</span>
-          <strong>{anime.title.native}</strong>
+          <strong>{anime.title?.native || "N/A"}</strong>
         </div>
         {anime.synonyms && anime.synonyms.length > 0 && (
           <div className="fact-item">

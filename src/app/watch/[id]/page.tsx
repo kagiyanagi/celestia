@@ -349,9 +349,9 @@ export default async function WatchPage({
   const title = getDisplayTitle(anime.title);
   const secondaryTitle = getSecondaryTitle(anime.title);
   const streamLookupTitle = [
-    anime.title.romaji,
-    anime.title.english,
-    anime.title.userPreferred,
+    anime.title?.romaji,
+    anime.title?.english,
+    anime.title?.userPreferred,
     title,
   ].filter((value): value is string => Boolean(value));
   const requestedEpisode = getEpisodeValue(ep);

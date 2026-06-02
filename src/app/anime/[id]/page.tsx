@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { AnimeDetailsShell } from "@/components/anime-details-shell";
+import { AnimeDetailsShell } from "@/components/AnimeDetailsShell";
 import { HeaderImageSetter } from "@/components/header-image-setter";
 import { getDisplayTitle } from "@/lib/format";
 import { getAnimeDetails } from "@/lib/providers/anilist";
@@ -53,9 +53,9 @@ export default async function AnimePage({ params }: AnimePageProps) {
 
   const title = getDisplayTitle(anime.title);
   const streamLookupTitle = [
-    anime.title.romaji,
-    anime.title.english,
-    anime.title.userPreferred,
+    anime.title?.romaji,
+    anime.title?.english,
+    anime.title?.userPreferred,
     title,
   ].filter((value): value is string => Boolean(value));
   const streamAvailability = await findStreamAvailability(streamLookupTitle);
