@@ -1,4 +1,4 @@
-import { streaming-providerProvider } from "@/lib/providers/streaming-provider";
+import { streamingAdapter } from "@/lib/providers/streaming-adapter";
 import type { ProviderHealth } from "@/types/anime";
 import type {
   StreamAudioType,
@@ -8,18 +8,20 @@ import type {
   StreamSource,
 } from "@/types/streaming";
 
+const STREAMING_PROVIDER_ID = process.env.STREAMING_PROVIDER_ID || "custom";
+
 const providers: Record<string, StreamingProvider> = {
-  streaming-provider: streaming-providerProvider,
+  [STREAMING_PROVIDER_ID]: streamingAdapter,
 };
 
 function getProvider(providerId?: string | null): StreamingProvider | null {
-  const fallbackProviderId = process.env.STREAMING_PROVIDER || "streaming-provider";
+  const fallbackProviderId = process.env.STREAMING_PROVIDER_ID || "custom";
   const selectedProviderId = providerId || fallbackProviderId;
 
   return (
     providers[selectedProviderId] ||
     providers[fallbackProviderId] ||
-    providers.streaming-provider ||
+    providers[STREAMING_PROVIDER_ID] ||
     null
   );
 }
@@ -96,7 +98,8 @@ export async function getStreamSource(input: {
   const candidates = getTitleCandidates(input.animeTitle);
   const providerAnimeId =
     input.providerAnimeId ||
-    (await findStreamAvailability(candidates, input.providerId)).providerAnimeId;
+    (await findStreamAvailability(candidates, input.providerId))
+      .providerAnimeId;
 
   if (!providerAnimeId) {
     return null;
@@ -123,15 +126,22 @@ export function getStreamingProviderOptions(): StreamProviderOption[] {
   }));
 }
 
+export function isStreamingConfigured(): boolean {
+  return streamingAdapter.isConfigured;
+}
+
 export function getStreamingProviderHealth(): ProviderHealth {
-  const provider = getProvider();
+  const provider = getProvider() as
+    | (StreamingProvider & { isConfigured?: boolean })
+    | null;
+  const isReady = provider?.isConfigured;
 
   return {
     name: "Streaming",
     role: "streaming",
-    status: provider ? "ready" : "disabled",
-    notes: provider
-      ? "A playback provider is active and isolated behind the streaming adapter."
-      : "No playback provider is configured.",
+    status: isReady ? "ready" : "disabled",
+    notes: isReady
+      ? `A playback provider (${provider.label}) is active. Isolated behind the streaming adapter.`
+      : "No playback provider is configured. Bring your own API here by setting STREAMING_PROVIDER_URL.",
   };
 }

@@ -1,0 +1,47 @@
+<h2>Design Section: Component Decomposition</h2>
+<p class="subtitle">Breaking down massive components for better maintainability</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">Current: monolithic</div>
+    <div class="mockup-body">
+      <div class="card" style="border: 2px dashed #ff4444;">
+        <b>AnimeDetailsShell.tsx</b>
+        <hr/>
+        - Hero Section<br/>
+        - Tab Navigation<br/>
+        - Overview Logic<br/>
+        - Episode Pagination<br/>
+        - Character Grid<br/>
+        - Related Items<br/>
+        - Trailer Embeds
+      </div>
+    </div>
+  </div>
+  <div class="mockup">
+    <div class="mockup-header">Target: Modular</div>
+    <div class="mockup-body">
+      <div class="card" style="border: 2px solid #44ff44;">
+        <b>AnimeDetailsShell/</b>
+        <hr/>
+        - index.tsx (Orchestrator)<br/>
+        - DetailsHero.tsx<br/>
+        - DetailsTabs.tsx<br/>
+        - DetailsOverview.tsx<br/>
+        - DetailsEpisodes.tsx<br/>
+        - DetailsCast.tsx
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>The "Tiger Style" Constraint</h3>
+  <ul>
+    <li><b>Logic Separation:</b> All complex "if/else" and data sorting logic will move out of the JSX and into small, testable helper functions.</li>
+    <li><b>Function Depth:</b> No sub-component will exceed 70-100 lines of UI code.</li>
+    <li><b>Prop Safety:</b> Using TypeScript interfaces to ensure components only receive exactly what they need, reducing "prop drilling".</li>
+  </ul>
+</div>
+
+<p>Does this decomposition strategy for the UI look good to you?</p>
