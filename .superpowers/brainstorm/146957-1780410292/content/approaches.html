@@ -1,0 +1,42 @@
+<h2>Refactoring Approaches</h2>
+<p class="subtitle">Applying Tiger Style principles to Celestia</p>
+
+<div class="options">
+  <div class="option" data-choice="pragmatic" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Pragmatic Tiger</h3>
+      <p><b>Focus:</b> Safety & Logic. Strictly limit provider functions to 70 lines. Keep UI flexible but clean. Extensive internal documentation.</p>
+      <div class="pros-cons">
+        <div class="pros"><ul><li>Lowest risk of breaking styling</li><li>Greatly improves provider readability</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="modular" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Modular Domain</h3>
+      <p><b>Focus:</b> Scalability. Break down large files (like details-shell) into domain-specific modules. Explicit boundaries between fetching and rendering.</p>
+      <div class="pros-cons">
+        <div class="pros"><ul><li>Easiest to scale for new features</li><li>Clearer separation of concerns</li></ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="safety" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Safety-First Hybrid</h3>
+      <p><b>Focus:</b> Reliability. Stronger type safety, explicit error boundaries, and defensive data transformation in the providers.</p>
+      <div class="pros-cons">
+        <div class="pros"><ul><li>Most robust against API changes</li><li>Highest runtime reliability</li></ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h3>My Recommendation</h3>
+  <p>I recommend <b>Option B (Modular Domain)</b> combined with Option A's logic constraints. This addresses the 25k+ line `anime-details-shell.tsx` which is the biggest scalability bottleneck, while ensuring your logic remains "Tiger-sized" and readable.</p>
+</div>

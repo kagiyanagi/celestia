@@ -8,7 +8,7 @@ Celestia is an anime watching and tracking website. AniList is the primary metad
 - AniList GraphQL provider for trending, seasonal, search, detail, characters, relations, recommendations, and airing data.
 - Local browser tracking on anime detail pages as the first progress ledger.
 - Provider health endpoint at `/api/health`.
-- Streaming Provider streaming is enabled by default through the streaming adapter.
+- Streaming is supported through a swappable adapter. Configure your own API in the environment variables.
 
 ## Commands
 
@@ -25,8 +25,11 @@ Copy `.env.example` to `.env.local` when credentials are available.
 
 ```bash
 ANILIST_GRAPHQL_ENDPOINT=https://graphql.anilist.co
-STREAMING_PROVIDER=streaming-provider
-STREAMING_PROVIDER_BASE_URL=https://streaming-provider.xyz
+
+# Streaming Configuration (Bring your own API)
+STREAMING_PROVIDER_URL=https://your-api.com
+STREAMING_PROVIDER_LABEL="My Provider"
+STREAMING_PROVIDER_ID=my-custom-provider
 ```
 
 ## Product Direction

@@ -25,6 +25,7 @@ import {
   getActiveStreamingProviderId,
   getStreamingProviderOptions,
   getStreamSource,
+  isStreamingConfigured,
 } from "@/lib/providers/streaming";
 import type {
   AnimeStreamingEpisode,
@@ -245,7 +246,8 @@ function buildEpisodeList(input: {
     ? Math.max(...episodesByNumber.keys())
     : 0;
   const totalEpisodes =
-    input.releasedEpisodeLimit ?? Math.max(input.fallbackTotal, largestKnownEpisode);
+    input.releasedEpisodeLimit ??
+    Math.max(input.fallbackTotal, largestKnownEpisode);
 
   for (let number = 1; number <= totalEpisodes; number += 1) {
     if (!episodesByNumber.has(number)) {
@@ -272,13 +274,7 @@ function getEpisodePageMap(episodes: WatchEpisode[]): Map<number, number> {
   );
 }
 
-function MediaCard({
-  anime,
-  meta,
-}: {
-  anime: AnimeSummary;
-  meta: string;
-}) {
+function MediaCard({ anime, meta }: { anime: AnimeSummary; meta: string }) {
   return (
     <Link className="watch-media-card" href={`/anime/${anime.id}`}>
       <div className="watch-media-poster">
@@ -520,10 +516,15 @@ export default async function WatchPage({
           ) : (
             <div className="watch-player-empty">
               <Play size={44} aria-hidden />
-              <h1>Episode source is not ready.</h1>
+              <h1>
+                {isStreamingConfigured()
+                  ? "Episode source is not ready."
+                  : "Streaming is not configured."}
+              </h1>
               <p>
-                Try another episode or switch servers when another provider is
-                enabled.
+                {isStreamingConfigured()
+                  ? "Try another episode or switch servers when another provider is enabled."
+                  : "Bring your own API here by setting the STREAMING_PROVIDER_URL environment variable."}
               </p>
             </div>
           )}
