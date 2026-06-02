@@ -6,15 +6,18 @@ import type {
   StreamSource,
 } from "@/types/streaming";
 
-const STREAMING_PROVIDER_BASE_URL = process.env.STREAMING_PROVIDER_BASE_URL || "https://streaming-provider.xyz";
+const STREAMING_PROVIDER_URL = process.env.STREAMING_PROVIDER_URL || "";
+const STREAMING_PROVIDER_LABEL =
+  process.env.STREAMING_PROVIDER_LABEL || "Custom Provider";
+const STREAMING_PROVIDER_ID = process.env.STREAMING_PROVIDER_ID || "custom";
 
-type Streaming ProviderFindResponse = {
+type StreamingFindResponse = {
   exist?: boolean;
   id?: number;
   ep?: number;
 };
 
-type Streaming ProviderEpisodeResponse = {
+type StreamingEpisodeResponse = {
   local?: {
     link?: string;
     title?: string;
@@ -28,7 +31,7 @@ type Streaming ProviderEpisodeResponse = {
 const AUDIO_OPTIONS: StreamAudioType[] = ["sub", "dub"];
 
 function isStreamingEnabled(): boolean {
-  return (process.env.STREAMING_PROVIDER || "streaming-provider") === "streaming-provider";
+  return Boolean(STREAMING_PROVIDER_URL);
 }
 
 async function getJson<T>(path: string, revalidate: number): Promise<T | null> {
@@ -36,8 +39,8 @@ async function getJson<T>(path: string, revalidate: number): Promise<T | null> {
     return null;
   }
 
-  const response = await fetch(`${STREAMING_PROVIDER_BASE_URL}${path}`, {
-    next: { revalidate }
+  const response = await fetch(`${STREAMING_PROVIDER_URL}${path}`, {
+    next: { revalidate },
   });
 
   if (!response.ok) {
@@ -61,7 +64,9 @@ function cleanStreamLink(value: string | null | undefined): string | null {
   return null;
 }
 
-function detectAudioType(value: string | null | undefined): StreamAudioType | null {
+function detectAudioType(
+  value: string | null | undefined,
+): StreamAudioType | null {
   const match = cleanStreamLink(value)?.match(/\/(sub|dub)(?:[/?#]|$)/i);
 
   return match ? (match[1].toLowerCase() as StreamAudioType) : null;
@@ -80,41 +85,43 @@ function setAudioType(
   return link.replace(/\/(sub|dub)(?=[/?#]|$)/i, `/${audio}`);
 }
 
-async function findStreaming ProviderAvailability(title: string): Promise<StreamAvailability> {
-  const payload = await getJson<Streaming ProviderFindResponse>(
+async function findAvailability(title: string): Promise<StreamAvailability> {
+  const payload = await getJson<StreamingFindResponse>(
     `/api/find/${encodeURIComponent(title)}`,
-    60 * 60 * 6
+    60 * 60 * 6,
   );
 
   return {
     available: Boolean(payload?.exist),
-    provider: streaming-providerProvider.label,
+    provider: streamingAdapter.label,
     providerAnimeId: payload?.id || null,
-    episodeCount: payload?.ep || null
+    episodeCount: payload?.ep || null,
   };
 }
 
-function toEpisodeList(payload: Streaming ProviderEpisodeResponse | null): StreamEpisode[] {
+function toEpisodeList(
+  payload: StreamingEpisodeResponse | null,
+): StreamEpisode[] {
   const firstEpisode = payload?.local?.link
     ? [
         {
           number: 1,
-          title: payload.local.title || "Episode 1"
-        }
+          title: payload.local.title || "Episode 1",
+        },
       ]
     : [];
 
   const rest =
     payload?.local?.ep?.map((episode, index) => ({
       number: index + 2,
-      title: episode.title || `Episode ${index + 2}`
+      title: episode.title || `Episode ${index + 2}`,
     })) || [];
 
   return [...firstEpisode, ...rest];
 }
 
 function getRawEpisodeLink(
-  payload: Streaming ProviderEpisodeResponse | null,
+  payload: StreamingEpisodeResponse | null,
   episode: number,
 ): string | null | undefined {
   if (episode === 1) {
@@ -132,11 +139,16 @@ function clampEpisode(episode: number): number {
   return Math.max(1, Math.floor(episode));
 }
 
-async function getEpisodesPayload(animeId: number): Promise<Streaming ProviderEpisodeResponse | null> {
-  return getJson<Streaming ProviderEpisodeResponse>(`/v1/api/details/${animeId}`, 60 * 10);
+async function getEpisodesPayload(
+  animeId: number,
+): Promise<StreamingEpisodeResponse | null> {
+  return getJson<StreamingEpisodeResponse>(
+    `/v1/api/details/${animeId}`,
+    60 * 10,
+  );
 }
 
-async function getStreaming ProviderSource(input: {
+async function getSource(input: {
   animeTitle: string;
   providerAnimeId?: number | null;
   episode: number;
@@ -144,7 +156,7 @@ async function getStreaming ProviderSource(input: {
 }): Promise<StreamSource | null> {
   const providerAnimeId =
     input.providerAnimeId ||
-    (await findStreaming ProviderAvailability(input.animeTitle)).providerAnimeId;
+    (await findAvailability(input.animeTitle)).providerAnimeId;
 
   if (!providerAnimeId) {
     return null;
@@ -159,8 +171,8 @@ async function getStreaming ProviderSource(input: {
   const availableAudio = detectedAudio ? AUDIO_OPTIONS : [];
 
   return {
-    providerId: streaming-providerProvider.id,
-    provider: streaming-providerProvider.label,
+    providerId: streamingAdapter.id,
+    provider: streamingAdapter.label,
     animeId: providerAnimeId,
     episode,
     audio,
@@ -170,9 +182,10 @@ async function getStreaming ProviderSource(input: {
   };
 }
 
-export const streaming-providerProvider: StreamingProvider = {
-  id: "streaming-provider",
-  label: "Streaming Provider",
-  findAvailability: findStreaming ProviderAvailability,
-  getSource: getStreaming ProviderSource
+export const streamingAdapter: StreamingProvider & { isConfigured: boolean } = {
+  id: STREAMING_PROVIDER_ID,
+  label: STREAMING_PROVIDER_LABEL,
+  isConfigured: isStreamingEnabled(),
+  findAvailability,
+  getSource,
 };
