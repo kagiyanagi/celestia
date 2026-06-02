@@ -1410,6 +1410,60 @@ main {
     gap: 32px;
 }
 
+.pagination-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding-top: 20px;
+}
+
+.pagination-button {
+    width: 58px;
+    height: 56px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel-2);
+    color: var(--muted-strong);
+    font-size: 1.25rem;
+    font-weight: 800;
+    transition:
+        background 160ms ease,
+        border-color 160ms ease,
+        color 160ms ease,
+        transform 160ms ease;
+}
+
+.pagination-button:hover {
+    border-color: var(--line-strong);
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text);
+    transform: translateY(-2px);
+}
+
+.pagination-button.current {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text);
+    cursor: default;
+}
+
+.pagination-button.disabled {
+    cursor: default;
+    opacity: 0.35;
+    pointer-events: none;
+}
+
+.pagination-button.disabled:hover {
+    border-color: var(--line);
+    background: var(--panel-2);
+    color: var(--muted-strong);
+    transform: none;
+}
+
 .anime-card {
     display: grid;
     gap: 12px;
@@ -2093,6 +2147,18 @@ main {
     .loader-grid {
         grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: 16px;
+    }
+
+    .pagination-nav {
+        gap: 6px;
+        padding-top: 12px;
+    }
+
+    .pagination-button {
+        width: 46px;
+        height: 46px;
+        border-radius: 8px;
+        font-size: 1rem;
     }
 
     .fact-panel,

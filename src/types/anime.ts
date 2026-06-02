@@ -114,6 +114,19 @@ export type BrowseSectionKey =
   | "finished"
   | "movies";
 
+export type BrowsePageInfo = {
+  total: number | null;
+  currentPage: number;
+  lastPage: number | null;
+  hasNextPage: boolean;
+  perPage: number;
+};
+
+export type BrowseCollection = {
+  items: AnimeSummary[];
+  pageInfo: BrowsePageInfo;
+};
+
 export type ProviderHealth = {
   name: string;
   role: "metadata" | "tracking" | "streaming";
