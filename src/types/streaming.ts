@@ -10,6 +10,7 @@ export type StreamAvailability = {
   provider: string;
   providerAnimeId: number | null;
   episodeCount: number | null;
+  score?: number;
 };
 
 export type StreamSource = {
@@ -37,5 +38,6 @@ export type StreamingProvider = {
     providerAnimeId?: number | null;
     episode: number;
     audio?: StreamAudioType | null;
+    expectedEpisodes?: number | null;
   }): Promise<StreamSource | null>;
 };

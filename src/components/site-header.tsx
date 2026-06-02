@@ -1,9 +1,11 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Bell, Search, UserRound } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/components/auth-provider";
 import { SearchModal } from "./search-modal";
 
 export function SiteHeader() {
@@ -11,6 +13,7 @@ export function SiteHeader() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+  const { user } = useAuth();
   const isHomePage = pathname === "/";
 
   function handleBack() {
@@ -80,9 +83,13 @@ export function SiteHeader() {
             >
               <Bell size={18} aria-hidden />
             </Link>
-            <span className="header-avatar" aria-hidden>
-              <UserRound size={18} />
-            </span>
+            <Link className="header-avatar" href="/profile" aria-label="Profile">
+              {user?.avatar ? (
+                <Image src={user.avatar} alt="" width={40} height={40} />
+              ) : (
+                <UserRound size={18} />
+              )}
+            </Link>
           </nav>
         </div>
       </header>

@@ -14,6 +14,27 @@ const providers: Record<string, StreamingProvider> = {
   [STREAMING_PROVIDER_ID]: streamingAdapter,
 };
 
+function calculateAlignmentScore(
+  expectedEps: number | null,
+  foundEps: number | null,
+  candidateIndex: number,
+): number {
+  let score = 100 - candidateIndex * 10;
+
+  if (expectedEps && foundEps) {
+    const diff = Math.abs(expectedEps - foundEps);
+    if (diff === 0) {
+      score += 50;
+    } else if (diff <= 2) {
+      score += 20;
+    } else {
+      score -= 80;
+    }
+  }
+
+  return score;
+}
+
 function getProvider(providerId?: string | null): StreamingProvider | null {
   const fallbackProviderId = process.env.STREAMING_PROVIDER_ID || "custom";
   const selectedProviderId = providerId || fallbackProviderId;
@@ -132,6 +153,7 @@ function getTitleCandidates(title: string | string[]): string[] {
 
 export async function findStreamAvailability(
   title: string | string[],
+  expectedEpisodes: number | null = null,
   providerId?: string | null,
 ): Promise<StreamAvailability> {
   const provider = getProvider(providerId);
@@ -145,20 +167,36 @@ export async function findStreamAvailability(
     };
   }
 
-  for (const candidate of getTitleCandidates(title)) {
-    const availability = await provider.findAvailability(candidate);
+  const candidates = getTitleCandidates(title);
+  const results: StreamAvailability[] = [];
 
+  for (let i = 0; i < candidates.length; i++) {
+    const availability = await provider.findAvailability(candidates[i]);
     if (availability.available) {
-      return availability;
+      availability.score = calculateAlignmentScore(
+        expectedEpisodes,
+        availability.episodeCount,
+        i,
+      );
+      results.push(availability);
+
+      // If we find a perfect match early, stop
+      if (availability.score >= 140) {
+        return availability;
+      }
     }
   }
 
-  return {
-    available: false,
-    provider: provider.label,
-    providerAnimeId: null,
-    episodeCount: null,
-  };
+  if (results.length === 0) {
+    return {
+      available: false,
+      provider: provider.label,
+      providerAnimeId: null,
+      episodeCount: null,
+    };
+  }
+
+  return results.sort((a, b) => (b.score || 0) - (a.score || 0))[0];
 }
 
 export async function getStreamSource(input: {
@@ -167,6 +205,7 @@ export async function getStreamSource(input: {
   episode: number;
   providerId?: string | null;
   audio?: StreamAudioType | null;
+  expectedEpisodes?: number | null;
 }): Promise<StreamSource | null> {
   const provider = getProvider(input.providerId);
 
@@ -177,8 +216,13 @@ export async function getStreamSource(input: {
   const candidates = getTitleCandidates(input.animeTitle);
   const providerAnimeId =
     input.providerAnimeId ||
-    (await findStreamAvailability(candidates, input.providerId))
-      .providerAnimeId;
+    (
+      await findStreamAvailability(
+        candidates,
+        input.expectedEpisodes,
+        input.providerId,
+      )
+    ).providerAnimeId;
 
   if (!providerAnimeId) {
     return null;
@@ -189,6 +233,7 @@ export async function getStreamSource(input: {
     providerAnimeId,
     episode: input.episode,
     audio: input.audio,
+    expectedEpisodes: input.expectedEpisodes,
   });
 }
 

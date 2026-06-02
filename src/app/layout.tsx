@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Paytone_One } from "next/font/google";
 
+import { AuthProvider } from "@/components/auth-provider";
 import { SiteHeader } from "@/components/site-header";
+import { getSessionUser } from "@/lib/auth";
 import "./globals.css";
 
 const paytoneOne = Paytone_One({
@@ -23,16 +25,29 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const initialUser = await getSessionUser();
+  const authKey = initialUser
+    ? [
+        initialUser.id,
+        initialUser.username,
+        Boolean(initialUser.aniListProfile),
+        initialUser.libraryEntries.length,
+        initialUser.historyEntries.length,
+      ].join(":")
+    : "anonymous";
+
   return (
     <html lang="en">
       <body className={paytoneOne.variable}>
-        <SiteHeader />
-        <main>{children}</main>
+        <AuthProvider initialUser={initialUser} key={authKey}>
+          <SiteHeader />
+          <main>{children}</main>
+        </AuthProvider>
       </body>
     </html>
   );

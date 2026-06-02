@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Play, Bookmark, Share2, Radio } from "lucide-react";
+import { Play, Share2, Radio } from "lucide-react";
+import { DetailsSaveButton } from "@/components/details-save-button";
 import { AnimeDetails } from "@/types/anime";
 
 interface DetailsHeroProps {
@@ -57,9 +58,7 @@ export function DetailsHero({
                 Watch Now
               </Link>
             )}
-            <button className="hero-icon-btn" title="Add to list">
-              <Bookmark size={20} />
-            </button>
+            <DetailsSaveButton anime={anime} />
             <button className="hero-icon-btn" title="Share">
               <Share2 size={20} />
             </button>
