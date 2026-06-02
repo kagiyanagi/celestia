@@ -387,13 +387,13 @@ export default async function WatchPage({
   const fallbackTotal =
     releasedEpisodeLimit ??
     (source?.episodes.length ||
-      anime.streamingEpisodes.length ||
+      anime.streamingEpisodes?.length ||
       anime.airingCount ||
       anime.episodes ||
       episode);
   const episodes = buildEpisodeList({
     providerEpisodes: source?.episodes || [],
-    metadataEpisodes: anime.streamingEpisodes,
+    metadataEpisodes: anime.streamingEpisodes || [],
     fallbackTotal,
     releasedEpisodeLimit,
     animeTitle: title,
