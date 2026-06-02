@@ -1,5 +1,6 @@
 import { AiringBoard } from "@/components/airing-board";
 import { HomeHeroCarousel } from "@/components/home-hero-carousel";
+import { HomePersonalSections } from "@/components/home-personal-sections";
 import { HomeShelf } from "@/components/home-shelf";
 import { HomeTrendingRail } from "@/components/home-trending-rail";
 import { HomeUpcomingGrid } from "@/components/home-upcoming-grid";
@@ -12,6 +13,7 @@ export default async function HomePage() {
     <>
       <HomeHeroCarousel items={collections.topAiring} />
       <div className="page-shell">
+        <HomePersonalSections user={null} />
         <HomeTrendingRail items={collections.trending} />
         <HomeUpcomingGrid items={collections.upcoming} />
         <AiringBoard items={collections.airingSoon} />

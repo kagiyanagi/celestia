@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { HeaderImageSetter } from "@/components/header-image-setter";
+import { WatchHistoryRecorder } from "@/components/watch-history-recorder";
 import {
   type WatchAudioOption,
   WatchControls,
@@ -370,6 +371,7 @@ export default async function WatchPage({
         episode,
         providerId: server,
         audio: audioPreference,
+        expectedEpisodes: anime.episodes,
       })
     : null;
   const providerOptions = getStreamingProviderOptions();
@@ -495,6 +497,12 @@ export default async function WatchPage({
   return (
     <div className="watch-page">
       <HeaderImageSetter image={anime.bannerImage || anime.coverImage} />
+      <WatchHistoryRecorder
+        anime={anime}
+        episode={episode}
+        episodeTitle={currentEpisode?.title || `Episode ${episode}`}
+        durationLabel={anime.duration ? `${anime.duration}:00` : null}
+      />
 
       <section className="watch-player-stage">
         <div className="watch-player-top">

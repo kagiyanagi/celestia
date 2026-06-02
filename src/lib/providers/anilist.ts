@@ -1,3 +1,4 @@
+import { getDisplayTitle } from "@/lib/format";
 import { getCurrentAnimeSeason } from "@/lib/anime-season";
 import {
   FALLBACK_GENRE_OPTIONS,
@@ -10,6 +11,11 @@ import {
   type AniListDetailsMedia,
   type AniListMedia,
 } from "@/lib/providers/transformers/anilist";
+import type {
+  AniListProfile,
+  LibraryEntry,
+  SyncedActivity,
+} from "@/types/account";
 import type {
   AiringItem,
   AnimeDetails,
@@ -774,4 +780,481 @@ export async function getAnimeDetails(
     console.error(error);
     return null;
   }
+}
+
+const VIEWER_PROFILE_QUERY = `
+  query ViewerProfile {
+    Viewer {
+      id
+      name
+      about(asHtml: false)
+      siteUrl
+      avatar {
+        large
+      }
+      bannerImage
+      statistics {
+        anime {
+          count
+          episodesWatched
+          minutesWatched
+          meanScore
+          statuses {
+            status
+            count
+          }
+        }
+      }
+    }
+  }
+`;
+
+const VIEWER_ACTIVITY_QUERY = `
+  query ViewerActivity {
+    Page(page: 1, perPage: 10) {
+      activities(sort: ID_DESC, type: ANIME_LIST) {
+        ... on ListActivity {
+          id
+          progress
+          createdAt
+          media {
+            id
+            title {
+              romaji
+              english
+              native
+              userPreferred
+            }
+            coverImage {
+              large
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+const VIEWER_LIBRARY_QUERY = `
+  query ViewerLibrary($userId: Int) {
+    MediaListCollection(userId: $userId, type: ANIME, forceSingleCompletedList: true) {
+      lists {
+        name
+        entries {
+          id
+          status
+          score
+          progress
+          repeat
+          notes
+          startedAt {
+            year
+            month
+            day
+          }
+          completedAt {
+            year
+            month
+            day
+          }
+          media {
+            ${MEDIA_CARD_FIELDS}
+          }
+        }
+      }
+    }
+  }
+`;
+
+const SAVE_MEDIA_LIST_ENTRY_MUTATION = `
+  mutation SaveMediaListEntry(
+    $mediaId: Int!,
+    $status: MediaListStatus,
+    $score: Float,
+    $progress: Int,
+    $repeat: Int,
+    $notes: String,
+    $startedAt: FuzzyDateInput,
+    $completedAt: FuzzyDateInput
+  ) {
+    SaveMediaListEntry(
+      mediaId: $mediaId,
+      status: $status,
+      score: $score,
+      progress: $progress,
+      repeat: $repeat,
+      notes: $notes,
+      startedAt: $startedAt,
+      completedAt: $completedAt
+    ) {
+      id
+      status
+      progress
+      repeat
+      notes
+      score
+    }
+  }
+`;
+
+const DELETE_MEDIA_LIST_ENTRY_MUTATION = `
+  mutation DeleteMediaListEntry($id: Int) {
+    DeleteMediaListEntry(id: $id) {
+      deleted
+    }
+  }
+`;
+
+type ViewerProfileResult = {
+  Viewer: {
+    id: number;
+    name: string;
+    about: string | null;
+    siteUrl: string | null;
+    avatar: {
+      large: string | null;
+    } | null;
+    bannerImage: string | null;
+    statistics: {
+      anime: {
+        count: number | null;
+        episodesWatched: number | null;
+        minutesWatched: number | null;
+        statuses:
+          | Array<{
+              status: string | null;
+              count: number | null;
+            }>
+          | null;
+      } | null;
+    } | null;
+  } | null;
+};
+
+type ViewerActivityResult = {
+  Page: {
+    activities: Array<{
+      id: number;
+      progress: string | null;
+      createdAt: number;
+      media: {
+        id: number;
+        title: AniListMedia["title"] | null;
+        coverImage: {
+          large: string | null;
+        } | null;
+      } | null;
+    }>;
+  };
+};
+
+type ViewerLibraryResult = {
+  MediaListCollection: {
+    lists: Array<{
+      name: string | null;
+      entries: Array<{
+        id: number;
+        status: string | null;
+        score: number | null;
+        progress: number | null;
+        repeat: number | null;
+        notes: string | null;
+        startedAt: {
+          year: number | null;
+          month: number | null;
+          day: number | null;
+        } | null;
+        completedAt: {
+          year: number | null;
+          month: number | null;
+          day: number | null;
+        } | null;
+        media: AniListMedia | null;
+      }>;
+    }> | null;
+  } | null;
+};
+
+type SaveMediaListEntryResult = {
+  SaveMediaListEntry: {
+    id: number;
+    status: string | null;
+    progress: number | null;
+    repeat: number | null;
+    notes: string | null;
+    score: number | null;
+  } | null;
+};
+
+function toDateString(
+  date:
+    | {
+        year: number | null;
+        month: number | null;
+        day: number | null;
+      }
+    | null
+    | undefined,
+) {
+  if (!date?.year || !date?.month || !date?.day) {
+    return null;
+  }
+
+  return `${date.year.toString().padStart(4, "0")}-${date.month
+    .toString()
+    .padStart(2, "0")}-${date.day.toString().padStart(2, "0")}`;
+}
+
+function toFuzzyDateInput(value: string | null) {
+  if (!value) {
+    return undefined;
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return undefined;
+  }
+
+  return {
+    year: date.getUTCFullYear(),
+    month: date.getUTCMonth() + 1,
+    day: date.getUTCDate(),
+  };
+}
+
+function mapAniListStatus(status: string | null | undefined): LibraryEntry["status"] {
+  switch (status) {
+    case "CURRENT":
+      return "watching";
+    case "PLANNING":
+      return "planning";
+    case "PAUSED":
+      return "on_hold";
+    case "DROPPED":
+      return "dropped";
+    case "COMPLETED":
+      return "completed";
+    case "REPEATING":
+      return "rewatching";
+    default:
+      return "planning";
+  }
+}
+
+function toAniListStatus(status: LibraryEntry["status"]) {
+  switch (status) {
+    case "watching":
+      return "CURRENT";
+    case "planning":
+      return "PLANNING";
+    case "on_hold":
+      return "PAUSED";
+    case "dropped":
+      return "DROPPED";
+    case "completed":
+      return "COMPLETED";
+    case "rewatching":
+      return "REPEATING";
+    default:
+      return "PLANNING";
+  }
+}
+
+async function fetchAniListWithToken<T>(
+  accessToken: string,
+  query: string,
+  variables: Record<string, unknown> = {},
+) {
+  const response = await fetch(ANILIST_ENDPOINT, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ query, variables }),
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new AniListError(
+      `AniList request failed with HTTP ${response.status}`,
+    );
+  }
+
+  const payload = (await response.json()) as AniListGraphQLResponse<T>;
+
+  if (payload.errors?.length) {
+    throw new AniListError(
+      payload.errors.map((error) => error.message).join("; "),
+    );
+  }
+
+  if (!payload.data) {
+    throw new AniListError("AniList returned an empty payload");
+  }
+
+  return payload.data;
+}
+
+export function getAniListAuthorizeUrl(state: string) {
+  const clientId = process.env.ANILIST_CLIENT_ID;
+  const redirectUri = process.env.ANILIST_REDIRECT_URI;
+
+  if (!clientId || !redirectUri) {
+    throw new Error("AniList OAuth is not configured.");
+  }
+
+  const url = new URL("https://anilist.co/api/v2/oauth/authorize");
+  url.searchParams.set("client_id", clientId);
+  url.searchParams.set("redirect_uri", redirectUri);
+  url.searchParams.set("response_type", "code");
+  url.searchParams.set("state", state);
+  return url.toString();
+}
+
+export async function exchangeAniListCode(code: string) {
+  const clientId = process.env.ANILIST_CLIENT_ID;
+  const clientSecret = process.env.ANILIST_CLIENT_SECRET;
+  const redirectUri = process.env.ANILIST_REDIRECT_URI;
+
+  if (!clientId || !clientSecret || !redirectUri) {
+    throw new Error("AniList OAuth is not configured.");
+  }
+
+  const response = await fetch("https://anilist.co/api/v2/oauth/token", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      grant_type: "authorization_code",
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri,
+      code,
+    }),
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(`AniList token exchange failed with HTTP ${response.status}`);
+  }
+
+  const payload = (await response.json()) as { access_token?: string };
+
+  if (!payload.access_token) {
+    throw new Error("AniList did not return an access token.");
+  }
+
+  return payload.access_token;
+}
+
+export async function getAniListViewerProfile(accessToken: string) {
+  const [profileData, activityData] = await Promise.all([
+    fetchAniListWithToken<ViewerProfileResult>(accessToken, VIEWER_PROFILE_QUERY),
+    fetchAniListWithToken<ViewerActivityResult>(accessToken, VIEWER_ACTIVITY_QUERY),
+  ]);
+
+  if (!profileData.Viewer) {
+    throw new Error("AniList viewer profile could not be loaded.");
+  }
+
+  const animeStats = profileData.Viewer.statistics?.anime;
+  const completedCount =
+    animeStats?.statuses?.find((status) => status.status === "COMPLETED")
+      ?.count || 0;
+  const watchedMinutes =
+    animeStats?.minutesWatched || (animeStats?.episodesWatched || 0) * 24;
+  const activity: SyncedActivity[] = activityData.Page.activities
+    .filter((item) => item.media)
+    .map((item) => {
+      const progressMatch = item.progress?.match(/(\d+)/);
+      return {
+        id: `anilist-${item.id}`,
+        animeId: item.media?.id || 0,
+        coverImage: item.media?.coverImage?.large || null,
+        animeTitle: getDisplayTitle(item.media?.title || undefined),
+        progress: progressMatch ? Number(progressMatch[1]) : 0,
+        createdAt: new Date(item.createdAt * 1000).toISOString(),
+        source: "anilist",
+      };
+    });
+
+  return {
+    id: profileData.Viewer.id,
+    name: profileData.Viewer.name,
+    avatar: profileData.Viewer.avatar?.large || null,
+    banner: profileData.Viewer.bannerImage || null,
+    about: profileData.Viewer.about || null,
+    siteUrl: profileData.Viewer.siteUrl || null,
+    daysWatched: Number((watchedMinutes / (60 * 24)).toFixed(1)),
+    animeCompleted: completedCount,
+    animeCount: animeStats?.count || 0,
+    activity,
+  } satisfies AniListProfile;
+}
+
+export async function getAniListViewerLibrary(accessToken: string, userId: number) {
+  const data = await fetchAniListWithToken<ViewerLibraryResult>(
+    accessToken,
+    VIEWER_LIBRARY_QUERY,
+    { userId },
+  );
+
+  return (
+    data.MediaListCollection?.lists
+      ?.flatMap((list) => list.entries)
+      .filter(
+        (entry): entry is typeof entry & { media: AniListMedia } =>
+          Boolean(entry.media),
+      )
+      .map((entry) => ({
+        id: `anilist-entry-${entry.id}`,
+        animeId: entry.media.id,
+        anime: transformAnimeSummary(entry.media),
+        status: mapAniListStatus(entry.status),
+        score: entry.score || 0,
+        progress: entry.progress || 0,
+        repeat: entry.repeat || 0,
+        notes: entry.notes || "",
+        startedAt: toDateString(entry.startedAt),
+        completedAt: toDateString(entry.completedAt),
+        updatedAt: new Date().toISOString(),
+        aniListEntryId: entry.id,
+      } satisfies LibraryEntry)) || []
+  );
+}
+
+export async function saveAniListLibraryEntry(
+  accessToken: string,
+  entry: Omit<LibraryEntry, "id" | "updatedAt">,
+) {
+  const data = await fetchAniListWithToken<SaveMediaListEntryResult>(
+    accessToken,
+    SAVE_MEDIA_LIST_ENTRY_MUTATION,
+    {
+      mediaId: entry.animeId,
+      status: toAniListStatus(entry.status),
+      score: entry.score,
+      progress: entry.progress,
+      repeat: entry.repeat,
+      notes: entry.notes,
+      startedAt: toFuzzyDateInput(entry.startedAt),
+      completedAt: toFuzzyDateInput(entry.completedAt),
+    },
+  );
+
+  return data.SaveMediaListEntry?.id || null;
+}
+
+export async function deleteAniListLibraryEntry(
+  accessToken: string,
+  entryId: number,
+) {
+  await fetchAniListWithToken(accessToken, DELETE_MEDIA_LIST_ENTRY_MUTATION, {
+    id: entryId,
+  });
 }

@@ -57,8 +57,12 @@ export default async function AnimePage({ params }: AnimePageProps) {
     anime.title?.english,
     anime.title?.userPreferred,
     title,
+    ...(anime.synonyms || []),
   ].filter((value): value is string => Boolean(value));
-  const streamAvailability = await findStreamAvailability(streamLookupTitle);
+  const streamAvailability = await findStreamAvailability(
+    streamLookupTitle,
+    anime.episodes,
+  );
   const watchHref = `/watch/${anime.id}?ep=1${
     streamAvailability.providerAnimeId
       ? `&sid=${streamAvailability.providerAnimeId}`
