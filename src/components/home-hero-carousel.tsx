@@ -156,8 +156,8 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
                       <h1>{title}</h1>
                     </Link>
                     <p className="celestia-description">
-                      {item.genres.slice(0, 3).join(" • ") || "Anime"} with
-                      fresh episodes and a simple watch flow.
+                      {(item.genres ?? []).slice(0, 3).join(" • ") || "Anime"}{" "}
+                      with fresh episodes and a simple watch flow.
                     </p>
                     <div className="celestia-pills">
                       <span>{item.format || "Anime"}</span>

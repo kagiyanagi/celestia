@@ -476,10 +476,10 @@ export default async function WatchPage({
       }),
     }),
   );
-  const relatedItems = anime.relations
+  const relatedItems = (anime.relations ?? [])
     .filter((item) => RELATED_TYPES.has(item.relationType))
     .slice(0, 8);
-  const recommendations = anime.recommendations.slice(0, 8);
+  const recommendations = (anime.recommendations ?? []).slice(0, 8);
   const currentHref = watchHref({
     animeId: anime.id,
     episode,
