@@ -1,6 +1,6 @@
-# Celstia
+# Celestia
 
-Celstia is an anime watching and tracking website. AniList is the primary metadata and tracking source, while streaming is routed through a swappable provider adapter.
+Celestia is an anime watching and tracking website. AniList is the primary metadata and tracking source, while streaming is routed through a swappable provider adapter.
 
 ## Current Build
 

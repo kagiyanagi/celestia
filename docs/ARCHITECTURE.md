@@ -1,8 +1,8 @@
-# Celstia Architecture
+# Celestia Architecture
 
 ## Provider Strategy
 
-Celstia uses provider boundaries instead of wiring third-party APIs directly into pages.
+Celestia uses provider boundaries instead of wiring third-party APIs directly into pages.
 
 - `AniList`: primary metadata, discovery, airing schedule, details, relations, characters, recommendations, and future account tracking.
 - `Streaming`: a swappable provider adapter. Streaming Provider is the current temporary provider.

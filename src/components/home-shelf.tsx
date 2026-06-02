@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Captions, Mic, Star } from "lucide-react";
+import { ArrowRight, Captions, Mic, Radio, Star } from "lucide-react";
 
 import { getDisplayTitle, scoreLabel } from "@/lib/format";
 import type { AnimeSummary } from "@/types/anime";
@@ -47,7 +47,16 @@ export function HomeShelf({ title, href, items }: HomeShelfProps) {
             </span>
 
             <span className="shelf-card-copy">
-              <strong>{getDisplayTitle(anime.title)}</strong>
+              <strong>
+                {anime.status === "RELEASING" && (
+                  <Radio
+                    size={14}
+                    className="shelf-card-airing-icon"
+                    aria-hidden
+                  />
+                )}
+                {getDisplayTitle(anime.title)}
+              </strong>
               <span className="shelf-card-meta">
                 <span>
                   <Captions size={14} aria-hidden />

@@ -1,17 +1,27 @@
 import { getCurrentAnimeSeason } from "@/lib/anime-season";
+import {
+  FALLBACK_GENRE_OPTIONS,
+  FALLBACK_TAG_OPTIONS,
+} from "@/lib/browse-filters";
 import { cleanDescription } from "@/lib/format";
+import { getAniZipEpisodes } from "@/lib/providers/anizip";
 import type {
   AiringItem,
   BrowseSectionKey,
   BrowseCollection,
+  BrowseFilterOptions,
+  BrowseFilters,
   AnimeDetails,
   AnimeSeason,
+  AnimeStreamingEpisode,
   AnimeSummary,
   CharacterCredit,
   ExternalLink,
   HomeCollections,
   RelationItem,
+  StaffCredit,
   Studio,
+  VoiceActorCredit,
 } from "@/types/anime";
 
 const ANILIST_ENDPOINT =
@@ -152,10 +162,15 @@ const BROWSE_QUERY = `
   query BrowseCollection(
     $page: Int,
     $perPage: Int,
+    $search: String,
+    $genre: String,
+    $tag: String,
     $season: MediaSeason,
     $seasonYear: Int,
     $status: MediaStatus,
     $format: MediaFormat,
+    $countryOfOrigin: CountryCode,
+    $source: MediaSource,
     $sort: [MediaSort]
   ) {
     Page(page: $page, perPage: $perPage) {
@@ -168,15 +183,30 @@ const BROWSE_QUERY = `
       }
       media(
         type: ANIME,
+        search: $search,
+        genre: $genre,
+        tag: $tag,
         season: $season,
         seasonYear: $seasonYear,
         status: $status,
         format: $format,
+        countryOfOrigin: $countryOfOrigin,
+        source: $source,
         sort: $sort,
         isAdult: false
       ) {
         ${MEDIA_CARD_FIELDS}
       }
+    }
+  }
+`;
+
+const FILTER_OPTIONS_QUERY = `
+  query BrowseFilterOptions {
+    genres: GenreCollection
+    tags: MediaTagCollection {
+      name
+      isAdult
     }
   }
 `;
@@ -199,6 +229,23 @@ const DETAIL_QUERY = `
       source
       countryOfOrigin
       hashtag
+      synonyms
+      streamingEpisodes {
+        title
+        thumbnail
+        url
+        site
+      }
+      startDate {
+        year
+        month
+        day
+      }
+      endDate {
+        year
+        month
+        day
+      }
       trailer {
         id
         site
@@ -224,7 +271,7 @@ const DETAIL_QUERY = `
         language
         color
       }
-      characters(sort: [ROLE, RELEVANCE], perPage: 8) {
+      characters(sort: [ROLE, RELEVANCE], perPage: 50) {
         edges {
           role
           node {
@@ -237,7 +284,22 @@ const DETAIL_QUERY = `
               large
             }
           }
-          voiceActors(language: JAPANESE, sort: RELEVANCE) {
+          voiceActors {
+            id
+            name {
+              full
+            }
+            image {
+              large
+            }
+            languageV2
+          }
+        }
+      }
+      staff(sort: [RELEVANCE, ROLE], perPage: 12) {
+        edges {
+          role
+          node {
             id
             name {
               full
@@ -257,7 +319,7 @@ const DETAIL_QUERY = `
           }
         }
       }
-      recommendations(sort: RATING_DESC, perPage: 6) {
+      recommendations(sort: RATING_DESC, perPage: 12) {
         nodes {
           mediaRecommendation {
             ${MEDIA_CARD_FIELDS}
@@ -320,6 +382,18 @@ type AniListDetailsMedia = AniListMedia & {
   source: string | null;
   countryOfOrigin: string | null;
   hashtag: string | null;
+  synonyms: string[] | null;
+  streamingEpisodes: AnimeStreamingEpisode[] | null;
+  startDate: {
+    year: number | null;
+    month: number | null;
+    day: number | null;
+  } | null;
+  endDate: {
+    year: number | null;
+    month: number | null;
+    day: number | null;
+  } | null;
   trailer: {
     id: string | null;
     site: string | null;
@@ -359,7 +433,22 @@ type AniListDetailsMedia = AniListMedia & {
         image: {
           large: string | null;
         } | null;
+        languageV2: string | null;
       }> | null;
+    }> | null;
+  } | null;
+  staff: {
+    edges: Array<{
+      role: string | null;
+      node: {
+        id: number;
+        name: {
+          full: string | null;
+        } | null;
+        image: {
+          large: string | null;
+        } | null;
+      } | null;
     }> | null;
   } | null;
   relations: {
@@ -436,6 +525,14 @@ type BrowseQueryResult = {
   };
 };
 
+type FilterOptionsQueryResult = {
+  genres: string[] | null;
+  tags: Array<{
+    name: string;
+    isAdult: boolean | null;
+  }> | null;
+};
+
 type DetailQueryResult = {
   Media: AniListDetailsMedia | null;
 };
@@ -486,20 +583,32 @@ async function fetchAniList<T>(
 }
 
 function toAnimeSummary(media: AniListMedia): AnimeSummary {
-  const airingCount = media.nextAiringEpisode
-    ? media.nextAiringEpisode.episode - 1
-    : media.status === "FINISHED"
-      ? media.episodes
-      : media.episodes || 0;
+  const isFinished = media.status === "FINISHED";
+  const isReleasing = media.status === "RELEASING";
 
-  // Best effort dub count: finished anime are usually fully dubbed.
-  // Releasing anime usually have a 2-week delay for dubs.
-  const dubCount =
-    media.status === "FINISHED"
-      ? media.episodes
-      : airingCount
-        ? Math.max(0, airingCount - 2)
-        : 0;
+  let airingCount = 0;
+  if (isFinished) {
+    airingCount = media.episodes || 0;
+  } else if (isReleasing) {
+    if (media.nextAiringEpisode) {
+      airingCount = media.nextAiringEpisode.episode - 1;
+    } else {
+      // If releasing but no nextAiringEpisode info, we assume it just started or AniList is behind.
+      // But we shouldn't show total planned episodes if we don't know.
+      // Better to show 0 or a very conservative estimate than the full planned count.
+      airingCount = 0;
+    }
+  } else {
+    // Upcoming, etc.
+    airingCount = 0;
+  }
+
+  // Best effort dub count
+  const dubCount = isFinished
+    ? media.episodes
+    : airingCount > 0
+      ? Math.max(0, airingCount - 2)
+      : 0;
 
   return {
     id: media.id,
@@ -534,8 +643,33 @@ function toCharacterCredits(media: AniListDetailsMedia): CharacterCredit[] {
     media.characters?.edges
       ?.filter((edge) => edge.node?.name?.full)
       .map((edge) => {
-        const actor =
-          edge.voiceActors?.find((voiceActor) => voiceActor.name?.full) || null;
+        const toVoiceActorCredit = (
+          actor: {
+            id: number;
+            name: {
+              full: string | null;
+            } | null;
+            image: {
+              large: string | null;
+            } | null;
+          } | null,
+        ): VoiceActorCredit | null =>
+          actor
+            ? {
+                id: actor.id,
+                name: actor.name?.full || "Unknown voice actor",
+                image: actor.image?.large || null,
+              }
+            : null;
+
+        const japaneseActor =
+          edge.voiceActors?.find(
+            (va) => va.languageV2 === "Japanese" && va.name?.full,
+          ) || null;
+        const englishActor =
+          edge.voiceActors?.find(
+            (va) => va.languageV2 === "English" && va.name?.full,
+          ) || null;
 
         return {
           id: edge.node?.id || 0,
@@ -543,15 +677,25 @@ function toCharacterCredits(media: AniListDetailsMedia): CharacterCredit[] {
           nativeName: edge.node?.name?.native || null,
           image: edge.node?.image?.large || null,
           role: edge.role,
-          voiceActor: actor
-            ? {
-                id: actor.id,
-                name: actor.name?.full || "Unknown voice actor",
-                image: actor.image?.large || null,
-              }
-            : null,
+          voiceActors: {
+            japanese: toVoiceActorCredit(japaneseActor),
+            english: toVoiceActorCredit(englishActor),
+          },
         };
       }) || []
+  );
+}
+
+function toStaffCredits(media: AniListDetailsMedia): StaffCredit[] {
+  return (
+    media.staff?.edges
+      ?.filter((edge) => edge.node?.name?.full)
+      .map((edge) => ({
+        id: edge.node?.id || 0,
+        name: edge.node?.name?.full || "Unknown staff",
+        role: edge.role || "Staff",
+        image: edge.node?.image?.large || null,
+      })) || []
   );
 }
 
@@ -573,18 +717,30 @@ function toAnimeDetails(media: AniListDetailsMedia): AnimeDetails {
     source: media.source,
     countryOfOrigin: media.countryOfOrigin,
     hashtag: media.hashtag,
+    synonyms: media.synonyms || [],
+    startDate: media.startDate,
+    endDate: media.endDate,
+    streamingEpisodes:
+      media.streamingEpisodes?.map((ep) => {
+        const match = ep.title?.match(/Episode\s+(\d+)/i);
+        return {
+          ...ep,
+          number: match ? parseInt(match[1], 10) : 0,
+        };
+      }) || [],
     trailer: media.trailer,
     tags:
       media.tags
         ?.filter((tag) => !tag.isGeneralSpoiler && !tag.isMediaSpoiler)
         .sort((a, b) => b.rank - a.rank)
-        .slice(0, 12)
+        .slice(0, 100)
         .map((tag) => tag.name) || [],
     rankings:
       media.rankings
         ?.slice(0, 4)
         .map((ranking) => `#${ranking.rank} ${ranking.context}`) || [],
     characters: toCharacterCredits(media),
+    staff: toStaffCredits(media),
     relations: toRelations(media),
     recommendations:
       media.recommendations?.nodes
@@ -709,9 +865,119 @@ export async function getAiringSchedule(
   }
 }
 
+function resolveBrowseSort(
+  sort: string,
+  section: BrowseSectionKey,
+  status: string,
+): string[] | null {
+  switch (sort) {
+    case "popularity":
+      return ["POPULARITY_DESC"];
+    case "score":
+      return ["SCORE_DESC", "POPULARITY_DESC"];
+    case "release_date":
+      return section === "finished" || status === "FINISHED"
+        ? ["END_DATE_DESC"]
+        : ["START_DATE_DESC"];
+    case "favourites":
+      return ["FAVOURITES_DESC"];
+    case "trending":
+      return ["TRENDING_DESC", "POPULARITY_DESC"];
+    default:
+      return null;
+  }
+}
+
+function getBrowseFilterVariables(
+  filters: BrowseFilters | undefined,
+  section: BrowseSectionKey,
+): Record<string, unknown> {
+  if (!filters) {
+    return {};
+  }
+
+  const variables: Record<string, unknown> = {};
+  const search = filters.q.trim();
+
+  if (search) {
+    variables.search = search;
+  }
+
+  if (filters.genre) {
+    variables.genre = filters.genre;
+  }
+
+  if (filters.tag) {
+    variables.tag = filters.tag;
+  }
+
+  if (filters.format) {
+    variables.format = filters.format;
+  }
+
+  if (filters.year) {
+    variables.seasonYear = Number(filters.year);
+  }
+
+  if (filters.season) {
+    variables.season = filters.season;
+  }
+
+  if (filters.status) {
+    variables.status = filters.status;
+  }
+
+  if (filters.country) {
+    variables.countryOfOrigin = filters.country;
+  }
+
+  if (filters.source) {
+    variables.source = filters.source;
+  }
+
+  const sort = resolveBrowseSort(filters.sort, section, filters.status);
+
+  if (sort) {
+    variables.sort = sort;
+  }
+
+  return variables;
+}
+
+export async function getBrowseFilterOptions(): Promise<BrowseFilterOptions> {
+  try {
+    const data = await fetchAniList<FilterOptionsQueryResult>(
+      FILTER_OPTIONS_QUERY,
+      {},
+      86_400,
+    );
+    const genres =
+      data.genres
+        ?.filter((genre) => genre && genre !== "Hentai")
+        .map((genre) => ({ value: genre, label: genre })) || [];
+    const tags =
+      data.tags
+        ?.filter((tag) => tag.name && !tag.isAdult)
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((tag) => ({ value: tag.name, label: tag.name })) || [];
+
+    return {
+      genres: genres.length ? genres : FALLBACK_GENRE_OPTIONS,
+      tags: tags.length ? tags : FALLBACK_TAG_OPTIONS,
+    };
+  } catch (error) {
+    console.error(error);
+    return {
+      genres: FALLBACK_GENRE_OPTIONS,
+      tags: FALLBACK_TAG_OPTIONS,
+    };
+  }
+}
+
 export async function getBrowseCollection(
   section: BrowseSectionKey,
   page = 1,
+  filters?: BrowseFilters,
 ): Promise<BrowseCollection> {
   const next = getNextAnimeSeason();
   const perPage = 30;
@@ -739,6 +1005,7 @@ export async function getBrowseCollection(
       format: "MOVIE",
       sort: ["SCORE_DESC", "POPULARITY_DESC"],
     },
+    search: {},
   };
 
   try {
@@ -748,6 +1015,7 @@ export async function getBrowseCollection(
         page: safePage,
         perPage,
         ...settings[section],
+        ...getBrowseFilterVariables(filters, section),
       },
       900,
     );
@@ -813,7 +1081,38 @@ export async function getAnimeDetails(
       900,
     );
 
-    return data.Media ? toAnimeDetails(data.Media) : null;
+    if (!data.Media) return null;
+
+    const anime = toAnimeDetails(data.Media);
+
+    // Fetch full episode list from AniZip
+    const fullEpisodes = await getAniZipEpisodes(id);
+
+    if (fullEpisodes.length > 0) {
+      // Map AniList's sparse streaming episodes to a map for easy lookup
+      const aniListEpsMap = new Map<
+        number,
+        (typeof anime.streamingEpisodes)[0]
+      >();
+      anime.streamingEpisodes.forEach((ep) => {
+        if (ep.number > 0) {
+          aniListEpsMap.set(ep.number, ep);
+        }
+      });
+
+      // Use AniZip as the source of truth for the list, and merge AniList data
+      anime.streamingEpisodes = fullEpisodes.map((ep) => {
+        const aniListEp = aniListEpsMap.get(ep.number);
+        return {
+          ...ep,
+          thumbnail: aniListEp?.thumbnail || ep.thumbnail,
+          url: aniListEp?.url || ep.url,
+          site: aniListEp?.site || ep.site,
+        };
+      });
+    }
+
+    return anime;
   } catch (error) {
     console.error(error);
     return null;

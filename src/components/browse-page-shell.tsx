@@ -7,7 +7,15 @@ import {
 } from "lucide-react";
 
 import { AnimeCard } from "@/components/anime-card";
-import type { AnimeSummary, BrowsePageInfo } from "@/types/anime";
+import { BrowseFilterBar } from "@/components/browse-filter-bar";
+import { buildBrowseHref } from "@/lib/browse-filters";
+import type {
+  AnimeSummary,
+  BrowseFilterOptions,
+  BrowseFilters,
+  BrowsePageInfo,
+  BrowseSectionKey,
+} from "@/types/anime";
 
 type BrowsePageShellProps = {
   eyebrow: string;
@@ -16,6 +24,10 @@ type BrowsePageShellProps = {
   items: AnimeSummary[];
   pageInfo: BrowsePageInfo;
   basePath: string;
+  section: BrowseSectionKey;
+  filters: BrowseFilters;
+  filterOptions: BrowseFilterOptions;
+  showSectionTitle?: boolean;
 };
 
 export function BrowsePageShell({
@@ -25,6 +37,10 @@ export function BrowsePageShell({
   items,
   pageInfo,
   basePath,
+  section,
+  filters,
+  filterOptions,
+  showSectionTitle = true,
 }: BrowsePageShellProps) {
   const currentPage = Math.max(1, pageInfo.currentPage);
   const lastPage = pageInfo.lastPage ?? currentPage;
@@ -35,9 +51,10 @@ export function BrowsePageShell({
   const hasLastPage = pageInfo.lastPage !== null && currentPage < lastPage;
   const startItem = items.length ? (currentPage - 1) * pageInfo.perPage + 1 : 0;
   const endItem = startItem + items.length - 1;
+  const filterKey = buildBrowseHref(basePath, filters);
 
   function pageHref(page: number): string {
-    return page <= 1 ? basePath : `${basePath}?page=${page}`;
+    return buildBrowseHref(basePath, filters, page);
   }
 
   return (
@@ -49,13 +66,21 @@ export function BrowsePageShell({
       </section>
 
       <section className="section-shell">
+        <BrowseFilterBar
+          key={filterKey}
+          basePath={basePath}
+          section={section}
+          filters={filters}
+          options={filterOptions}
+        />
+
         <div className="section-heading">
           <span>
             {pageInfo.total
               ? `${startItem}-${endItem} of ${pageInfo.total} titles`
               : `${items.length} titles`}
           </span>
-          <h2>{title}</h2>
+          {showSectionTitle && <h2>{title}</h2>}
         </div>
 
         {items.length ? (

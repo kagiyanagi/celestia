@@ -1,21 +1,46 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, Menu, Search, UserRound } from "lucide-react";
+import { ArrowLeft, Bell, Search, UserRound } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { SearchModal } from "./search-modal";
 
 export function SiteHeader() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
+  const isHomePage = pathname === "/";
+
+  function handleBack() {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+      return;
+    }
+
+    router.push("/");
+  }
 
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
 
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        setIsSearchOpen(true);
+      }
+    };
+
     window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, []);
 
   return (
@@ -25,19 +50,20 @@ export function SiteHeader() {
       >
         <div className="site-header-row">
           <div className="site-header-brand">
-            <button
-              className="header-icon-button"
-              type="button"
-              aria-label="Open navigation"
-            >
-              <Menu size={18} aria-hidden />
-            </button>
-            <Link className="brand-mark" href="/" aria-label="Celstia home">
-              CELSTIA
+            {!isHomePage ? (
+              <button
+                className="header-icon-button"
+                type="button"
+                onClick={handleBack}
+                aria-label="Go back"
+              >
+                <ArrowLeft size={18} aria-hidden />
+              </button>
+            ) : null}
+            <Link className="brand-mark" href="/" aria-label="Celestia home">
+              CELESTIA
             </Link>
           </div>
-
-          <div className="site-header-spacer" />
 
           <nav className="site-header-actions" aria-label="Primary navigation">
             <button

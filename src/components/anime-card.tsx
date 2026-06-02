@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Captions, Mic } from "lucide-react";
+import { Captions, Mic, Radio } from "lucide-react";
 
 import { getDisplayTitle, scoreLabel } from "@/lib/format";
 import type { AnimeSummary } from "@/types/anime";
@@ -27,7 +27,7 @@ export function AnimeCard({ anime, priority = false }: AnimeCardProps) {
             className="poster-image"
           />
         ) : (
-          <span className="poster-fallback">Celstia</span>
+          <span className="poster-fallback">Celestia</span>
         )}
 
         <span className="poster-stats">
@@ -52,7 +52,12 @@ export function AnimeCard({ anime, priority = false }: AnimeCardProps) {
           </span>
           <span>{anime.seasonYear || "Now"}</span>
         </span>
-        <span className="anime-card-title">{title}</span>
+        <span className="anime-card-title">
+          {anime.status === "RELEASING" && (
+            <Radio size={14} className="anime-card-airing-icon" aria-hidden />
+          )}
+          {title}
+        </span>
       </span>
     </Link>
   );

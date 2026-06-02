@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Radio } from "lucide-react";
 
 import { formatSeasonLabel } from "@/lib/anime-season";
 import {
@@ -68,7 +68,16 @@ export function HomeUpcomingGrid({ items }: HomeUpcomingGridProps) {
                       loading="lazy"
                     />
                   ) : null}
-                  <strong className="upcoming-card-title">{title}</strong>
+                  <strong className="upcoming-card-title">
+                    {anime.status === "RELEASING" && (
+                      <Radio
+                        size={14}
+                        className="upcoming-card-airing-icon"
+                        aria-hidden
+                      />
+                    )}
+                    {title}
+                  </strong>
                   {studio ? (
                     <span className="upcoming-card-studio">{studio}</span>
                   ) : null}
