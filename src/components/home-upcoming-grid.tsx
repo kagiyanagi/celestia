@@ -99,7 +99,7 @@ export function HomeUpcomingGrid({ items }: HomeUpcomingGridProps) {
                 </p>
 
                 <div className="upcoming-card-tags">
-                  {anime.genres.slice(0, 2).map((genre) => (
+                  {(anime.genres ?? []).slice(0, 2).map((genre) => (
                     <span
                       key={genre}
                       style={{

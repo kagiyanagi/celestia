@@ -33,7 +33,7 @@ export function DetailsCast({ anime, mode, onShowMore }: DetailsCastProps) {
                     )}
                   </div>
                   <div className="va-img">
-                    {char.voiceActors.japanese?.image && (
+                    {char.voiceActors?.japanese?.image && (
                       <Image
                         src={char.voiceActors.japanese.image}
                         alt={char.voiceActors.japanese.name}
@@ -52,7 +52,7 @@ export function DetailsCast({ anime, mode, onShowMore }: DetailsCastProps) {
                   </div>
                   <div className="va-name">
                     <strong>
-                      {char.voiceActors.japanese?.name || "No JP VA"}
+                      {char.voiceActors?.japanese?.name || "No JP VA"}
                     </strong>
                     <span>Japanese</span>
                   </div>
@@ -113,7 +113,7 @@ export function DetailsCast({ anime, mode, onShowMore }: DetailsCastProps) {
             <div className="voice-actor-stack">
               <div className="voice-actor-row">
                 <div className="voice-actor-avatar">
-                  {char.voiceActors.japanese?.image ? (
+                  {char.voiceActors?.japanese?.image ? (
                     <Image
                       src={char.voiceActors.japanese.image}
                       alt={char.voiceActors.japanese.name}
@@ -124,7 +124,7 @@ export function DetailsCast({ anime, mode, onShowMore }: DetailsCastProps) {
                 </div>
                 <div className="voice-actor-copy">
                   <strong>
-                    {char.voiceActors.japanese?.name || "Not listed"}
+                    {char.voiceActors?.japanese?.name || "Not listed"}
                   </strong>
                   <span>Japanese VA</span>
                 </div>
@@ -132,7 +132,7 @@ export function DetailsCast({ anime, mode, onShowMore }: DetailsCastProps) {
 
               <div className="voice-actor-row">
                 <div className="voice-actor-avatar">
-                  {char.voiceActors.english?.image ? (
+                  {char.voiceActors?.english?.image ? (
                     <Image
                       src={char.voiceActors.english.image}
                       alt={char.voiceActors.english.name}
@@ -143,7 +143,7 @@ export function DetailsCast({ anime, mode, onShowMore }: DetailsCastProps) {
                 </div>
                 <div className="voice-actor-copy">
                   <strong>
-                    {char.voiceActors.english?.name || "Not listed"}
+                    {char.voiceActors?.english?.name || "Not listed"}
                   </strong>
                   <span>English VA</span>
                 </div>

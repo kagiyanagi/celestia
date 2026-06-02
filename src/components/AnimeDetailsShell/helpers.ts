@@ -1,6 +1,6 @@
-import { AnimeDate, AnimeRelation } from "@/types/anime";
+import { AnimeDate, RelationItem } from "@/types/anime";
 
-export function formatDate(date: AnimeDate | null): string {
+export function formatDate(date: AnimeDate | null | undefined): string {
   if (!date || (!date.year && !date.month && !date.day)) return "?";
   const months = [
     "Jan",
@@ -20,7 +20,7 @@ export function formatDate(date: AnimeDate | null): string {
   return [m, date.day, date.year].filter(Boolean).join(" ");
 }
 
-export function getRelatedItems(relations: AnimeRelation[]) {
+export function getRelatedItems(relations: RelationItem[]) {
   return relations.filter((item) =>
     [
       "PREQUEL",
