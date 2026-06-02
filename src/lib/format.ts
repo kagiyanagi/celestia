@@ -2,14 +2,22 @@ import type { AnimeTitle } from "@/types/anime";
 
 const relativeFormatter = new Intl.RelativeTimeFormat("en", {
   numeric: "auto",
-  style: "short"
+  style: "short",
 });
 
-export function getDisplayTitle(title: AnimeTitle): string {
-  return title.english || title.userPreferred || title.romaji || title.native || "Untitled anime";
+export function getDisplayTitle(title?: AnimeTitle | null): string {
+  if (!title) return "Untitled anime";
+  return (
+    title.english ||
+    title.userPreferred ||
+    title.romaji ||
+    title.native ||
+    "Untitled anime"
+  );
 }
 
-export function getSecondaryTitle(title: AnimeTitle): string | null {
+export function getSecondaryTitle(title?: AnimeTitle | null): string | null {
+  if (!title) return null;
   const primary = getDisplayTitle(title);
   const secondary = title.romaji || title.native;
 
@@ -23,7 +31,7 @@ export function compactNumber(value: number | null | undefined): string {
 
   return new Intl.NumberFormat("en", {
     notation: "compact",
-    maximumFractionDigits: 1
+    maximumFractionDigits: 1,
   }).format(value);
 }
 
@@ -45,7 +53,7 @@ export function formatAiringTime(epochSeconds: number): string {
     month: "short",
     day: "numeric",
     hour: "numeric",
-    minute: "2-digit"
+    minute: "2-digit",
   }).format(new Date(epochSeconds * 1000));
 }
 
@@ -55,19 +63,24 @@ export function formatRelativeSeconds(seconds: number): string {
     { amount: 60 * 60 * 24 * 7, unit: "week" as const },
     { amount: 60 * 60 * 24, unit: "day" as const },
     { amount: 60 * 60, unit: "hour" as const },
-    { amount: 60, unit: "minute" as const }
+    { amount: 60, unit: "minute" as const },
   ];
 
   for (const division of divisions) {
     if (abs >= division.amount) {
-      return relativeFormatter.format(Math.round(seconds / division.amount), division.unit);
+      return relativeFormatter.format(
+        Math.round(seconds / division.amount),
+        division.unit,
+      );
     }
   }
 
   return relativeFormatter.format(Math.round(seconds), "second");
 }
 
-export function cleanDescription(value: string | null | undefined): string | null {
+export function cleanDescription(
+  value: string | null | undefined,
+): string | null {
   if (!value) {
     return null;
   }
