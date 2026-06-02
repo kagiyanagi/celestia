@@ -70,15 +70,59 @@ function getTitleCandidates(title: string | string[]): string[] {
       variations.push(trimmed.replace(/(\d+)(st|nd|rd|th)\s+Season/i, "S$1"));
     }
 
+    // "Name 2" -> "Name Season 2" and "Name S2"
+    const trailingNumber = trimmed.match(/(.*)\s+(\d+)$/);
+    if (
+      trailingNumber &&
+      !trimmed.toLowerCase().includes("season") &&
+      !trimmed.toLowerCase().includes("part")
+    ) {
+      variations.push(`${trailingNumber[1]} Season ${trailingNumber[2]}`);
+      variations.push(`${trailingNumber[1]} S${trailingNumber[2]}`);
+    }
+
+    // "Part 3" -> "Season 3" and "3"
+    const withPart = trimmed.replace(/\s+Part\s+(\d+)/i, " Season $1");
+    if (withPart !== trimmed) {
+      variations.push(withPart);
+      variations.push(trimmed.replace(/\s+Part\s+(\d+)/i, " $1"));
+      variations.push(trimmed.replace(/\s+Part\s+(\d+)/i, " S$1"));
+    }
+
     // Try without subtitle (everything after colon)
     if (trimmed.includes(":")) {
-      variations.push(trimmed.split(":")[0].trim());
+      const mainTitle = trimmed.split(":")[0].trim();
+      variations.push(mainTitle);
+
+      // Also try main title + season if the original had a season
+      const seasonMatch = trimmed.match(/Season\s+(\d+)/i);
+      if (seasonMatch) {
+        variations.push(`${mainTitle} Season ${seasonMatch[1]}`);
+        variations.push(`${mainTitle} S${seasonMatch[1]}`);
+      }
+
+      // Handle "Part X: Subtitle"
+      const partMatch = trimmed.match(/(.*Part\s+\d+):/i);
+      if (partMatch) {
+        variations.push(partMatch[1].trim());
+      }
     }
 
     // Try without subtitle (everything after dash)
     if (trimmed.includes(" - ")) {
       variations.push(trimmed.split(" - ")[0].trim());
     }
+
+    // Remove articles (A, An, The) from the start
+    const withoutArticle = trimmed.replace(/^(A|An|The)\s+/i, "");
+    if (withoutArticle !== trimmed) variations.push(withoutArticle);
+
+    // Remove special characters (keeping spaces and alphanumeric)
+    const alphanumeric = trimmed
+      .replace(/[^a-zA-Z0-9\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (alphanumeric !== trimmed) variations.push(alphanumeric);
 
     return variations.flatMap((v) => [v, toTitleCase(v)]);
   });
