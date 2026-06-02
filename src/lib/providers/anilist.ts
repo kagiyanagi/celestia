@@ -3,25 +3,23 @@ import {
   FALLBACK_GENRE_OPTIONS,
   FALLBACK_TAG_OPTIONS,
 } from "@/lib/browse-filters";
-import { cleanDescription } from "@/lib/format";
 import { getAniZipEpisodes } from "@/lib/providers/anizip";
+import {
+  transformAnimeDetails,
+  transformAnimeSummary,
+  type AniListDetailsMedia,
+  type AniListMedia,
+} from "@/lib/providers/transformers/anilist";
 import type {
   AiringItem,
-  BrowseSectionKey,
+  AnimeDetails,
+  AnimeSeason,
+  AnimeSummary,
   BrowseCollection,
   BrowseFilterOptions,
   BrowseFilters,
-  AnimeDetails,
-  AnimeSeason,
-  AnimeStreamingEpisode,
-  AnimeSummary,
-  CharacterCredit,
-  ExternalLink,
+  BrowseSectionKey,
   HomeCollections,
-  RelationItem,
-  StaffCredit,
-  Studio,
-  VoiceActorCredit,
 } from "@/types/anime";
 
 const ANILIST_ENDPOINT =
@@ -338,132 +336,6 @@ type AniListGraphQLResponse<T> = {
   }>;
 };
 
-type AniListMedia = {
-  id: number;
-  idMal: number | null;
-  title: {
-    romaji: string | null;
-    english: string | null;
-    native: string | null;
-    userPreferred: string | null;
-  };
-  coverImage: {
-    extraLarge: string | null;
-    large: string | null;
-    color: string | null;
-  } | null;
-  bannerImage: string | null;
-  format: string | null;
-  status: string | null;
-  source: string | null;
-  description: string | null;
-  episodes: number | null;
-  duration: number | null;
-  season: AnimeSeason | null;
-  seasonYear: number | null;
-  averageScore: number | null;
-  meanScore: number | null;
-  popularity: number | null;
-  trending: number | null;
-  favourites: number | null;
-  genres: string[] | null;
-  nextAiringEpisode: {
-    episode: number;
-    airingAt: number;
-    timeUntilAiring: number;
-  } | null;
-  studios: {
-    nodes: Studio[] | null;
-  } | null;
-};
-
-type AniListDetailsMedia = AniListMedia & {
-  description: string | null;
-  source: string | null;
-  countryOfOrigin: string | null;
-  hashtag: string | null;
-  synonyms: string[] | null;
-  streamingEpisodes: AnimeStreamingEpisode[] | null;
-  startDate: {
-    year: number | null;
-    month: number | null;
-    day: number | null;
-  } | null;
-  endDate: {
-    year: number | null;
-    month: number | null;
-    day: number | null;
-  } | null;
-  trailer: {
-    id: string | null;
-    site: string | null;
-    thumbnail: string | null;
-  } | null;
-  tags: Array<{
-    name: string;
-    rank: number;
-    isMediaSpoiler: boolean;
-    isGeneralSpoiler: boolean;
-  }> | null;
-  rankings: Array<{
-    rank: number;
-    type: string;
-    allTime: boolean;
-    context: string;
-  }> | null;
-  externalLinks: ExternalLink[] | null;
-  characters: {
-    edges: Array<{
-      role: string | null;
-      node: {
-        id: number;
-        name: {
-          full: string | null;
-          native: string | null;
-        } | null;
-        image: {
-          large: string | null;
-        } | null;
-      } | null;
-      voiceActors: Array<{
-        id: number;
-        name: {
-          full: string | null;
-        } | null;
-        image: {
-          large: string | null;
-        } | null;
-        languageV2: string | null;
-      }> | null;
-    }> | null;
-  } | null;
-  staff: {
-    edges: Array<{
-      role: string | null;
-      node: {
-        id: number;
-        name: {
-          full: string | null;
-        } | null;
-        image: {
-          large: string | null;
-        } | null;
-      } | null;
-    }> | null;
-  } | null;
-  relations: {
-    edges: Array<{
-      relationType: string;
-      node: (AniListMedia & { type: string | null }) | null;
-    }> | null;
-  } | null;
-  recommendations: {
-    nodes: Array<{
-      mediaRecommendation: AniListMedia | null;
-    }> | null;
-  } | null;
-};
-
 type HomeQueryResult = {
   topAiring: {
     media: AniListMedia[];
@@ -582,175 +454,6 @@ async function fetchAniList<T>(
   return payload.data;
 }
 
-function toAnimeSummary(media: AniListMedia): AnimeSummary {
-  const isFinished = media.status === "FINISHED";
-  const isReleasing = media.status === "RELEASING";
-
-  let airingCount = 0;
-  if (isFinished) {
-    airingCount = media.episodes || 0;
-  } else if (isReleasing) {
-    if (media.nextAiringEpisode) {
-      airingCount = media.nextAiringEpisode.episode - 1;
-    } else {
-      // If releasing but no nextAiringEpisode info, we assume it just started or AniList is behind.
-      // But we shouldn't show total planned episodes if we don't know.
-      // Better to show 0 or a very conservative estimate than the full planned count.
-      airingCount = 0;
-    }
-  } else {
-    // Upcoming, etc.
-    airingCount = 0;
-  }
-
-  // Best effort dub count
-  const dubCount = isFinished
-    ? media.episodes
-    : airingCount > 0
-      ? Math.max(0, airingCount - 2)
-      : 0;
-
-  return {
-    id: media.id,
-    idMal: media.idMal,
-    title: media.title,
-    coverImage: media.coverImage?.extraLarge || media.coverImage?.large || null,
-    bannerImage: media.bannerImage,
-    color: media.coverImage?.color || null,
-    format: media.format,
-    status: media.status,
-    source: media.source,
-    episodes: media.episodes,
-    duration: media.duration,
-    season: media.season,
-    seasonYear: media.seasonYear,
-    averageScore: media.averageScore,
-    meanScore: media.meanScore,
-    popularity: media.popularity,
-    trending: media.trending,
-    favourites: media.favourites,
-    genres: media.genres || [],
-    studios: media.studios?.nodes || [],
-    nextAiringEpisode: media.nextAiringEpisode,
-    description: media.description,
-    airingCount,
-    dubCount,
-  };
-}
-
-function toCharacterCredits(media: AniListDetailsMedia): CharacterCredit[] {
-  return (
-    media.characters?.edges
-      ?.filter((edge) => edge.node?.name?.full)
-      .map((edge) => {
-        const toVoiceActorCredit = (
-          actor: {
-            id: number;
-            name: {
-              full: string | null;
-            } | null;
-            image: {
-              large: string | null;
-            } | null;
-          } | null,
-        ): VoiceActorCredit | null =>
-          actor
-            ? {
-                id: actor.id,
-                name: actor.name?.full || "Unknown voice actor",
-                image: actor.image?.large || null,
-              }
-            : null;
-
-        const japaneseActor =
-          edge.voiceActors?.find(
-            (va) => va.languageV2 === "Japanese" && va.name?.full,
-          ) || null;
-        const englishActor =
-          edge.voiceActors?.find(
-            (va) => va.languageV2 === "English" && va.name?.full,
-          ) || null;
-
-        return {
-          id: edge.node?.id || 0,
-          name: edge.node?.name?.full || "Unknown character",
-          nativeName: edge.node?.name?.native || null,
-          image: edge.node?.image?.large || null,
-          role: edge.role,
-          voiceActors: {
-            japanese: toVoiceActorCredit(japaneseActor),
-            english: toVoiceActorCredit(englishActor),
-          },
-        };
-      }) || []
-  );
-}
-
-function toStaffCredits(media: AniListDetailsMedia): StaffCredit[] {
-  return (
-    media.staff?.edges
-      ?.filter((edge) => edge.node?.name?.full)
-      .map((edge) => ({
-        id: edge.node?.id || 0,
-        name: edge.node?.name?.full || "Unknown staff",
-        role: edge.role || "Staff",
-        image: edge.node?.image?.large || null,
-      })) || []
-  );
-}
-
-function toRelations(media: AniListDetailsMedia): RelationItem[] {
-  return (
-    media.relations?.edges
-      ?.filter((edge) => edge.node?.type === "ANIME")
-      .map((edge) => ({
-        relationType: edge.relationType,
-        anime: toAnimeSummary(edge.node as AniListMedia),
-      })) || []
-  );
-}
-
-function toAnimeDetails(media: AniListDetailsMedia): AnimeDetails {
-  return {
-    ...toAnimeSummary(media),
-    description: cleanDescription(media.description),
-    source: media.source,
-    countryOfOrigin: media.countryOfOrigin,
-    hashtag: media.hashtag,
-    synonyms: media.synonyms || [],
-    startDate: media.startDate,
-    endDate: media.endDate,
-    streamingEpisodes:
-      media.streamingEpisodes?.map((ep) => {
-        const match = ep.title?.match(/Episode\s+(\d+)/i);
-        return {
-          ...ep,
-          number: match ? parseInt(match[1], 10) : 0,
-        };
-      }) || [],
-    trailer: media.trailer,
-    tags:
-      media.tags
-        ?.filter((tag) => !tag.isGeneralSpoiler && !tag.isMediaSpoiler)
-        .sort((a, b) => b.rank - a.rank)
-        .slice(0, 100)
-        .map((tag) => tag.name) || [],
-    rankings:
-      media.rankings
-        ?.slice(0, 4)
-        .map((ranking) => `#${ranking.rank} ${ranking.context}`) || [],
-    characters: toCharacterCredits(media),
-    staff: toStaffCredits(media),
-    relations: toRelations(media),
-    recommendations:
-      media.recommendations?.nodes
-        ?.map((node) => node.mediaRecommendation)
-        .filter((node): node is AniListMedia => Boolean(node))
-        .map(toAnimeSummary) || [],
-    externalLinks: media.externalLinks || [],
-  };
-}
-
 function emptyHomeCollections(): HomeCollections {
   return {
     topAiring: [],
@@ -795,19 +498,19 @@ export async function getHomeCollections(): Promise<HomeCollections> {
     );
 
     return {
-      topAiring: data.topAiring.media.map(toAnimeSummary),
-      trending: data.trending.media.map(toAnimeSummary),
-      season: data.season.media.map(toAnimeSummary),
-      upcoming: data.upcoming.media.map(toAnimeSummary),
-      finished: data.finished.media.map(toAnimeSummary),
-      movies: data.movies.media.map(toAnimeSummary),
+      topAiring: data.topAiring.media.map(transformAnimeSummary),
+      trending: data.trending.media.map(transformAnimeSummary),
+      season: data.season.media.map(transformAnimeSummary),
+      upcoming: data.upcoming.media.map(transformAnimeSummary),
+      finished: data.finished.media.map(transformAnimeSummary),
+      movies: data.movies.media.map(transformAnimeSummary),
       airingSoon: data.airing.airingSchedules
         .filter((item) => item.media.type === "ANIME")
         .map<AiringItem>((item) => ({
           episode: item.episode,
           airingAt: item.airingAt,
           timeUntilAiring: item.airingAt - Math.floor(Date.now() / 1000),
-          anime: toAnimeSummary(item.media),
+          anime: transformAnimeSummary(item.media),
         })),
     };
   } catch (error) {
@@ -830,34 +533,23 @@ export async function getAiringSchedule(
     for (let page = 1; page <= maxPages; page += 1) {
       const data = await fetchAniList<AiringScheduleQueryResult>(
         AIRING_SCHEDULE_QUERY,
-        {
-          page,
-          perPage,
-          startAt,
-          endAt,
-        },
+        { page, perPage, startAt, endAt },
         300,
       );
 
       data.Page.airingSchedules.forEach((item) => {
-        if (item.media.type !== "ANIME" || seen.has(item.id)) {
-          return;
-        }
-
+        if (item.media.type !== "ANIME" || seen.has(item.id)) return;
         seen.add(item.id);
         items.push({
           episode: item.episode,
           airingAt: item.airingAt,
           timeUntilAiring: item.airingAt - now,
-          anime: toAnimeSummary(item.media),
+          anime: transformAnimeSummary(item.media),
         });
       });
 
-      if (!data.Page.pageInfo?.hasNextPage) {
-        break;
-      }
+      if (!data.Page.pageInfo?.hasNextPage) break;
     }
-
     return items.sort((a, b) => a.airingAt - b.airingAt);
   } catch (error) {
     console.error(error);
@@ -892,54 +584,23 @@ function getBrowseFilterVariables(
   filters: BrowseFilters | undefined,
   section: BrowseSectionKey,
 ): Record<string, unknown> {
-  if (!filters) {
-    return {};
-  }
+  if (!filters) return {};
 
   const variables: Record<string, unknown> = {};
   const search = filters.q.trim();
 
-  if (search) {
-    variables.search = search;
-  }
-
-  if (filters.genre) {
-    variables.genre = filters.genre;
-  }
-
-  if (filters.tag) {
-    variables.tag = filters.tag;
-  }
-
-  if (filters.format) {
-    variables.format = filters.format;
-  }
-
-  if (filters.year) {
-    variables.seasonYear = Number(filters.year);
-  }
-
-  if (filters.season) {
-    variables.season = filters.season;
-  }
-
-  if (filters.status) {
-    variables.status = filters.status;
-  }
-
-  if (filters.country) {
-    variables.countryOfOrigin = filters.country;
-  }
-
-  if (filters.source) {
-    variables.source = filters.source;
-  }
+  if (search) variables.search = search;
+  if (filters.genre) variables.genre = filters.genre;
+  if (filters.tag) variables.tag = filters.tag;
+  if (filters.format) variables.format = filters.format;
+  if (filters.year) variables.seasonYear = Number(filters.year);
+  if (filters.season) variables.season = filters.season;
+  if (filters.status) variables.status = filters.status;
+  if (filters.country) variables.countryOfOrigin = filters.country;
+  if (filters.source) variables.source = filters.source;
 
   const sort = resolveBrowseSort(filters.sort, section, filters.status);
-
-  if (sort) {
-    variables.sort = sort;
-  }
+  if (sort) variables.sort = sort;
 
   return variables;
 }
@@ -974,16 +635,10 @@ export async function getBrowseFilterOptions(): Promise<BrowseFilterOptions> {
   }
 }
 
-export async function getBrowseCollection(
+function getBrowseSectionSettings(
   section: BrowseSectionKey,
-  page = 1,
-  filters?: BrowseFilters,
-): Promise<BrowseCollection> {
-  const next = getNextAnimeSeason();
-  const perPage = 30;
-  const requestedPage = Number.isFinite(page) ? Math.floor(page) : 1;
-  const safePage = Math.max(1, requestedPage);
-
+  next: { season: AnimeSeason; year: number },
+): Record<string, unknown> {
   const settings: Record<BrowseSectionKey, Record<string, unknown>> = {
     airing: {
       status: "RELEASING",
@@ -1007,6 +662,17 @@ export async function getBrowseCollection(
     },
     search: {},
   };
+  return settings[section];
+}
+
+export async function getBrowseCollection(
+  section: BrowseSectionKey,
+  page = 1,
+  filters?: BrowseFilters,
+): Promise<BrowseCollection> {
+  const next = getNextAnimeSeason();
+  const perPage = 30;
+  const safePage = Math.max(1, Number.isFinite(page) ? Math.floor(page) : 1);
 
   try {
     const data = await fetchAniList<BrowseQueryResult>(
@@ -1014,14 +680,14 @@ export async function getBrowseCollection(
       {
         page: safePage,
         perPage,
-        ...settings[section],
+        ...getBrowseSectionSettings(section, next),
         ...getBrowseFilterVariables(filters, section),
       },
       900,
     );
 
     return {
-      items: data.Page.media.map(toAnimeSummary),
+      items: data.Page.media.map(transformAnimeSummary),
       pageInfo: {
         total: data.Page.pageInfo?.total ?? null,
         currentPage: data.Page.pageInfo?.currentPage || safePage,
@@ -1049,26 +715,43 @@ export async function searchAnime(
   search: string,
   page = 1,
 ): Promise<AnimeSummary[]> {
-  if (!search.trim()) {
-    return [];
-  }
+  if (!search.trim()) return [];
 
   try {
     const data = await fetchAniList<SearchQueryResult>(
       SEARCH_QUERY,
-      {
-        search,
-        page,
-        perPage: 18,
-      },
+      { search, page, perPage: 18 },
       120,
     );
 
-    return data.Page.media.map(toAnimeSummary);
+    return data.Page.media.map(transformAnimeSummary);
   } catch (error) {
     console.error(error);
     return [];
   }
+}
+
+async function mergeAniZipEpisodes(anime: AnimeDetails, id: number) {
+  const fullEpisodes = await getAniZipEpisodes(id);
+  if (fullEpisodes.length === 0 || !anime.streamingEpisodes) return;
+
+  const aniListEpsMap = new Map<
+    number,
+    NonNullable<typeof anime.streamingEpisodes>[number]
+  >();
+  anime.streamingEpisodes.forEach((ep) => {
+    if (ep.number > 0) aniListEpsMap.set(ep.number, ep);
+  });
+
+  anime.streamingEpisodes = fullEpisodes.map((ep) => {
+    const aniListEp = aniListEpsMap.get(ep.number);
+    return {
+      ...ep,
+      thumbnail: aniListEp?.thumbnail || ep.thumbnail,
+      url: aniListEp?.url || ep.url,
+      site: aniListEp?.site || ep.site,
+    };
+  });
 }
 
 export async function getAnimeDetails(
@@ -1083,34 +766,8 @@ export async function getAnimeDetails(
 
     if (!data.Media) return null;
 
-    const anime = toAnimeDetails(data.Media);
-
-    // Fetch full episode list from AniZip
-    const fullEpisodes = await getAniZipEpisodes(id);
-
-    if (fullEpisodes.length > 0) {
-      // Map AniList's sparse streaming episodes to a map for easy lookup
-      const aniListEpsMap = new Map<
-        number,
-        (typeof anime.streamingEpisodes)[0]
-      >();
-      anime.streamingEpisodes.forEach((ep) => {
-        if (ep.number > 0) {
-          aniListEpsMap.set(ep.number, ep);
-        }
-      });
-
-      // Use AniZip as the source of truth for the list, and merge AniList data
-      anime.streamingEpisodes = fullEpisodes.map((ep) => {
-        const aniListEp = aniListEpsMap.get(ep.number);
-        return {
-          ...ep,
-          thumbnail: aniListEp?.thumbnail || ep.thumbnail,
-          url: aniListEp?.url || ep.url,
-          site: aniListEp?.site || ep.site,
-        };
-      });
-    }
+    const anime = transformAnimeDetails(data.Media);
+    await mergeAniZipEpisodes(anime, id);
 
     return anime;
   } catch (error) {
