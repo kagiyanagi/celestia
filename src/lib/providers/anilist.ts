@@ -3,6 +3,7 @@ import { cleanDescription } from "@/lib/format";
 import type {
   AiringItem,
   BrowseSectionKey,
+  BrowseCollection,
   AnimeDetails,
   AnimeSeason,
   AnimeSummary,
@@ -97,7 +98,7 @@ const HOME_QUERY = `
       }
     }
     finished: Page(page: 1, perPage: 5) {
-      media(type: ANIME, status: FINISHED, sort: [POPULARITY_DESC, SCORE_DESC], isAdult: false) {
+      media(type: ANIME, status: FINISHED, sort: END_DATE_DESC, isAdult: false) {
         ${MEDIA_CARD_FIELDS}
       }
     }
@@ -158,6 +159,13 @@ const BROWSE_QUERY = `
     $sort: [MediaSort]
   ) {
     Page(page: $page, perPage: $perPage) {
+      pageInfo {
+        total
+        currentPage
+        lastPage
+        hasNextPage
+        perPage
+      }
       media(
         type: ANIME,
         season: $season,
@@ -411,6 +419,19 @@ type AiringScheduleQueryResult = {
 
 type SearchQueryResult = {
   Page: {
+    media: AniListMedia[];
+  };
+};
+
+type BrowseQueryResult = {
+  Page: {
+    pageInfo: {
+      total: number | null;
+      currentPage: number | null;
+      lastPage: number | null;
+      hasNextPage: boolean | null;
+      perPage: number | null;
+    } | null;
     media: AniListMedia[];
   };
 };
@@ -690,8 +711,12 @@ export async function getAiringSchedule(
 
 export async function getBrowseCollection(
   section: BrowseSectionKey,
-): Promise<AnimeSummary[]> {
+  page = 1,
+): Promise<BrowseCollection> {
   const next = getNextAnimeSeason();
+  const perPage = 30;
+  const requestedPage = Number.isFinite(page) ? Math.floor(page) : 1;
+  const safePage = Math.max(1, requestedPage);
 
   const settings: Record<BrowseSectionKey, Record<string, unknown>> = {
     airing: {
@@ -708,7 +733,7 @@ export async function getBrowseCollection(
     },
     finished: {
       status: "FINISHED",
-      sort: ["POPULARITY_DESC", "SCORE_DESC"],
+      sort: ["END_DATE_DESC"],
     },
     movies: {
       format: "MOVIE",
@@ -717,20 +742,38 @@ export async function getBrowseCollection(
   };
 
   try {
-    const data = await fetchAniList<SearchQueryResult>(
+    const data = await fetchAniList<BrowseQueryResult>(
       BROWSE_QUERY,
       {
-        page: 1,
-        perPage: 30,
+        page: safePage,
+        perPage,
         ...settings[section],
       },
       900,
     );
 
-    return data.Page.media.map(toAnimeSummary);
+    return {
+      items: data.Page.media.map(toAnimeSummary),
+      pageInfo: {
+        total: data.Page.pageInfo?.total ?? null,
+        currentPage: data.Page.pageInfo?.currentPage || safePage,
+        lastPage: data.Page.pageInfo?.lastPage ?? null,
+        hasNextPage: Boolean(data.Page.pageInfo?.hasNextPage),
+        perPage: data.Page.pageInfo?.perPage || perPage,
+      },
+    };
   } catch (error) {
     console.error(error);
-    return [];
+    return {
+      items: [],
+      pageInfo: {
+        total: null,
+        currentPage: safePage,
+        lastPage: null,
+        hasNextPage: false,
+        perPage,
+      },
+    };
   }
 }
 
