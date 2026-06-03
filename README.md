@@ -30,6 +30,10 @@ ANILIST_CLIENT_SECRET=
 ANILIST_REDIRECT_URI=http://localhost:3000/api/auth/callback/anilist
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
+# Optional airing timetable enrichment
+ANIMESCHEDULE_API_BASE_URL=https://animeschedule.net/api/v3
+ANIMESCHEDULE_API_TOKEN=
+
 # Streaming Configuration (Bring your own API)
 STREAMING_PROVIDER_URL=https://your-api.com
 STREAMING_PROVIDER_LABEL="My Provider"

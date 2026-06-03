@@ -5,6 +5,7 @@ import {
   FALLBACK_TAG_OPTIONS,
 } from "@/lib/browse-filters";
 import { fetchJson } from "@/lib/http/client";
+import { enrichAiringScheduleWithAnimeSchedule } from "@/lib/providers/anime-schedule";
 import { getEpisodeMetadata } from "@/lib/providers/episode-metadata";
 import {
   transformAnimeDetails,
@@ -576,7 +577,11 @@ export async function getAiringSchedule(
 
       if (!data.Page.pageInfo?.hasNextPage) break;
     }
-    return items.sort((a, b) => a.airingAt - b.airingAt);
+    return enrichAiringScheduleWithAnimeSchedule(
+      items.sort((a, b) => a.airingAt - b.airingAt),
+      startAt,
+      endAt,
+    );
   } catch (error) {
     console.error(error);
     return [];
