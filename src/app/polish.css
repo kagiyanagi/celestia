@@ -1,0 +1,447 @@
+:root {
+  --ink: #f8f3e7;
+  --ink-dim: rgba(248, 243, 231, 0.68);
+  --ink-soft: rgba(248, 243, 231, 0.48);
+  --obsidian: #050607;
+  --night: #0b1114;
+  --smoke: rgba(255, 255, 255, 0.07);
+  --smoke-strong: rgba(255, 255, 255, 0.16);
+  --ember: #f4b35f;
+  --aqua: #7dd8d0;
+  --moss: #8ab17d;
+  --danger: #ff6b5e;
+  --surface-glass: rgba(10, 15, 17, 0.74);
+  --surface-deep: rgba(6, 10, 12, 0.92);
+  --shadow-deep: 0 26px 80px rgba(0, 0, 0, 0.42);
+  --shadow-lift: 0 18px 50px rgba(125, 216, 208, 0.08);
+}
+
+* {
+  scrollbar-width: thin !important;
+  scrollbar-color: rgba(244, 179, 95, 0.55) rgba(255, 255, 255, 0.08) !important;
+}
+
+*::-webkit-scrollbar {
+  display: block !important;
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--ember), var(--aqua));
+  border: 2px solid var(--obsidian);
+  border-radius: 999px;
+}
+
+::selection {
+  color: #061012;
+  background: var(--ember);
+}
+
+html {
+  background: var(--obsidian);
+}
+
+body {
+  background:
+    radial-gradient(circle at 18% 4%, rgba(244, 179, 95, 0.18), transparent 29rem),
+    radial-gradient(circle at 84% 14%, rgba(125, 216, 208, 0.16), transparent 30rem),
+    linear-gradient(135deg, #040506 0%, #0a1115 48%, #070907 100%);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.026) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(circle at center, black, transparent 72%);
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(120deg, rgba(244, 179, 95, 0.08), transparent 32%),
+    linear-gradient(300deg, rgba(125, 216, 208, 0.08), transparent 36%);
+  mix-blend-mode: screen;
+}
+
+main {
+  position: relative;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ember);
+  outline-offset: 4px;
+}
+
+.site-header {
+  padding-top: 16px;
+}
+
+.site-header.is-scrolled {
+  background:
+    linear-gradient(180deg, rgba(5, 8, 9, 0.92), rgba(5, 8, 9, 0.72)),
+    rgba(5, 8, 9, 0.8);
+  border-bottom-color: rgba(244, 179, 95, 0.14);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(14px) saturate(140%);
+}
+
+.brand-mark {
+  color: var(--ink);
+  letter-spacing: 0.08em;
+  text-shadow:
+    0 1px 0 rgba(244, 179, 95, 0.22),
+    0 18px 44px rgba(0, 0, 0, 0.7);
+}
+
+.header-icon-button,
+.header-avatar {
+  background: rgba(6, 10, 12, 0.78);
+  border-color: rgba(248, 243, 231, 0.13);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.header-icon-button:hover,
+.header-link-button:hover,
+.header-avatar:hover {
+  background: rgba(244, 179, 95, 0.12);
+  border-color: rgba(244, 179, 95, 0.36);
+  transform: translateY(-1px);
+}
+
+.page-shell,
+.detail-hero-content,
+.detail-content,
+.loader-shell {
+  max-width: 1520px;
+}
+
+.home-section,
+.section-shell,
+.airing-board,
+.search-hero,
+.tracker-panel,
+.stream-card,
+.episode-panel,
+.fact-panel,
+.tag-cloud,
+.stat-card,
+.character-card,
+.anime-card,
+.upcoming-card-wide,
+.shelf-card,
+.watch-section-panel,
+.auth-panel {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.026)),
+    var(--surface-glass);
+  border-color: rgba(248, 243, 231, 0.11);
+  box-shadow: var(--shadow-deep);
+  backdrop-filter: blur(18px) saturate(130%);
+}
+
+.home-section,
+.section-shell,
+.airing-board,
+.search-hero,
+.watch-section-panel,
+.auth-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.home-section::before,
+.section-shell::before,
+.airing-board::before,
+.search-hero::before,
+.watch-section-panel::before,
+.auth-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(244, 179, 95, 0.12), transparent 28%),
+    radial-gradient(circle at 88% 12%, rgba(125, 216, 208, 0.12), transparent 18rem);
+  opacity: 0.7;
+}
+
+.home-section > *,
+.section-shell > *,
+.airing-board > *,
+.search-hero > *,
+.watch-section-panel > *,
+.auth-panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+.section-kicker,
+.section-heading span,
+.anime-card-meta,
+.shelf-card-meta,
+.upcoming-kicker,
+.search-box label {
+  color: var(--ember);
+  letter-spacing: 0.14em;
+}
+
+.home-section-head h2,
+.section-heading h2,
+.search-hero h1,
+.detail-copy h1,
+.watch-now-playing h1,
+.airing-board h2,
+.tracker-panel h2,
+.stream-card h2 {
+  color: var(--ink);
+  letter-spacing: -0.055em;
+}
+
+.search-hero,
+.browse-hero {
+  min-height: 210px;
+  align-content: end;
+  background:
+    linear-gradient(135deg, rgba(244, 179, 95, 0.15), transparent 38%),
+    linear-gradient(225deg, rgba(125, 216, 208, 0.16), transparent 44%),
+    rgba(7, 12, 14, 0.84);
+}
+
+.search-hero p,
+.airing-board p,
+.tracker-panel p,
+.stream-card p,
+.section-heading p,
+.detail-description,
+.watch-now-playing p {
+  color: var(--ink-dim);
+}
+
+.celestia-hero-shade,
+.detail-scrim,
+.watch-shade {
+  background:
+    linear-gradient(90deg, rgba(2, 4, 5, 0.9) 0%, rgba(2, 4, 5, 0.42) 48%, rgba(2, 4, 5, 0.78) 100%),
+    linear-gradient(180deg, rgba(2, 4, 5, 0.12) 0%, rgba(2, 4, 5, 0.86) 78%, #050607 100%);
+}
+
+.celestia-copy-main h1,
+.detail-copy h1,
+.trending-title,
+.anime-card-title,
+.shelf-card-copy strong,
+.upcoming-card-title {
+  background: linear-gradient(135deg, #fff7dc 12%, var(--ember) 54%, var(--aqua) 100%);
+  background-clip: text;
+  text-shadow: none;
+}
+
+.celestia-watch,
+.watch-button,
+.wide-watch-link,
+.detail-actions a,
+.episode-nav a,
+.search-box button,
+.anilist-connect-btn {
+  background: linear-gradient(135deg, #ffe0a3, var(--ember) 48%, #ffcf75);
+  border: 0;
+  color: #12100a;
+  box-shadow:
+    0 16px 34px rgba(244, 179, 95, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition:
+    transform 160ms var(--ease-spring),
+    box-shadow 160ms var(--ease-spring),
+    filter 160ms var(--ease-spring);
+}
+
+.celestia-watch:hover,
+.watch-button:hover,
+.wide-watch-link:hover,
+.detail-actions a:hover,
+.episode-nav a:hover,
+.search-box button:hover,
+.anilist-connect-btn:hover {
+  filter: saturate(1.08);
+  transform: translateY(-2px);
+  box-shadow:
+    0 22px 46px rgba(244, 179, 95, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.44);
+}
+
+.anime-card,
+.trending-card,
+.shelf-card,
+.upcoming-card-wide,
+.watch-media-card,
+.schedule-entry-card,
+.schedule-spotlight-card {
+  transition:
+    transform 190ms var(--ease-spring),
+    border-color 190ms var(--ease-spring),
+    box-shadow 190ms var(--ease-spring),
+    filter 190ms var(--ease-spring);
+}
+
+.anime-card:hover,
+.trending-card:hover,
+.shelf-card:hover,
+.upcoming-card-wide:hover,
+.watch-media-card:hover,
+.schedule-entry-card:hover,
+.schedule-spotlight-card:hover {
+  border-color: rgba(244, 179, 95, 0.38);
+  box-shadow: var(--shadow-deep), var(--shadow-lift);
+  filter: saturate(1.05);
+}
+
+.anime-card .poster-shell,
+.trending-poster,
+.shelf-card-poster,
+.upcoming-card-left,
+.detail-poster,
+.watch-episode-thumb {
+  border-color: rgba(248, 243, 231, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.watch-page {
+  background:
+    radial-gradient(circle at 82% 3%, rgba(244, 179, 95, 0.16), transparent 24rem),
+    radial-gradient(circle at 18% 30%, rgba(125, 216, 208, 0.1), transparent 26rem);
+}
+
+.watch-player-stage {
+  border: 1px solid rgba(248, 243, 231, 0.12);
+  border-radius: 32px;
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02)),
+    rgba(5, 8, 9, 0.82);
+  box-shadow: var(--shadow-deep);
+  overflow: hidden;
+}
+
+.watch-player-frame {
+  border-radius: 28px;
+  border-color: rgba(244, 179, 95, 0.2);
+  background:
+    radial-gradient(circle at center, rgba(125, 216, 208, 0.08), transparent 28rem),
+    #020303;
+  box-shadow:
+    0 26px 80px rgba(0, 0, 0, 0.5),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.watch-provider-badge,
+.watch-action-button,
+.watch-tool-button,
+.pagination-button,
+.ep-nav-btn,
+.ep-range-pill,
+.ep-count-pill {
+  background: rgba(248, 243, 231, 0.065);
+  border-color: rgba(248, 243, 231, 0.13);
+  color: var(--ink);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.watch-action-button.active,
+.pagination-button.current,
+.ep-action-btn:hover,
+.ep-nav-btn:hover:not(:disabled),
+.watch-server-option.active {
+  background: rgba(244, 179, 95, 0.16);
+  border-color: rgba(244, 179, 95, 0.4);
+  color: var(--ink);
+}
+
+.watch-server-popover,
+.search-modal {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)),
+    rgba(5, 8, 9, 0.94);
+  border-color: rgba(244, 179, 95, 0.2);
+  box-shadow: 0 34px 90px rgba(0, 0, 0, 0.58);
+}
+
+.search-result-item:hover,
+.search-result-item.is-active {
+  background: rgba(244, 179, 95, 0.12);
+  outline-color: rgba(244, 179, 95, 0.9);
+}
+
+.schedule-shell {
+  max-width: 1520px;
+}
+
+.schedule-spotlight-card,
+.schedule-entry-card {
+  border-color: rgba(248, 243, 231, 0.12);
+  background: rgba(5, 8, 9, 0.72);
+}
+
+.schedule-corner-badge,
+.schedule-entry-time,
+.airing-episode {
+  background: rgba(244, 179, 95, 0.15);
+  border-color: rgba(244, 179, 95, 0.34);
+  color: #ffe6b9;
+}
+
+.auth-header h2,
+.profile-hero-copy h1,
+.settings-page h1 {
+  color: var(--ink);
+}
+
+.guest-badge,
+.user-badge {
+  border: 1px solid rgba(125, 216, 208, 0.34);
+  background: rgba(125, 216, 208, 0.12);
+  color: #c6fff8;
+}
+
+@media (max-width: 760px) {
+  .page-shell,
+  .detail-hero-content,
+  .detail-content,
+  .loader-shell {
+    width: calc(100% - 28px);
+  }
+
+  .home-section,
+  .section-shell,
+  .airing-board,
+  .search-hero,
+  .watch-section-panel,
+  .auth-panel {
+    border-radius: 20px;
+  }
+
+  .watch-player-stage,
+  .watch-player-frame {
+    border-radius: 20px;
+  }
+}

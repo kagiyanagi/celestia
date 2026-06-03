@@ -5,6 +5,7 @@ import { AuthProvider } from "@/components/auth-provider";
 import { SiteHeader } from "@/components/site-header";
 import { getSessionUser } from "@/lib/auth";
 import "./globals.css";
+import "./polish.css";
 
 const paytoneOne = Paytone_One({
   weight: "400",
