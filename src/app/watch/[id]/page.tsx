@@ -21,6 +21,7 @@ import {
   type WatchServerOption,
 } from "@/components/watch-controls";
 import { EpisodeThumbnail } from "@/components/episode-thumbnail";
+import { getSessionUser } from "@/lib/auth";
 import { getDisplayTitle, getSecondaryTitle } from "@/lib/format";
 import { getAnimeDetails } from "@/lib/providers/anilist";
 import {
@@ -342,12 +343,23 @@ export default async function WatchPage({
     notFound();
   }
 
-  const anime = await getAnimeDetails(animeId);
+  const [anime, sessionUser] = await Promise.all([
+    getAnimeDetails(animeId),
+    getSessionUser().catch(() => null),
+  ]);
 
   if (!anime) {
     notFound();
   }
 
+  const watchedEpisodes = new Set(
+    (sessionUser?.historyEntries || [])
+      .filter((entry) => entry.animeId === animeId)
+      .map((entry) => entry.episode),
+  );
+  // Dub availability is per-episode count data from AnimeSchedule; when it is
+  // unknown we show nothing rather than guessing.
+  const dubbedEpisodeCount = anime.dubInfo?.dubbedEpisodes ?? null;
   const title = getDisplayTitle(anime.title);
   const secondaryTitle = getSecondaryTitle(anime.title);
   const streamLookupTitle = [
@@ -372,7 +384,8 @@ export default async function WatchPage({
         episode,
         providerId: server,
         audio: audioPreference,
-        expectedEpisodes: anime.episodes,
+        expectedEpisodes: anime.episodes ?? anime.airingCount ?? null,
+        anilistId: anime.id,
       })
     : null;
   const providerOptions = getStreamingProviderOptions();
@@ -502,7 +515,9 @@ export default async function WatchPage({
         anime={anime}
         episode={episode}
         episodeTitle={currentEpisode?.title || `Episode ${episode}`}
+        episodeImage={currentEpisode?.thumbnail || null}
         durationLabel={anime.duration ? `${anime.duration}:00` : null}
+        durationMinutes={anime.duration ?? null}
       />
 
       <section className="watch-player-stage">
@@ -680,11 +695,13 @@ export default async function WatchPage({
         <div className="watch-episode-grid-cards">
           {visibleEpisodes.map((item) => (
             <Link
-              className={
-                item.number === episode
-                  ? "watch-episode-card active"
-                  : "watch-episode-card"
-              }
+              className={[
+                "watch-episode-card",
+                item.number === episode ? "active" : "",
+                watchedEpisodes.has(item.number) ? "watched" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
               href={watchHref({
                 animeId: anime.id,
                 episode: item.number,
@@ -697,8 +714,17 @@ export default async function WatchPage({
               key={item.number}
             >
               <div className="watch-episode-thumb">
-                <EpisodeThumbnail src={item.thumbnail} alt={item.title} />
+                <EpisodeThumbnail
+                  src={item.thumbnail}
+                  alt={item.title}
+                  fallbackSrc={anime.bannerImage || anime.coverImage || null}
+                />
                 <span>Ep {item.number}</span>
+                {dubbedEpisodeCount !== null ? (
+                  <span className="watch-episode-audio">
+                    {item.number <= dubbedEpisodeCount ? "SUB • DUB" : "SUB"}
+                  </span>
+                ) : null}
               </div>
               <div className="watch-episode-copy">
                 <strong>{item.title}</strong>

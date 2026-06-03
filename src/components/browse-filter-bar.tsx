@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronDown, Filter, Search } from "lucide-react";
+import { Filter, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   type ChangeEvent,
@@ -9,11 +9,14 @@ import {
   useTransition,
 } from "react";
 
+import { CustomSelect } from "@/components/custom-select";
+
 import {
   COUNTRY_OPTIONS,
   FORMAT_OPTIONS,
   getDefaultBrowseSort,
   getYearOptions,
+  LIST_OPTIONS,
   SEASON_OPTIONS,
   SORT_OPTIONS,
   SOURCE_OPTIONS,
@@ -39,7 +42,7 @@ type SelectFieldProps = {
   value: string;
   options: BrowseFilterOption[];
   includeAny?: boolean;
-  onChange: (event: ChangeEvent<HTMLSelectElement>) => void;
+  onChange: (name: keyof BrowseFilters, value: string) => void;
 };
 
 function buildFilterUrl(basePath: string, filters: BrowseFilters): string {
@@ -64,21 +67,20 @@ function SelectField({
   includeAny = true,
   onChange,
 }: SelectFieldProps) {
+  const allOptions = includeAny
+    ? [{ value: "", label: "Any" }, ...options]
+    : options;
+
   return (
-    <label className="browse-filter-field">
+    <div className="browse-filter-field">
       <span>{label}</span>
-      <span className="browse-select-wrap">
-        <select name={name} value={value} onChange={onChange}>
-          {includeAny && <option value="">Any</option>}
-          {options.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <ChevronDown size={18} aria-hidden />
-      </span>
-    </label>
+      <CustomSelect
+        value={value}
+        options={allOptions}
+        ariaLabel={label}
+        onChange={(nextValue) => onChange(name, nextValue)}
+      />
+    </div>
   );
 }
 
@@ -110,12 +112,10 @@ export function BrowseFilterBar({
     }));
   }
 
-  function handleSelectChange(event: ChangeEvent<HTMLSelectElement>) {
-    const { name, value } = event.target;
-    const filterName = name as keyof BrowseFilters;
+  function handleSelectChange(name: keyof BrowseFilters, value: string) {
     const nextValues: BrowseFilters = {
       ...values,
-      [filterName]: value,
+      [name]: value,
     };
 
     setValues(nextValues);
@@ -224,6 +224,13 @@ export function BrowseFilterBar({
             name="source"
             value={values.source}
             options={SOURCE_OPTIONS}
+            onChange={handleSelectChange}
+          />
+          <SelectField
+            label="Your List"
+            name="list"
+            value={values.list}
+            options={LIST_OPTIONS}
             onChange={handleSelectChange}
           />
         </div>

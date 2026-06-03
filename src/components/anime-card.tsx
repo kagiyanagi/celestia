@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Captions, Mic, Radio } from "lucide-react";
+import { Captions, Mic, Radio, Star } from "lucide-react";
 
+import { LibraryStatusChip } from "@/components/library-status-chip";
 import { getDisplayTitle, scoreLabel } from "@/lib/format";
 import type { AnimeSummary } from "@/types/anime";
 
@@ -29,20 +30,7 @@ export function AnimeCard({ anime, priority = false }: AnimeCardProps) {
         ) : (
           <span className="poster-fallback">Celestia</span>
         )}
-
-        <span className="poster-stats">
-          <span className="score-chip">{scoreLabel(anime.averageScore)}</span>
-          <span className="card-episode-counts">
-            <span title="Airing/Sub">
-              <Captions size={12} aria-hidden />
-              {anime.airingCount || 0}
-            </span>
-            <span title="Dubbed">
-              <Mic size={12} aria-hidden />
-              {anime.dubCount || 0}
-            </span>
-          </span>
-        </span>
+        <LibraryStatusChip animeId={anime.id} />
       </span>
 
       <span className="anime-card-body">
@@ -57,6 +45,22 @@ export function AnimeCard({ anime, priority = false }: AnimeCardProps) {
             <Radio size={14} className="anime-card-airing-icon" aria-hidden />
           )}
           {title}
+        </span>
+        <span className="anime-card-stats">
+          <span title="Score">
+            <Star size={12} aria-hidden />
+            {scoreLabel(anime.averageScore)}
+          </span>
+          <span title="Airing/Sub">
+            <Captions size={12} aria-hidden />
+            {anime.airingCount || 0}
+          </span>
+          {anime.dubCount != null ? (
+            <span title="Dubbed">
+              <Mic size={12} aria-hidden />
+              {anime.dubCount}
+            </span>
+          ) : null}
         </span>
       </span>
     </Link>

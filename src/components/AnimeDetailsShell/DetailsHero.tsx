@@ -17,16 +17,20 @@ export function DetailsHero({
   title,
   secondaryTitle,
 }: DetailsHeroProps) {
+  const backdropImage = anime.bannerImage || anime.coverImage;
+
   return (
     <section className="anime-hero-stage">
-      {anime.bannerImage ? (
+      {backdropImage ? (
         <Image
-          src={anime.bannerImage}
+          src={backdropImage}
           alt=""
           fill
           priority
           sizes="100vw"
-          className="detail-backdrop"
+          className={
+            anime.bannerImage ? "detail-backdrop" : "detail-backdrop is-cover"
+          }
         />
       ) : null}
       <div className="detail-scrim" />
@@ -68,7 +72,14 @@ export function DetailsHero({
               rel="noreferrer"
               className="hero-db-btn"
             >
-              AL
+              AniList
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="https://anilist.co/img/icons/favicon-32x32.png"
+                alt=""
+                width={16}
+                height={16}
+              />
             </a>
             {anime.idMal && (
               <a
@@ -78,6 +89,13 @@ export function DetailsHero({
                 className="hero-db-btn"
               >
                 MAL
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src="https://cdn.myanimelist.net/images/favicon.ico"
+                  alt=""
+                  width={16}
+                  height={16}
+                />
               </a>
             )}
           </div>

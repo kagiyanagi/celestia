@@ -61,7 +61,9 @@ export default async function AnimePage({ params }: AnimePageProps) {
   ].filter((value): value is string => Boolean(value));
   const streamAvailability = await findStreamAvailability(
     streamLookupTitle,
-    anime.episodes,
+    anime.episodes ?? anime.airingCount ?? null,
+    null,
+    anime.id,
   );
   const watchParams = new URLSearchParams({ ep: "1" });
 

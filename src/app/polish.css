@@ -1,582 +1,610 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   Celestia Design Layer — monochrome, professional
+   Overrides globals.css where needed; does NOT duplicate base layout rules.
+   ───────────────────────────────────────────────────────────────────────── */
+
 :root {
-  --ink: #f8f3e7;
-  --ink-dim: rgba(248, 243, 231, 0.68);
-  --ink-soft: rgba(248, 243, 231, 0.48);
-  --obsidian: #050607;
-  --night: #0b1114;
-  --smoke: rgba(255, 255, 255, 0.07);
-  --smoke-strong: rgba(255, 255, 255, 0.16);
-  --ember: #f4b35f;
-  --aqua: #7dd8d0;
-  --moss: #8ab17d;
-  --danger: #ff6b5e;
-  --surface-glass: rgba(10, 15, 17, 0.74);
-  --surface-deep: rgba(6, 10, 12, 0.92);
-  --shadow-deep: 0 26px 80px rgba(0, 0, 0, 0.42);
-  --shadow-lift: 0 18px 50px rgba(125, 216, 208, 0.08);
+  /* Expanded surface scale */
+  --surface-0:  #000000;
+  --surface-1:  #0a0a0a;
+  --surface-2:  #111111;
+  --surface-3:  #171717;
+  --surface-4:  #1e1e1e;
+
+  /* Border scale */
+  --border-dim:      rgba(255, 255, 255, 0.05);
+  --border-subtle:   rgba(255, 255, 255, 0.08);
+  --border-default:  rgba(255, 255, 255, 0.12);
+  --border-strong:   rgba(255, 255, 255, 0.20);
+  --border-focus:    rgba(255, 255, 255, 0.70);
+
+  /* Text scale */
+  --text-primary:   #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.70);
+  --text-tertiary:  rgba(255, 255, 255, 0.45);
+  --text-dim:       rgba(255, 255, 255, 0.28);
+
+  /* Functional */
+  --danger:  #ff4444;
+  --success: #22c55e;
+  --warning: #f59e0b;
+
+  /* Shadows — depth without color */
+  --shadow-sm:  0 1px  4px rgba(0, 0, 0, 0.40);
+  --shadow-md:  0 4px 16px rgba(0, 0, 0, 0.50);
+  --shadow-lg:  0 12px 40px rgba(0, 0, 0, 0.60);
+  --shadow-xl:  0 24px 72px rgba(0, 0, 0, 0.70);
+
+  /* Radius scale */
+  --r-xs:   4px;
+  --r-sm:   8px;
+  --r-md:   12px;
+  --r-lg:   16px;
+  --r-xl:   20px;
+  --r-2xl:  24px;
+  --r-full: 9999px;
 }
 
-* {
-  scrollbar-width: thin !important;
-  scrollbar-color: rgba(244, 179, 95, 0.55) rgba(255, 255, 255, 0.08) !important;
-}
+/* ── Global resets ──────────────────────────────────────────────────────── */
 
-*::-webkit-scrollbar {
-  display: block !important;
-  width: 10px;
-  height: 10px;
-}
-
-*::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-*::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, var(--ember), var(--aqua));
-  border: 2px solid var(--obsidian);
-  border-radius: 999px;
-}
-
-::selection {
-  color: #061012;
-  background: var(--ember);
-}
-
-html {
-  background: var(--obsidian);
-}
-
-body {
-  background:
-    radial-gradient(circle at 18% 4%, rgba(244, 179, 95, 0.18), transparent 29rem),
-    radial-gradient(circle at 84% 14%, rgba(125, 216, 208, 0.16), transparent 30rem),
-    linear-gradient(135deg, #040506 0%, #0a1115 48%, #070907 100%);
-  color: var(--ink);
-  min-height: 100vh;
-}
-
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -2;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.026) 1px, transparent 1px);
-  background-size: 72px 72px;
-  mask-image: radial-gradient(circle at center, black, transparent 72%);
-}
-
-body::after {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    linear-gradient(120deg, rgba(244, 179, 95, 0.08), transparent 32%),
-    linear-gradient(300deg, rgba(125, 216, 208, 0.08), transparent 36%);
-  mix-blend-mode: screen;
-}
-
-main {
-  position: relative;
-}
-
-button,
-a {
+button, a {
   -webkit-tap-highlight-color: transparent;
 }
 
-:focus-visible {
-  outline: 2px solid var(--ember);
-  outline-offset: 4px;
+::selection {
+  color: #000000;
+  background: #ffffff;
 }
 
+:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Body — pure black, no warm gradients ───────────────────────────────── */
+
+html {
+  background: #000000;
+}
+
+body {
+  background: #000000;
+  color: var(--text-primary);
+}
+
+/* ── Site header ────────────────────────────────────────────────────────── */
+
 .site-header {
-  padding-top: 16px;
+  padding: 14px 20px;
+  backdrop-filter: none;
 }
 
 .site-header.is-scrolled {
-  background:
-    linear-gradient(180deg, rgba(5, 8, 9, 0.92), rgba(5, 8, 9, 0.72)),
-    rgba(5, 8, 9, 0.8);
-  border-bottom-color: rgba(244, 179, 95, 0.14);
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.34);
-  backdrop-filter: blur(14px) saturate(140%);
+  background: rgba(0, 0, 0, 0.94);
+  border-bottom-color: var(--border-subtle);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04),
+              var(--shadow-md);
 }
 
 .brand-mark {
-  color: var(--ink);
-  letter-spacing: 0.08em;
-  text-shadow:
-    0 1px 0 rgba(244, 179, 95, 0.22),
-    0 18px 44px rgba(0, 0, 0, 0.7);
+  color: #ffffff;
+  letter-spacing: 0.10em;
+  font-size: 1.5rem;
+  text-shadow: none;
 }
 
 .header-icon-button,
 .header-avatar {
-  background: rgba(6, 10, 12, 0.78);
-  border-color: rgba(248, 243, 231, 0.13);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-subtle);
+  border-radius: var(--r-lg);
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
 }
 
 .header-icon-button:hover,
-.header-link-button:hover,
-.header-avatar:hover {
-  background: rgba(244, 179, 95, 0.12);
-  border-color: rgba(244, 179, 95, 0.36);
-  transform: translateY(-1px);
+.header-link-button:hover {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: var(--border-default);
 }
 
-.page-shell,
-.detail-hero-content,
-.detail-content,
-.loader-shell {
-  max-width: 1520px;
-}
-
-.home-section,
-.section-shell,
-.airing-board,
-.search-hero,
-.tracker-panel,
-.stream-card,
-.episode-panel,
-.fact-panel,
-.tag-cloud,
-.stat-card,
-.character-card,
-.anime-card,
-.upcoming-card-wide,
-.shelf-card,
-.watch-section-panel,
-.auth-panel {
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.026)),
-    var(--surface-glass);
-  border-color: rgba(248, 243, 231, 0.11);
-  box-shadow: var(--shadow-deep);
-  backdrop-filter: blur(18px) saturate(130%);
-}
-
-.home-section,
-.section-shell,
-.airing-board,
-.search-hero,
-.watch-section-panel,
-.auth-panel {
-  position: relative;
+.header-avatar {
+  border-radius: var(--r-full);
   overflow: hidden;
 }
 
-.home-section::before,
-.section-shell::before,
-.airing-board::before,
-.search-hero::before,
-.watch-section-panel::before,
-.auth-panel::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    linear-gradient(90deg, rgba(244, 179, 95, 0.12), transparent 28%),
-    radial-gradient(circle at 88% 12%, rgba(125, 216, 208, 0.12), transparent 18rem);
-  opacity: 0.7;
+/* ── Search modal ───────────────────────────────────────────────────────── */
+
+.search-overlay {
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
-.home-section > *,
-.section-shell > *,
-.airing-board > *,
-.search-hero > *,
-.watch-section-panel > *,
-.auth-panel > * {
-  position: relative;
-  z-index: 1;
+.search-modal {
+  background: var(--surface-2);
+  border-color: var(--border-default);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-xl);
 }
 
-.section-kicker,
-.section-heading span,
-.anime-card-meta,
-.shelf-card-meta,
-.upcoming-kicker,
-.search-box label {
-  color: var(--ember);
-  letter-spacing: 0.14em;
+.search-modal-header {
+  border-bottom-color: var(--border-subtle);
 }
 
-.home-section-head h2,
-.section-heading h2,
-.search-hero h1,
-.detail-copy h1,
-.watch-now-playing h1,
-.airing-board h2,
-.tracker-panel h2,
-.stream-card h2 {
-  color: var(--ink);
-  letter-spacing: -0.055em;
+.search-result-item {
+  border-radius: var(--r-md);
+  transition: background 100ms ease;
 }
 
-.search-hero,
-.browse-hero {
-  min-height: 210px;
-  align-content: end;
-  background:
-    linear-gradient(135deg, rgba(244, 179, 95, 0.15), transparent 38%),
-    linear-gradient(225deg, rgba(125, 216, 208, 0.16), transparent 44%),
-    rgba(7, 12, 14, 0.84);
+.search-result-item:hover,
+.search-result-item.is-active {
+  background: rgba(255, 255, 255, 0.06);
 }
 
-.search-hero p,
-.airing-board p,
-.tracker-panel p,
-.stream-card p,
-.section-heading p,
-.detail-description,
-.watch-now-playing p {
-  color: var(--ink-dim);
-}
-
-.celestia-hero-shade,
-.detail-scrim,
-.watch-shade {
-  background:
-    linear-gradient(90deg, rgba(2, 4, 5, 0.9) 0%, rgba(2, 4, 5, 0.42) 48%, rgba(2, 4, 5, 0.78) 100%),
-    linear-gradient(180deg, rgba(2, 4, 5, 0.12) 0%, rgba(2, 4, 5, 0.86) 78%, #050607 100%);
-}
-
-.celestia-copy-main h1,
-.detail-copy h1,
-.trending-title,
-.anime-card-title,
-.shelf-card-copy strong,
-.upcoming-card-title {
-  background: linear-gradient(135deg, #fff7dc 12%, var(--ember) 54%, var(--aqua) 100%);
-  background-clip: text;
-  text-shadow: none;
-}
+/* ── Buttons — unified white-on-black primary ───────────────────────────── */
 
 .celestia-watch,
 .watch-button,
 .wide-watch-link,
-.detail-actions a,
-.episode-nav a,
-.search-box button,
-.anilist-connect-btn {
-  background: linear-gradient(135deg, #ffe0a3, var(--ember) 48%, #ffcf75);
-  border: 0;
-  color: #12100a;
-  box-shadow:
-    0 16px 34px rgba(244, 179, 95, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+.hero-watch-btn,
+.sidebar-watch-btn {
+  background: #ffffff;
+  color: #000000;
+  border-color: transparent;
+  font-weight: 700;
+  letter-spacing: 0.01em;
   transition:
-    transform 160ms var(--ease-spring),
-    box-shadow 160ms var(--ease-spring),
-    filter 160ms var(--ease-spring);
+    background 120ms ease,
+    box-shadow 120ms ease,
+    transform  120ms ease;
 }
 
 .celestia-watch:hover,
 .watch-button:hover,
 .wide-watch-link:hover,
+.hero-watch-btn:hover,
+.sidebar-watch-btn:hover {
+  background: rgba(255, 255, 255, 0.88);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.14);
+}
+
+/* Secondary/ghost buttons */
+.detail-actions a,
+.episode-nav a,
+.search-box button,
+.celestia-more,
+.hero-icon-btn,
+.sidebar-plus-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--border-default);
+  color: var(--text-primary);
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
+}
+
 .detail-actions a:hover,
 .episode-nav a:hover,
 .search-box button:hover,
-.anilist-connect-btn:hover {
-  filter: saturate(1.08);
-  transform: translateY(-2px);
-  box-shadow:
-    0 22px 46px rgba(244, 179, 95, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.44);
+.celestia-more:hover,
+.hero-icon-btn:hover,
+.sidebar-plus-btn:hover {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: var(--border-strong);
 }
 
-.anime-card,
+/* ── Carousel dots ──────────────────────────────────────────────────────── */
+
+.celestia-dots button {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: transparent;
+}
+
+.celestia-dots button.active {
+  background: #ffffff;
+}
+
+/* ── Cards — clean hover with white glow ────────────────────────────────── */
+
 .trending-card,
-.shelf-card,
+.anime-card,
 .upcoming-card-wide,
+.shelf-card,
+.airing-row,
+.character-card,
 .watch-media-card,
-.schedule-entry-card,
-.schedule-spotlight-card {
+.schedule-entry-card {
   transition:
-    transform 190ms var(--ease-spring),
-    border-color 190ms var(--ease-spring),
-    box-shadow 190ms var(--ease-spring),
-    filter 190ms var(--ease-spring);
+    transform  300ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-color 160ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 160ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.anime-card:hover,
 .trending-card:hover,
-.shelf-card:hover,
+.anime-card:hover,
 .upcoming-card-wide:hover,
+.shelf-card:hover,
+.airing-row:hover,
+.character-card:hover,
 .watch-media-card:hover,
-.schedule-entry-card:hover,
-.schedule-spotlight-card:hover {
-  border-color: rgba(244, 179, 95, 0.38);
-  box-shadow: var(--shadow-deep), var(--shadow-lift);
-  filter: saturate(1.05);
+.schedule-entry-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border-strong);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5),
+              0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
-.anime-card .poster-shell,
 .trending-poster,
+.anime-card .poster-shell,
 .shelf-card-poster,
-.upcoming-card-left,
-.detail-poster,
+.history-card-thumb,
 .watch-episode-thumb {
-  border-color: rgba(248, 243, 231, 0.12);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-color: var(--border-subtle);
 }
 
-.watch-page {
-  background:
-    radial-gradient(circle at 82% 3%, rgba(244, 179, 95, 0.16), transparent 24rem),
-    radial-gradient(circle at 18% 30%, rgba(125, 216, 208, 0.1), transparent 26rem);
+/* ── Score chip & episode counts ─────────────────────────────────────────── */
+
+.score-chip,
+.play-chip,
+.card-episode-counts span {
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(6px) saturate(120%);
+  -webkit-backdrop-filter: blur(6px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
 }
 
-.watch-player-stage {
-  border: 1px solid rgba(248, 243, 231, 0.12);
-  border-radius: 32px;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02)),
-    rgba(5, 8, 9, 0.82);
-  box-shadow: var(--shadow-deep);
-  overflow: hidden;
+/* ── Section labels ─────────────────────────────────────────────────────── */
+
+.section-kicker,
+.section-heading span {
+  color: var(--text-tertiary);
+  letter-spacing: 0.12em;
 }
 
-.watch-player-frame {
-  border-radius: 28px;
-  border-color: rgba(244, 179, 95, 0.2);
-  background:
-    radial-gradient(circle at center, rgba(125, 216, 208, 0.08), transparent 28rem),
-    #020303;
-  box-shadow:
-    0 26px 80px rgba(0, 0, 0, 0.5),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+/* ── Detail hero ────────────────────────────────────────────────────────── */
+
+.badge-airing {
+  background: rgba(34, 197, 94, 0.14);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.24);
 }
 
-.watch-provider-badge,
+.pill-orange,
+.upcoming-kicker {
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--text-secondary);
+  border-color: var(--border-subtle);
+}
+
+/* ── Overview stat boxes ─────────────────────────────────────────────────── */
+
+.stat-box {
+  background: var(--surface-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-md);
+  transition: border-color 140ms ease;
+}
+
+.stat-box:hover {
+  border-color: var(--border-default);
+}
+
+/* ── Airing banner ───────────────────────────────────────────────────────── */
+
+.airing-banner {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-md);
+}
+
+.airing-banner .highlight {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+/* ── Watch page ─────────────────────────────────────────────────────────── */
+
 .watch-action-button,
-.watch-tool-button,
-.pagination-button,
-.ep-nav-btn,
-.ep-range-pill,
-.ep-count-pill {
-  background: rgba(248, 243, 231, 0.065);
-  border-color: rgba(248, 243, 231, 0.13);
-  color: var(--ink);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+.watch-tabs a {
+  border-color: var(--border-subtle);
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    color 120ms ease;
+}
+
+.watch-action-button:hover,
+.watch-tabs a:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-default);
 }
 
 .watch-action-button.active,
-.pagination-button.current,
-.ep-action-btn:hover,
-.ep-nav-btn:hover:not(:disabled),
+.watch-tabs a.active {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: var(--border-strong);
+  color: #ffffff;
+}
+
 .watch-server-option.active {
-  background: rgba(244, 179, 95, 0.16);
-  border-color: rgba(244, 179, 95, 0.4);
-  color: var(--ink);
+  background: rgba(255, 255, 255, 0.10);
+  border-color: var(--border-strong);
+  color: #ffffff;
 }
 
-.watch-server-popover,
-.search-modal {
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.03)),
-    rgba(5, 8, 9, 0.94);
-  border-color: rgba(244, 179, 95, 0.2);
-  box-shadow: 0 34px 90px rgba(0, 0, 0, 0.58);
+.watch-server-popover {
+  background: var(--surface-3);
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-lg);
 }
 
-.search-result-item:hover,
-.search-result-item.is-active {
-  background: rgba(244, 179, 95, 0.12);
-  outline-color: rgba(244, 179, 95, 0.9);
+.watch-provider-badge {
+  background: rgba(34, 197, 94, 0.10);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.20);
 }
 
-.schedule-shell {
-  max-width: 1520px;
+/* ── Episode cards ───────────────────────────────────────────────────────── */
+
+.watch-episode-card {
+  border-color: var(--border-subtle);
+  background: var(--surface-2);
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
 }
+
+.watch-episode-card:hover {
+  background: var(--surface-3);
+  border-color: var(--border-default);
+}
+
+.watch-episode-card.active {
+  background: var(--surface-3);
+  border-color: var(--border-strong);
+}
+
+/* ── Auth panel ──────────────────────────────────────────────────────────── */
+
+.auth-panel {
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ── Settings ────────────────────────────────────────────────────────────── */
+
+.settings-row,
+.settings-toggle-row,
+.device-row {
+  border-color: var(--border-subtle);
+}
+
+/* ── Save dialog ─────────────────────────────────────────────────────────── */
+
+.save-dialog {
+  background: var(--surface-2);
+  border-color: var(--border-default);
+  box-shadow: var(--shadow-xl);
+}
+
+/* ── Pagination ──────────────────────────────────────────────────────────── */
+
+.pagination-button {
+  border-color: var(--border-subtle);
+  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+}
+
+.pagination-button:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-default);
+}
+
+.pagination-button.current {
+  background: rgba(255, 255, 255, 0.10);
+  border-color: var(--border-default);
+}
+
+/* ── Schedule ────────────────────────────────────────────────────────────── */
 
 .schedule-spotlight-card,
-.schedule-entry-card {
-  border-color: rgba(248, 243, 231, 0.12);
-  background: rgba(5, 8, 9, 0.72);
+.schedule-corner-badge {
+  border-color: var(--border-subtle);
 }
 
-.schedule-corner-badge,
-.schedule-entry-time,
-.airing-episode {
-  background: rgba(244, 179, 95, 0.15);
-  border-color: rgba(244, 179, 95, 0.34);
-  color: #ffe6b9;
+/* ── Scrollbar — thin, subtle, opt-in for overflow areas ─────────────────── */
+
+.search-modal-results,
+.watch-tabs,
+.watch-actions,
+.trending-rail,
+.upcoming-rail,
+.home-shelf-row {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
 
-.auth-header h2,
-.profile-hero-copy h1,
-.settings-page h1 {
-  color: var(--ink);
+.search-modal-results::-webkit-scrollbar,
+.trending-rail::-webkit-scrollbar {
+  display: block !important;
+  height: 3px;
+  width: 3px;
 }
 
-.guest-badge,
-.user-badge {
-  border: 1px solid rgba(125, 216, 208, 0.34);
-  background: rgba(125, 216, 208, 0.12);
-  color: #c6fff8;
+.search-modal-results::-webkit-scrollbar-thumb,
+.trending-rail::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
 }
 
-.franchise-timeline {
-  display: grid;
-  gap: 18px;
-  padding: 22px;
-  border: 1px solid rgba(248, 243, 231, 0.11);
-  border-radius: 26px;
-  background:
-    linear-gradient(135deg, rgba(244, 179, 95, 0.11), transparent 38%),
-    rgba(5, 8, 9, 0.58);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+/* ── Text selection ──────────────────────────────────────────────────────── */
+
+/* already set above via ::selection */
+
+/* ── Mobile: 480px — safeguard for small phones ──────────────────────────── */
+
+@media (max-width: 480px) {
+  .site-header {
+    padding: 8px 12px;
+  }
+
+  .site-header-row {
+    padding: 0;
+    gap: 8px;
+  }
+
+  .brand-mark {
+    font-size: 1.1rem;
+  }
+
+  .header-icon-button,
+  .header-avatar {
+    width: 38px;
+    height: 38px;
+  }
+
+  main {
+    padding-top: 80px;
+  }
+
+  .celestia-hero-inner {
+    aspect-ratio: 16 / 9;
+    min-height: 260px;
+  }
+
+  .celestia-copy-main h1 {
+    font-size: clamp(1.4rem, 6vw, 2rem);
+  }
+
+  .celestia-description {
+    display: none;
+  }
+
+  .celestia-pills {
+    display: none;
+  }
+
+  .celestia-actions {
+    gap: 8px;
+  }
+
+  .celestia-watch {
+    min-height: 40px;
+    padding: 0 14px;
+    font-size: 0.85rem;
+  }
+
+  .watch-episode-card {
+    grid-template-columns: 96px minmax(0, 1fr);
+    min-height: 80px;
+  }
+
+  .watch-episode-thumb {
+    min-height: 80px;
+  }
+
+  .overview-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .search-modal-footer .search-modal-keybinds {
+    display: none;
+  }
 }
 
-.franchise-timeline-head {
-  display: grid;
-  gap: 6px;
-}
+/* ── Press feedback — bouncy scale on click ──────────────────────────────── */
 
-.franchise-timeline-head span {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  width: fit-content;
-  color: var(--ember);
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.franchise-timeline-head h2 {
-  margin: 0;
-  color: var(--ink);
-  font-size: clamp(1.35rem, 2vw, 1.9rem);
-  letter-spacing: -0.045em;
-}
-
-.franchise-timeline-head p {
-  max-width: 58ch;
-  margin: 0;
-  color: var(--ink-dim);
-  line-height: 1.55;
-}
-
-.franchise-timeline-track {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(260px, 1fr);
-  gap: 14px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-}
-
-.franchise-step {
-  display: grid;
-  grid-template-columns: auto 72px minmax(0, 1fr);
-  align-items: center;
-  gap: 14px;
-  min-height: 104px;
-  padding: 12px;
-  border: 1px solid rgba(248, 243, 231, 0.1);
-  border-radius: 20px;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02)),
-    rgba(6, 10, 12, 0.72);
+/* Spring-back transition for interactive elements that don't already
+   transition transform. */
+button:not(:disabled),
+.header-icon-button,
+.header-avatar,
+.hero-watch-btn,
+.hero-icon-btn,
+.hero-db-btn,
+.celestia-watch,
+.celestia-more,
+.primary-action,
+.secondary-action,
+.watch-action-button,
+.watch-tool-button,
+.watch-tabs a,
+.episode-nav a,
+.detail-actions a,
+.pagination-button,
+.search-result-item,
+.watch-episode-card,
+.continue-card,
+.watchlist-grid-card {
   transition:
-    transform 160ms var(--ease-spring),
-    border-color 160ms var(--ease-spring),
-    background 160ms var(--ease-spring);
+    transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1),
+    background 120ms ease,
+    border-color 120ms ease,
+    box-shadow 160ms ease,
+    color 120ms ease;
 }
 
-.franchise-step:hover,
-.franchise-step.active {
-  border-color: rgba(244, 179, 95, 0.35);
-  background:
-    linear-gradient(145deg, rgba(244, 179, 95, 0.13), rgba(125, 216, 208, 0.06)),
-    rgba(6, 10, 12, 0.84);
-  transform: translateY(-2px);
+/* Quick squash on press; releasing springs back with overshoot. */
+:is(
+  button:not(:disabled),
+  .anime-card,
+  .shelf-card,
+  .upcoming-card-wide,
+  .airing-row,
+  .character-card,
+  .watch-media-card,
+  .schedule-entry-card,
+  .header-icon-button,
+  .header-avatar,
+  .hero-watch-btn,
+  .hero-icon-btn,
+  .hero-db-btn,
+  .celestia-watch,
+  .celestia-more,
+  .primary-action,
+  .secondary-action,
+  .watch-action-button,
+  .watch-tool-button,
+  .watch-tabs a,
+  .episode-nav a,
+  .detail-actions a,
+  .pagination-button,
+  .search-result-item,
+  .watch-episode-card,
+  .continue-card,
+  .watchlist-grid-card
+):active {
+  transform: scale(0.94);
+  transition-duration: 70ms;
 }
 
-.franchise-step-index {
-  color: rgba(244, 179, 95, 0.7);
-  font-family: var(--font-paytone), sans-serif;
-  font-size: 1.15rem;
-}
+/* ── Reduce motion ────────────────────────────────────────────────────────── */
 
-.franchise-step-poster {
-  position: relative;
-  width: 72px;
-  aspect-ratio: 2 / 3;
-  overflow: hidden;
-  border: 1px solid rgba(248, 243, 231, 0.12);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.franchise-step-poster img {
-  object-fit: cover;
-}
-
-.franchise-step-copy {
-  display: grid;
-  gap: 5px;
-  min-width: 0;
-}
-
-.franchise-step-copy small {
-  color: var(--aqua);
-  font-size: 0.68rem;
-  font-style: normal;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.franchise-step-copy strong {
-  overflow: hidden;
-  color: var(--ink);
-  font-size: 0.98rem;
-  line-height: 1.25;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.franchise-step-copy em {
-  color: var(--ink-soft);
-  font-size: 0.76rem;
-  font-style: normal;
-  font-weight: 700;
-  text-transform: uppercase;
-}
-
-@media (max-width: 760px) {
-  .page-shell,
-  .detail-hero-content,
-  .detail-content,
-  .loader-shell {
-    width: calc(100% - 28px);
+@media (prefers-reduced-motion: reduce) {
+  .trending-card,
+  .anime-card,
+  .upcoming-card-wide,
+  .shelf-card,
+  .airing-row,
+  .character-card {
+    transition: border-color 1ms, box-shadow 1ms !important;
   }
 
-  .home-section,
-  .section-shell,
-  .airing-board,
-  .search-hero,
-  .watch-section-panel,
-  .auth-panel {
-    border-radius: 20px;
+  .trending-card:hover,
+  .anime-card:hover,
+  .upcoming-card-wide:hover,
+  .shelf-card:hover {
+    transform: none !important;
   }
 
-  .watch-player-stage,
-  .watch-player-frame {
-    border-radius: 20px;
-  }
-
-  .franchise-timeline-track {
-    grid-auto-columns: minmax(230px, 86vw);
+  *:active {
+    transform: none !important;
   }
 }

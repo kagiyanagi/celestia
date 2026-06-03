@@ -1,21 +1,62 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Bookmark, Play } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { ArrowRight } from "lucide-react";
+import { AnimeCard } from "@/components/anime-card";
 import { useAuth } from "@/components/auth-provider";
-import type { PublicUser } from "@/types/account";
+import { EpisodeThumbnail } from "@/components/episode-thumbnail";
+import type { HistoryEntry, PublicUser } from "@/types/account";
 import { getDisplayTitle } from "@/lib/format";
+
+/** Latest entry per anime — history is stored newest-first. */
+function dedupeByAnime(entries: HistoryEntry[]): HistoryEntry[] {
+  const seen = new Set<number>();
+
+  return entries.filter((entry) => {
+    if (seen.has(entry.animeId)) {
+      return false;
+    }
+
+    seen.add(entry.animeId);
+    return true;
+  });
+}
 
 export function HomePersonalSections({
   user: initialUser,
 }: {
   user: PublicUser | null;
 }) {
-  const { user: authUser } = useAuth();
+  const { user: authUser, refreshUser } = useAuth();
   const user = authUser || initialUser;
-  const history = user?.historyEntries || [];
+  const history = dedupeByAnime(user?.historyEntries || []);
   const library = user?.libraryEntries || [];
+  const refreshRef = useRef(refreshUser);
+
+  useEffect(() => {
+    refreshRef.current = refreshUser;
+  }, [refreshUser]);
+
+  // Keep Continue Watching fresh without a manual reload: refetch on mount
+  // (back-navigation serves cached RSC payloads) and on tab refocus.
+  useEffect(() => {
+    void refreshRef.current();
+
+    const handleFocus = () => {
+      if (document.visibilityState === "visible") {
+        void refreshRef.current();
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleFocus);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleFocus);
+    };
+  }, []);
 
   const watchlist = library.filter((entry) =>
     ["planning", "watching", "on_hold", "rewatching"].includes(entry.status),
@@ -39,16 +80,15 @@ export function HomePersonalSections({
             {history.slice(0, 4).map((entry) => (
               <Link key={entry.id} href={`/watch/${entry.animeId}?ep=${entry.episode}`} className="continue-card">
                 <span className="continue-card-thumb">
-                  {entry.anime.bannerImage || entry.anime.coverImage ? (
-                    <Image
-                      src={entry.anime.bannerImage || entry.anime.coverImage || ""}
-                      alt=""
-                      fill
-                      sizes="360px"
-                      className="poster-image"
-                    />
+                  <EpisodeThumbnail
+                    src={entry.episodeImage || null}
+                    alt={entry.episodeTitle}
+                    fallbackSrc={entry.anime.bannerImage || entry.anime.coverImage || null}
+                  />
+                  <span className="continue-card-episode">EP {entry.episode}</span>
+                  {entry.durationLabel ? (
+                    <span className="continue-card-duration">{entry.durationLabel}</span>
                   ) : null}
-                  <span className="continue-card-duration">{entry.durationLabel || `EP ${entry.episode}`}</span>
                   <span className="continue-card-progress">
                     <span style={{ width: `${entry.progressPercent}%` }} />
                   </span>
@@ -70,25 +110,8 @@ export function HomePersonalSections({
             <Link href="/watchlist">View all</Link>
           </div>
           <div className="watchlist-rail">
-            {watchlist.slice(0, 8).map((entry) => (
-              <Link key={entry.id} href={`/anime/${entry.animeId}`} className="watchlist-card">
-                <span className="watchlist-card-image">
-                  {entry.anime.coverImage ? (
-                    <Image src={entry.anime.coverImage} alt="" fill sizes="220px" className="poster-image" />
-                  ) : null}
-                </span>
-                <span className="watchlist-card-meta">
-                  <span>
-                    {entry.anime.format === "TV" ? "TV Show" : entry.anime.format || "Anime"}
-                  </span>
-                  <span>{entry.anime.seasonYear || "Now"}</span>
-                </span>
-                <strong>{getDisplayTitle(entry.anime.title)}</strong>
-                <span className="watchlist-card-status">
-                  {entry.status === "watching" ? <Play size={14} /> : <Bookmark size={14} />}
-                  {entry.status.replaceAll("_", " ")}
-                </span>
-              </Link>
+            {watchlist.slice(0, 6).map((entry) => (
+              <AnimeCard key={entry.id} anime={entry.anime} />
             ))}
           </div>
         </section>

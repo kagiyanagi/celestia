@@ -14,6 +14,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import { LibraryStatusChip } from "@/components/library-status-chip";
 import { getDisplayTitle } from "@/lib/format";
 import type { AnimeSummary } from "@/types/anime";
 
@@ -247,6 +248,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   <span>{formatLabel(anime.format)}</span>
                   <span>{episodeCountLabel(anime.episodes)}</span>
                   <span>{anime.status || "UNKNOWN"}</span>
+                  <LibraryStatusChip animeId={anime.id} inline />
                 </div>
                 {seasonLabel(anime) && (
                   <span className="search-result-season">

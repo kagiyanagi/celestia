@@ -1,8 +1,9 @@
-import { Clock } from "lucide-react";
+import { Clock, Mic } from "lucide-react";
 import { AnimeDetails } from "@/types/anime";
+import { AiringCountdown } from "@/components/airing-countdown";
+import { compactNumber, formatAiringTime } from "@/lib/format";
 import { formatDate } from "./helpers";
 import { DetailsCast } from "./DetailsCast";
-import { DetailsFranchiseTimeline } from "./DetailsFranchiseTimeline";
 
 interface DetailsOverviewProps {
   anime: AnimeDetails;
@@ -18,23 +19,47 @@ export function DetailsOverview({
       {anime.status === "RELEASING" && anime.nextAiringEpisode && (
         <div className="airing-banner">
           <Clock size={16} />
-          Next ep airing{" "}
+          Ep {anime.nextAiringEpisode.episode} airing in{" "}
           <span className="highlight">
-            in {Math.floor(anime.nextAiringEpisode.timeUntilAiring / 86400)}{" "}
-            days
+            <AiringCountdown
+              airingAt={anime.nextAiringEpisode.airingAt}
+              fallbackSeconds={anime.nextAiringEpisode.timeUntilAiring}
+            />
+          </span>
+          <span className="airing-banner-when" suppressHydrationWarning>
+            {formatAiringTime(anime.nextAiringEpisode.airingAt)}
           </span>
         </div>
       )}
 
-      <DetailsFranchiseTimeline anime={anime} />
+      {anime.dubInfo?.nextDubEpisode && (
+        <div className="airing-banner">
+          <Mic size={16} />
+          Dub ep {anime.dubInfo.nextDubEpisode.episode} arriving in{" "}
+          <span className="highlight">
+            <AiringCountdown
+              airingAt={anime.dubInfo.nextDubEpisode.airingAt}
+              fallbackSeconds={anime.dubInfo.nextDubEpisode.timeUntilAiring}
+            />
+          </span>
+        </div>
+      )}
 
       <div className="overview-stats-grid">
         <div className="stat-box">
-          <span className="stat-label">Average Score</span>
+          <span className="stat-label">AniList Score</span>
           <strong className="stat-value">
             {anime.averageScore ? (anime.averageScore / 10).toFixed(1) : "?"}
           </strong>
         </div>
+        {anime.malStats?.score ? (
+          <div className="stat-box">
+            <span className="stat-label">MAL Score</span>
+            <strong className="stat-value">
+              {(anime.malStats.score / 10).toFixed(1)}
+            </strong>
+          </div>
+        ) : null}
         <div className="stat-box">
           <span className="stat-label">Type</span>
           <strong className="stat-value">{anime.format || "TV"}</strong>
@@ -72,6 +97,29 @@ export function DetailsOverview({
           <span>Mean Score:</span>
           <strong>{anime.meanScore || "?"}</strong>
         </div>
+        {anime.dubInfo?.dubbedEpisodes != null && (
+          <div className="fact-item">
+            <span>Dubbed Episodes:</span>
+            <strong>
+              {anime.dubInfo.dubbedEpisodes}
+              {anime.dubInfo.totalEpisodes
+                ? ` / ${anime.dubInfo.totalEpisodes}`
+                : ""}
+            </strong>
+          </div>
+        )}
+        {anime.malStats?.scoredBy && (
+          <div className="fact-item">
+            <span>MAL Ratings:</span>
+            <strong>{compactNumber(anime.malStats.scoredBy)}</strong>
+          </div>
+        )}
+        {anime.malStats?.rank && (
+          <div className="fact-item">
+            <span>MAL Rank:</span>
+            <strong>#{anime.malStats.rank}</strong>
+          </div>
+        )}
         <div className="fact-item">
           <span>Source:</span>
           <strong>{anime.source?.replaceAll("_", " ")}</strong>

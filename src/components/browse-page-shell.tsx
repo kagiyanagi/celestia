@@ -6,8 +6,8 @@ import {
   ChevronsRight,
 } from "lucide-react";
 
-import { AnimeCard } from "@/components/anime-card";
 import { BrowseFilterBar } from "@/components/browse-filter-bar";
+import { BrowseResultsGrid } from "@/components/browse-results-grid";
 import { buildBrowseHref } from "@/lib/browse-filters";
 import type {
   AnimeSummary,
@@ -52,6 +52,9 @@ export function BrowsePageShell({
   const startItem = items.length ? (currentPage - 1) * pageInfo.perPage + 1 : 0;
   const endItem = startItem + items.length - 1;
   const filterKey = buildBrowseHref(basePath, filters);
+  // "In your list" renders from the viewer's library — catalog counts and
+  // pagination don't apply to it.
+  const isLibraryView = filters.list === "in";
 
   function pageHref(page: number): string {
     return buildBrowseHref(basePath, filters, page);
@@ -75,24 +78,25 @@ export function BrowsePageShell({
         />
 
         <div className="section-heading">
-          <span>
-            {pageInfo.total
-              ? `${startItem}-${endItem} of ${pageInfo.total} titles`
-              : `${items.length} titles`}
-          </span>
+          {!isLibraryView ? (
+            <span>
+              {pageInfo.total
+                ? `${startItem}-${endItem} of ${pageInfo.total} titles`
+                : `${items.length} titles`}
+            </span>
+          ) : (
+            <span>Your list</span>
+          )}
           {showSectionTitle && <h2>{title}</h2>}
         </div>
 
-        {items.length ? (
-          <div className="anime-grid search-results">
-            {items.map((anime) => (
-              <AnimeCard anime={anime} key={anime.id} />
-            ))}
-          </div>
+        {items.length || isLibraryView ? (
+          <BrowseResultsGrid items={items} filters={filters} />
         ) : (
           <div className="empty-panel">No titles found for this page.</div>
         )}
 
+        {!isLibraryView ? (
         <nav className="pagination-nav" aria-label={`${title} pages`}>
           {hasPreviousPage ? (
             <Link
@@ -154,6 +158,7 @@ export function BrowsePageShell({
             </span>
           )}
         </nav>
+        ) : null}
       </section>
     </div>
   );

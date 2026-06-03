@@ -165,10 +165,12 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
                         <Captions size={14} aria-hidden />
                         {item.airingCount || 0}
                       </span>
-                      <span>
-                        <Mic size={14} aria-hidden />
-                        {item.dubCount || 0}
-                      </span>
+                      {item.dubCount != null ? (
+                        <span>
+                          <Mic size={14} aria-hidden />
+                          {item.dubCount}
+                        </span>
+                      ) : null}
                       <span>{item.seasonYear || "Now"}</span>
                     </div>
                   </div>
