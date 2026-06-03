@@ -50,6 +50,9 @@ export type AiringItem = {
   airingAt: number;
   timeUntilAiring: number;
   anime: AnimeSummary;
+  source?: "anilist" | "anime_schedule";
+  sourceLabel?: string;
+  airingStatus?: string | null;
 };
 
 export type CharacterCredit = {
