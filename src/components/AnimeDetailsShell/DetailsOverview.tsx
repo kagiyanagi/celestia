@@ -2,6 +2,7 @@ import { Clock } from "lucide-react";
 import { AnimeDetails } from "@/types/anime";
 import { formatDate } from "./helpers";
 import { DetailsCast } from "./DetailsCast";
+import { DetailsFranchiseTimeline } from "./DetailsFranchiseTimeline";
 
 interface DetailsOverviewProps {
   anime: AnimeDetails;
@@ -24,6 +25,8 @@ export function DetailsOverview({
           </span>
         </div>
       )}
+
+      <DetailsFranchiseTimeline anime={anime} />
 
       <div className="overview-stats-grid">
         <div className="stat-box">
