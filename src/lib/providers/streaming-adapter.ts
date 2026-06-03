@@ -1,3 +1,4 @@
+import { fetchJson } from "@/lib/http/client";
 import type {
   StreamAudioType,
   StreamAvailability,
@@ -6,10 +7,12 @@ import type {
   StreamSource,
 } from "@/types/streaming";
 
-const STREAMING_PROVIDER_URL = process.env.STREAMING_PROVIDER_URL || "";
-const STREAMING_PROVIDER_LABEL =
-  process.env.STREAMING_PROVIDER_LABEL || "Custom Provider";
-const STREAMING_PROVIDER_ID = process.env.STREAMING_PROVIDER_ID || "custom";
+export type StreamingAdapterConfig = {
+  id: string;
+  label: string;
+  url: string;
+  priority?: number;
+};
 
 type StreamingFindResponse = {
   exist?: boolean;
@@ -30,24 +33,8 @@ type StreamingEpisodeResponse = {
 
 const AUDIO_OPTIONS: StreamAudioType[] = ["sub", "dub"];
 
-function isStreamingEnabled(): boolean {
-  return Boolean(STREAMING_PROVIDER_URL);
-}
-
-async function getJson<T>(path: string, revalidate: number): Promise<T | null> {
-  if (!isStreamingEnabled()) {
-    return null;
-  }
-
-  const response = await fetch(`${STREAMING_PROVIDER_URL}${path}`, {
-    next: { revalidate },
-  });
-
-  if (!response.ok) {
-    return null;
-  }
-
-  return (await response.json()) as T;
+function cleanBaseUrl(value: string): string {
+  return value.trim().replace(/\/+$/, "");
 }
 
 function cleanStreamLink(value: string | null | undefined): string | null {
@@ -83,20 +70,6 @@ function setAudioType(
   }
 
   return link.replace(/\/(sub|dub)(?=[/?#]|$)/i, `/${audio}`);
-}
-
-async function findAvailability(title: string): Promise<StreamAvailability> {
-  const payload = await getJson<StreamingFindResponse>(
-    `/api/find/${encodeURIComponent(title)}`,
-    60 * 60 * 1,
-  );
-
-  return {
-    available: Boolean(payload?.exist),
-    provider: streamingAdapter.label,
-    providerAnimeId: payload?.id || null,
-    episodeCount: payload?.ep || null,
-  };
 }
 
 function toEpisodeList(
@@ -139,53 +112,115 @@ function clampEpisode(episode: number): number {
   return Math.max(1, Math.floor(episode));
 }
 
-async function getEpisodesPayload(
-  animeId: number,
-): Promise<StreamingEpisodeResponse | null> {
-  return getJson<StreamingEpisodeResponse>(
-    `/v1/api/details/${animeId}`,
-    60 * 10,
-  );
-}
+export function createStreamingAdapter(
+  config: StreamingAdapterConfig,
+): StreamingProvider {
+  const baseUrl = cleanBaseUrl(config.url);
+  const isConfigured = Boolean(baseUrl);
 
-async function getSource(input: {
-  animeTitle: string;
-  providerAnimeId?: number | null;
-  episode: number;
-  audio?: StreamAudioType | null;
-}): Promise<StreamSource | null> {
-  const providerAnimeId =
-    input.providerAnimeId ||
-    (await findAvailability(input.animeTitle)).providerAnimeId;
+  async function getJson<T>(
+    path: string,
+    revalidate: number,
+    timeoutMs = 4_500,
+  ): Promise<T | null> {
+    if (!isConfigured) {
+      return null;
+    }
 
-  if (!providerAnimeId) {
-    return null;
+    try {
+      return await fetchJson<T>(
+        `${baseUrl}${path}`,
+        {
+          next: { revalidate },
+        },
+        {
+          provider: config.label,
+          timeoutMs,
+          retries: 1,
+          retryDelayMs: 250,
+          cacheKey: `${config.id}:${path}`,
+          staleTtlMs: revalidate * 1000 * 6,
+        },
+      );
+    } catch (error) {
+      console.warn(`${config.label} request failed for ${path}`, error);
+      return null;
+    }
   }
 
-  const episode = clampEpisode(input.episode);
-  const episodesPayload = await getEpisodesPayload(providerAnimeId);
-  const rawEpisodeLink = getRawEpisodeLink(episodesPayload, episode);
-  const detectedAudio = detectAudioType(rawEpisodeLink);
-  const audio = input.audio || detectedAudio;
-  const embedUrl = setAudioType(rawEpisodeLink, audio);
-  const availableAudio = detectedAudio ? AUDIO_OPTIONS : [];
+  async function findAvailability(title: string): Promise<StreamAvailability> {
+    const payload = await getJson<StreamingFindResponse>(
+      `/api/find/${encodeURIComponent(title)}`,
+      60 * 60,
+      2_500,
+    );
+
+    return {
+      available: Boolean(payload?.exist),
+      providerId: config.id,
+      provider: config.label,
+      providerAnimeId: payload?.id || null,
+      episodeCount: payload?.ep || null,
+    };
+  }
+
+  async function getEpisodesPayload(
+    animeId: number,
+  ): Promise<StreamingEpisodeResponse | null> {
+    return getJson<StreamingEpisodeResponse>(
+      `/v1/api/details/${animeId}`,
+      60 * 10,
+      5_000,
+    );
+  }
+
+  async function getSource(input: {
+    animeTitle: string;
+    providerAnimeId?: number | null;
+    episode: number;
+    audio?: StreamAudioType | null;
+  }): Promise<StreamSource | null> {
+    const providerAnimeId =
+      input.providerAnimeId ||
+      (await findAvailability(input.animeTitle)).providerAnimeId;
+
+    if (!providerAnimeId) {
+      return null;
+    }
+
+    const episode = clampEpisode(input.episode);
+    const episodesPayload = await getEpisodesPayload(providerAnimeId);
+    const rawEpisodeLink = getRawEpisodeLink(episodesPayload, episode);
+    const detectedAudio = detectAudioType(rawEpisodeLink);
+    const audio = input.audio || detectedAudio;
+    const embedUrl = setAudioType(rawEpisodeLink, audio);
+    const availableAudio = detectedAudio ? AUDIO_OPTIONS : [];
+
+    return {
+      providerId: config.id,
+      provider: config.label,
+      animeId: providerAnimeId,
+      episode,
+      audio,
+      availableAudio,
+      embedUrl,
+      episodes: toEpisodeList(episodesPayload),
+    };
+  }
 
   return {
-    providerId: streamingAdapter.id,
-    provider: streamingAdapter.label,
-    animeId: providerAnimeId,
-    episode,
-    audio,
-    availableAudio,
-    embedUrl,
-    episodes: toEpisodeList(episodesPayload),
+    id: config.id,
+    label: config.label,
+    priority: config.priority ?? 100,
+    isConfigured,
+    findAvailability,
+    getSource,
   };
 }
 
-export const streamingAdapter: StreamingProvider & { isConfigured: boolean } = {
-  id: STREAMING_PROVIDER_ID,
-  label: STREAMING_PROVIDER_LABEL,
-  isConfigured: isStreamingEnabled(),
-  findAvailability,
-  getSource,
-};
+export const streamingAdapter = createStreamingAdapter({
+  id: process.env.STREAMING_PROVIDER_ID || "custom",
+  label: process.env.STREAMING_PROVIDER_LABEL || "Custom Provider",
+  url: process.env.STREAMING_PROVIDER_URL || "",
+  priority: 100,
+});
