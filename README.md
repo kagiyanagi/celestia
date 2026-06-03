@@ -34,6 +34,9 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 ANIMESCHEDULE_API_BASE_URL=https://animeschedule.net/api/v3
 ANIMESCHEDULE_API_TOKEN=
 
+# Optional durable app state storage
+DATABASE_URL=
+
 # Streaming Configuration (Bring your own API)
 STREAMING_PROVIDER_URL=https://your-api.com
 STREAMING_PROVIDER_LABEL="My Provider"
@@ -60,10 +63,10 @@ Set the environment variables above in the platform dashboard. For Vercel,
 server routes and provider fetches run as serverless functions. For Railway,
 the app can run as a long-lived Node service with `pnpm start` after `pnpm build`.
 
-Current persistence is prototype-only: account/session data is stored in
-`data/app-db.json`, which is ignored by git and is not durable on Vercel. Use a
-managed database before treating accounts, sessions, library entries, or history
-as production data.
+Current persistence supports two modes. Without `DATABASE_URL`, account/session
+data is stored in `data/app-db.json` for local development. With `DATABASE_URL`,
+the app stores the same state in a Postgres `app_state` table, which is durable
+enough for deployment while the final normalized schema is still being built.
 
 GitHub Actions runs `pnpm install --frozen-lockfile`, `pnpm lint`,
 `pnpm typecheck`, and `pnpm build` on pushes to `main` and pull requests.
