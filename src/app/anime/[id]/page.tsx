@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { AnimeDetailsShell } from "@/components/AnimeDetailsShell";
 import { HeaderImageSetter } from "@/components/header-image-setter";
+import { withSoftTimeout } from "@/lib/async";
 import { getDisplayTitle } from "@/lib/format";
 import { getAnimeDetails } from "@/lib/providers/anilist";
 import { findStreamAvailability } from "@/lib/providers/streaming";
@@ -59,11 +60,24 @@ export default async function AnimePage({ params }: AnimePageProps) {
     title,
     ...(anime.synonyms || []),
   ].filter((value): value is string => Boolean(value));
-  const streamAvailability = await findStreamAvailability(
-    streamLookupTitle,
-    anime.episodes ?? anime.airingCount ?? null,
-    null,
-    anime.id,
+  // The details page only needs availability to prefill the watch href —
+  // never hold the render hostage to a slow provider probe. The watch page
+  // re-resolves the source itself.
+  const streamAvailability = await withSoftTimeout(
+    findStreamAvailability(
+      streamLookupTitle,
+      anime.episodes ?? anime.airingCount ?? null,
+      null,
+      anime.id,
+    ),
+    4_000,
+    {
+      available: false,
+      providerId: null,
+      provider: "unknown",
+      providerAnimeId: null,
+      episodeCount: null,
+    },
   );
   const watchParams = new URLSearchParams({ ep: "1" });
 

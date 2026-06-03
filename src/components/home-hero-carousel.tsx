@@ -3,7 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Captions, Mic, Plus } from "lucide-react";
+import { Captions, Mic } from "lucide-react";
+
+import { DetailsSaveButton } from "@/components/details-save-button";
 
 import { getDisplayTitle } from "@/lib/format";
 import type { AnimeSummary } from "@/types/anime";
@@ -187,13 +189,7 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
                         Watch Now
                       </Link>
                     )}
-                    <Link
-                      className="celestia-more"
-                      href={`/anime/${item.id}`}
-                      onClick={handleLinkClick}
-                    >
-                      <Plus size={16} aria-hidden />
-                    </Link>
+                    <DetailsSaveButton anime={item} />
                   </div>
                 </div>
               </article>

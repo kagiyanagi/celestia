@@ -63,6 +63,8 @@ export function DetailsHero({
               </Link>
             )}
             <DetailsSaveButton anime={anime} />
+          </div>
+          <div className="hero-actions-row hero-links-row">
             <button className="hero-icon-btn" title="Share">
               <Share2 size={20} />
             </button>

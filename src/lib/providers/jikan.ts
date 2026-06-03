@@ -1,5 +1,5 @@
 import { fetchJson } from "@/lib/http/client";
-import type { MalStats, ProviderHealth } from "@/types/anime";
+import type { EpisodeFlags, MalStats, ProviderHealth } from "@/types/anime";
 
 // Jikan is a free, keyless REST mirror of MyAnimeList data.
 // Public rate limit is 60 requests/minute — long revalidation keeps us
@@ -72,6 +72,102 @@ export async function getMalStats(malId: number): Promise<MalStats | null> {
     };
   } catch (error) {
     console.warn(`Jikan stats fetch failed for MAL ${malId}`, error);
+    return null;
+  }
+}
+
+type JikanEpisodesResponse = {
+  data?: Array<{
+    mal_id?: number;
+    filler?: boolean;
+    recap?: boolean;
+  }>;
+  pagination?: {
+    last_visible_page?: number;
+    has_next_page?: boolean;
+  };
+};
+
+// 100 episodes per Jikan page; 15 pages covers 1500 episodes (One Piece
+// territory) without hammering the API for outliers.
+const MAX_EPISODE_PAGES = 15;
+
+async function fetchEpisodePage(
+  malId: number,
+  page: number,
+): Promise<JikanEpisodesResponse | null> {
+  return fetchJson<JikanEpisodesResponse>(
+    `${JIKAN_ENDPOINT}/anime/${malId}/episodes?page=${page}`,
+    {
+      next: { revalidate: 86_400 },
+    },
+    {
+      provider: "Jikan",
+      timeoutMs: 6_000,
+      retries: 1,
+      retryDelayMs: 1_000,
+      cacheKey: `jikan:episodes:${malId}:${page}`,
+      staleTtlMs: 86_400 * 1000 * 7,
+    },
+  );
+}
+
+/**
+ * Filler/recap episode numbers from MAL via Jikan. Returns null when the
+ * lookup fails or MAL has no episode list — absence of data is never
+ * presented as "not filler".
+ */
+export async function getJikanEpisodeFlags(
+  malId: number,
+): Promise<EpisodeFlags | null> {
+  try {
+    const firstPage = await fetchEpisodePage(malId, 1);
+
+    if (!firstPage?.data?.length) {
+      return null;
+    }
+
+    const lastPage = Math.min(
+      firstPage.pagination?.last_visible_page || 1,
+      MAX_EPISODE_PAGES,
+    );
+    // Jikan allows ~3 req/s — batch instead of bursting every page at once,
+    // otherwise long shows trigger a 429/retry storm.
+    const remainingPages: Array<JikanEpisodesResponse | null> = [];
+
+    for (let page = 2; page <= lastPage; page += 3) {
+      const batch = await Promise.all(
+        Array.from(
+          { length: Math.min(3, lastPage - page + 1) },
+          (_, index) =>
+            fetchEpisodePage(malId, page + index).catch(() => null),
+        ),
+      );
+      remainingPages.push(...batch);
+    }
+
+    const filler: number[] = [];
+    const recap: number[] = [];
+
+    for (const pagePayload of [firstPage, ...remainingPages]) {
+      for (const episode of pagePayload?.data || []) {
+        if (!episode.mal_id) {
+          continue;
+        }
+
+        if (episode.filler) {
+          filler.push(episode.mal_id);
+        }
+
+        if (episode.recap) {
+          recap.push(episode.mal_id);
+        }
+      }
+    }
+
+    return { filler, recap };
+  } catch (error) {
+    console.warn(`Jikan episode flags fetch failed for MAL ${malId}`, error);
     return null;
   }
 }

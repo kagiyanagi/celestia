@@ -134,6 +134,19 @@ export function formatCountdownSeconds(seconds: number): string {
   return parts.join(" ");
 }
 
+/** ISO "2024-10-04" → "4 Oct 2024"; null for unknown/partial dates. */
+export function formatIsoDate(value: string | null | undefined): string | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value || "");
+
+  if (!match) {
+    return null;
+  }
+
+  const month = MONTH_NAMES[Number(match[2]) - 1];
+
+  return month ? `${Number(match[3])} ${month} ${match[1]}` : null;
+}
+
 export function cleanDescription(
   value: string | null | undefined,
 ): string | null {

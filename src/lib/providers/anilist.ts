@@ -1,3 +1,6 @@
+import { cache } from "react";
+
+import { withSoftTimeout } from "@/lib/async";
 import { getDisplayTitle } from "@/lib/format";
 import { getCurrentAnimeSeason } from "@/lib/anime-season";
 import {
@@ -12,10 +15,11 @@ import {
 } from "@/lib/providers/anime-schedule";
 import { getAnimeMappings } from "@/lib/providers/anizip";
 import { getEpisodeMetadata } from "@/lib/providers/episode-metadata";
-import { getMalStats } from "@/lib/providers/jikan";
+import { getJikanEpisodeFlags, getMalStats } from "@/lib/providers/jikan";
 import {
   transformAnimeDetails,
   transformAnimeSummary,
+  transformCharacterCredits,
   type AniListDetailsMedia,
   type AniListMedia,
 } from "@/lib/providers/transformers/anilist";
@@ -288,7 +292,10 @@ const DETAIL_QUERY = `
         language
         color
       }
-      characters(sort: [ROLE, RELEVANCE], perPage: 50) {
+      characters(sort: [ROLE, RELEVANCE], perPage: 25) {
+        pageInfo {
+          hasNextPage
+        }
         edges {
           role
           node {
@@ -791,7 +798,101 @@ async function resolveMalStats(anilistId: number, idMal: number | null) {
   return malId ? getMalStats(malId) : null;
 }
 
-export async function getAnimeDetails(
+async function resolveEpisodeFlags(anilistId: number, idMal: number | null) {
+  const malId = idMal || (await getAnimeMappings(anilistId))?.malId;
+  return malId ? getJikanEpisodeFlags(malId) : null;
+}
+
+const CHARACTERS_PAGE_QUERY = `
+  query MediaCharacters($id: Int, $page: Int) {
+    Media(id: $id) {
+      characters(sort: [ROLE, RELEVANCE], page: $page, perPage: 25) {
+        pageInfo {
+          hasNextPage
+        }
+        edges {
+          role
+          node {
+            id
+            name {
+              full
+              native
+            }
+            image {
+              large
+            }
+          }
+          voiceActors {
+            id
+            name {
+              full
+            }
+            image {
+              large
+            }
+            languageV2
+          }
+        }
+      }
+    }
+  }
+`;
+
+type CharactersPageResult = {
+  Media: {
+    characters: AniListDetailsMedia["characters"] | null;
+  } | null;
+};
+
+// AniList serves at most 25 character edges per page; a 10-page cap (250
+// characters) covers even ensemble casts without unbounded fan-out.
+const MAX_CHARACTER_PAGES = 10;
+
+/** Fetches character pages 2..N so large casts are complete. */
+async function fetchRemainingCharacterCredits(id: number, hasMore: boolean) {
+  if (!hasMore) {
+    return [];
+  }
+
+  const extra = [];
+
+  try {
+    for (let page = 2; page <= MAX_CHARACTER_PAGES; page += 1) {
+      const data = await fetchAniList<CharactersPageResult>(
+        CHARACTERS_PAGE_QUERY,
+        { id, page },
+        900,
+      );
+      const characters = data.Media?.characters;
+
+      if (!characters?.edges?.length) {
+        break;
+      }
+
+      extra.push(
+        ...transformCharacterCredits({
+          characters,
+        } as AniListDetailsMedia),
+      );
+
+      if (!characters.pageInfo?.hasNextPage) {
+        break;
+      }
+    }
+  } catch (error) {
+    console.warn(`Character pagination failed for AniList ${id}`, error);
+  }
+
+  return extra;
+}
+
+/**
+ * React cache() dedupes the generateMetadata + page call pair within one
+ * request. Enrichments are soft-capped: a slow provider returns its fallback
+ * for this render while the fetch finishes in the background and warms the
+ * cache for the next one — bounded latency, progressively complete data.
+ */
+export const getAnimeDetails = cache(async function getAnimeDetails(
   id: number,
 ): Promise<AnimeDetails | null> {
   try {
@@ -806,33 +907,73 @@ export async function getAnimeDetails(
     const anime = transformAnimeDetails(data.Media);
     // Enrichment providers are optional and independent — run them
     // concurrently and tolerate individual failures.
-    const [episodeMetadata, malStats, dubInfo] = await Promise.all([
-      getEpisodeMetadata({
-        anilistId: id,
-        anilistEpisodes: anime.streamingEpisodes || [],
-        expectedEpisodes: anime.episodes ?? anime.airingCount ?? null,
-      }),
-      resolveMalStats(id, anime.idMal ?? null),
-      getDubInfo([
-        anime.title?.romaji,
-        anime.title?.english,
-        anime.title?.native,
-        anime.title?.userPreferred,
-        ...(anime.synonyms || []),
-      ]),
-    ]);
+    const [episodeMetadata, malStats, dubInfo, episodeFlags, extraCharacters] =
+      await Promise.all([
+        withSoftTimeout(
+          getEpisodeMetadata({
+            anilistId: id,
+            anilistEpisodes: anime.streamingEpisodes || [],
+            expectedEpisodes: anime.episodes ?? anime.airingCount ?? null,
+          }),
+          5_000,
+          { episodes: anime.streamingEpisodes || [], sources: [] },
+        ),
+        withSoftTimeout(resolveMalStats(id, anime.idMal ?? null), 4_000, null),
+        withSoftTimeout(
+          getDubInfo([
+            anime.title?.romaji,
+            anime.title?.english,
+            anime.title?.native,
+            anime.title?.userPreferred,
+            ...(anime.synonyms || []),
+          ]),
+          4_000,
+          null,
+        ),
+        withSoftTimeout(
+          resolveEpisodeFlags(id, anime.idMal ?? null),
+          4_000,
+          null,
+        ),
+        withSoftTimeout(
+          fetchRemainingCharacterCredits(
+            id,
+            Boolean(data.Media.characters?.pageInfo?.hasNextPage),
+          ),
+          5_000,
+          [],
+        ),
+      ]);
     anime.streamingEpisodes = episodeMetadata.episodes;
     anime.metadataSources = episodeMetadata.sources;
     anime.malStats = malStats;
     anime.dubInfo = dubInfo;
     anime.dubCount = dubInfo?.dubbedEpisodes ?? null;
+    anime.episodeFlags = episodeFlags;
+
+    if (extraCharacters.length) {
+      // AniList's RELEVANCE sort is unstable across pages — the same
+      // character can appear on several pages, so dedupe the merged list.
+      const seenCharacterIds = new Set<number>();
+      anime.characters = [
+        ...(anime.characters || []),
+        ...extraCharacters,
+      ].filter((credit) => {
+        if (seenCharacterIds.has(credit.id)) {
+          return false;
+        }
+
+        seenCharacterIds.add(credit.id);
+        return true;
+      });
+    }
 
     return anime;
   } catch (error) {
     console.error(error);
     return null;
   }
-}
+});
 
 const VIEWER_PROFILE_QUERY = `
   query ViewerProfile {
@@ -1322,3 +1463,4 @@ export async function deleteAniListLibraryEntry(
     id: entryId,
   });
 }
+
