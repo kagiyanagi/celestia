@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import { authenticateUser, createSession } from "@/lib/auth";
+import { rateLimitResponse } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const limited = await rateLimitResponse("auth:login", {
+    limit: 8,
+    windowMs: 60_000,
+  });
+  if (limited) return limited;
+
   try {
     const body = (await request.json()) as {
       email?: string;

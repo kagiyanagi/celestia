@@ -5,8 +5,14 @@ import {
   FALLBACK_TAG_OPTIONS,
 } from "@/lib/browse-filters";
 import { fetchJson } from "@/lib/http/client";
-import { enrichAiringScheduleWithAnimeSchedule } from "@/lib/providers/anime-schedule";
+import {
+  enrichAiringScheduleWithAnimeSchedule,
+  enrichSummariesWithDubCounts,
+  getDubInfo,
+} from "@/lib/providers/anime-schedule";
+import { getAnimeMappings } from "@/lib/providers/anizip";
 import { getEpisodeMetadata } from "@/lib/providers/episode-metadata";
+import { getMalStats } from "@/lib/providers/jikan";
 import {
   transformAnimeDetails,
   transformAnimeSummary,
@@ -55,6 +61,11 @@ const MEDIA_CARD_FIELDS = `
   duration
   season
   seasonYear
+  startDate {
+    year
+    month
+    day
+  }
   averageScore
   meanScore
   popularity
@@ -524,10 +535,18 @@ export async function getHomeCollections(): Promise<HomeCollections> {
       900,
     );
 
+    // Card-level dub counts come from one cached weekly dub timetable
+    // fetch; shows without an active dub keep dubCount null (chip hidden).
+    const [topAiring, trending, season] = await Promise.all([
+      enrichSummariesWithDubCounts(data.topAiring.media.map(transformAnimeSummary)),
+      enrichSummariesWithDubCounts(data.trending.media.map(transformAnimeSummary)),
+      enrichSummariesWithDubCounts(data.season.media.map(transformAnimeSummary)),
+    ]);
+
     return {
-      topAiring: data.topAiring.media.map(transformAnimeSummary),
-      trending: data.trending.media.map(transformAnimeSummary),
-      season: data.season.media.map(transformAnimeSummary),
+      topAiring,
+      trending,
+      season,
       upcoming: data.upcoming.media.map(transformAnimeSummary),
       finished: data.finished.media.map(transformAnimeSummary),
       movies: data.movies.media.map(transformAnimeSummary),
@@ -718,7 +737,9 @@ export async function getBrowseCollection(
     );
 
     return {
-      items: data.Page.media.map(transformAnimeSummary),
+      items: await enrichSummariesWithDubCounts(
+        data.Page.media.map(transformAnimeSummary),
+      ),
       pageInfo: {
         total: data.Page.pageInfo?.total ?? null,
         currentPage: data.Page.pageInfo?.currentPage || safePage,
@@ -762,6 +783,14 @@ export async function searchAnime(
   }
 }
 
+async function resolveMalStats(anilistId: number, idMal: number | null) {
+  // AniList usually carries the MAL ID directly; ani.zip mappings cover the
+  // rest. The ani.zip payload is already fetched for episode metadata, so
+  // this lookup is deduped and effectively free.
+  const malId = idMal || (await getAnimeMappings(anilistId))?.malId;
+  return malId ? getMalStats(malId) : null;
+}
+
 export async function getAnimeDetails(
   id: number,
 ): Promise<AnimeDetails | null> {
@@ -775,12 +804,28 @@ export async function getAnimeDetails(
     if (!data.Media) return null;
 
     const anime = transformAnimeDetails(data.Media);
-    const episodeMetadata = await getEpisodeMetadata({
-      anilistId: id,
-      anilistEpisodes: anime.streamingEpisodes || [],
-    });
+    // Enrichment providers are optional and independent — run them
+    // concurrently and tolerate individual failures.
+    const [episodeMetadata, malStats, dubInfo] = await Promise.all([
+      getEpisodeMetadata({
+        anilistId: id,
+        anilistEpisodes: anime.streamingEpisodes || [],
+        expectedEpisodes: anime.episodes ?? anime.airingCount ?? null,
+      }),
+      resolveMalStats(id, anime.idMal ?? null),
+      getDubInfo([
+        anime.title?.romaji,
+        anime.title?.english,
+        anime.title?.native,
+        anime.title?.userPreferred,
+        ...(anime.synonyms || []),
+      ]),
+    ]);
     anime.streamingEpisodes = episodeMetadata.episodes;
     anime.metadataSources = episodeMetadata.sources;
+    anime.malStats = malStats;
+    anime.dubInfo = dubInfo;
+    anime.dubCount = dubInfo?.dubbedEpisodes ?? null;
 
     return anime;
   } catch (error) {

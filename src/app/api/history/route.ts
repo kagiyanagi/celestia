@@ -51,8 +51,11 @@ export async function POST(request: Request) {
       anime: AnimeSummary;
       episode: number;
       episodeTitle: string;
+      episodeImage?: string | null;
       durationLabel: string | null;
       progressPercent: number;
+      /** Progress ticks only update the history entry — no library/AniList sync. */
+      progressOnly?: boolean;
     };
 
     if (!isValidAnimeSummary(body.anime)) {
@@ -71,15 +74,25 @@ export async function POST(request: Request) {
     const episodeTitle = String(
       body.episodeTitle || `Episode ${episode}`,
     ).slice(0, 240);
+    const episodeImage =
+      typeof body.episodeImage === "string" &&
+      /^https:\/\//.test(body.episodeImage)
+        ? body.episodeImage.slice(0, 600)
+        : null;
 
     const historyEntry = await recordHistory({
       userId: user.id,
       anime: body.anime,
       episode,
       episodeTitle,
+      episodeImage,
       durationLabel: body.durationLabel,
       progressPercent,
     });
+
+    if (body.progressOnly) {
+      return NextResponse.json({ entry: historyEntry, syncWarning: null });
+    }
 
     const currentLibraryEntry =
       user.libraryEntries.find((entry) => entry.animeId === body.anime.id) ||

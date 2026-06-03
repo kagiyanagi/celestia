@@ -16,6 +16,7 @@ export type BrowseSearchParams = PaginationSearchParams & {
   tag?: string | string[];
   country?: string | string[];
   source?: string | string[];
+  list?: string | string[];
 };
 
 export type ParsedBrowseParams = {
@@ -34,7 +35,13 @@ export const EMPTY_BROWSE_FILTERS: BrowseFilters = {
   tag: "",
   country: "",
   source: "",
+  list: "",
 };
+
+export const LIST_OPTIONS: BrowseFilterOption[] = [
+  { value: "in", label: "In your list" },
+  { value: "out", label: "Not in your list" },
+];
 
 export const FORMAT_OPTIONS: BrowseFilterOption[] = [
   { value: "MOVIE", label: "Movie" },
@@ -191,6 +198,7 @@ const SEASON_VALUES = new Set(SEASON_OPTIONS.map((option) => option.value));
 const STATUS_VALUES = new Set(STATUS_OPTIONS.map((option) => option.value));
 const COUNTRY_VALUES = new Set(COUNTRY_OPTIONS.map((option) => option.value));
 const SOURCE_VALUES = new Set(SOURCE_OPTIONS.map((option) => option.value));
+const LIST_VALUES = new Set(LIST_OPTIONS.map((option) => option.value));
 
 function readParam(value: string | string[] | undefined): string {
   const rawValue = Array.isArray(value) ? value[0] : value;
@@ -256,6 +264,7 @@ export function parseBrowseParams(
       tag: readParam(params.tag),
       country: readAllowedParam(params.country, COUNTRY_VALUES),
       source: readAllowedParam(params.source, SOURCE_VALUES),
+      list: readAllowedParam(params.list, LIST_VALUES),
     },
   };
 }

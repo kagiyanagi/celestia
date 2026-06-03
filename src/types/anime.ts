@@ -32,6 +32,7 @@ export type AnimeSummary = {
   duration?: number | null;
   season?: AnimeSeason | null;
   seasonYear?: number | null;
+  startDate?: AnimeDate | null;
   averageScore?: number | null;
   meanScore?: number | null;
   popularity?: number | null;
@@ -112,6 +113,7 @@ export type MetadataProviderId =
   | "anilist"
   | "anizip"
   | "tvdb"
+  | "tmdb"
   | "generated"
   | "unknown";
 
@@ -148,7 +150,28 @@ export type AnimeStreamingEpisode = {
   sources?: EpisodeMetadataSource[];
 };
 
+export type DubInfo = {
+  /** Dubbed episodes aired so far; null when unknown. */
+  dubbedEpisodes: number | null;
+  nextDubEpisode: NextAiringEpisode | null;
+  totalEpisodes: number | null;
+};
+
+export type MalStats = {
+  malId: number;
+  /** MAL score normalized to 0-100 to match AniList's scale. */
+  score: number | null;
+  scoredBy: number | null;
+  rank: number | null;
+  popularity: number | null;
+  members: number | null;
+  favorites: number | null;
+  url: string;
+};
+
 export type AnimeDetails = AnimeSummary & {
+  malStats?: MalStats | null;
+  dubInfo?: DubInfo | null;
   description?: string | null;
   source?: string | null;
   countryOfOrigin?: string | null;
@@ -209,6 +232,8 @@ export type BrowseFilters = {
   tag: string;
   country: string;
   source: string;
+  /** Viewer-relative filter: "in" = on their list, "out" = not on it. */
+  list: string;
 };
 
 export type BrowseFilterOption = {

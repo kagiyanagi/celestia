@@ -1,5 +1,10 @@
 import { fetchJson } from "@/lib/http/client";
-import type { AiringItem, ProviderHealth } from "@/types/anime";
+import type {
+  AiringItem,
+  AnimeSummary,
+  DubInfo,
+  ProviderHealth,
+} from "@/types/anime";
 
 const ANIME_SCHEDULE_ENDPOINT =
   process.env.ANIMESCHEDULE_API_BASE_URL ||
@@ -212,6 +217,158 @@ async function getTimetableForWeek(key: WeekKey) {
     console.warn("AnimeSchedule timetable fetch failed", error);
     return [];
   }
+}
+
+type DubTimetableEntry = {
+  titles: string[];
+  episode: number;
+  airingAt: number;
+  totalEpisodes: number | null;
+};
+
+async function getDubTimetableEntries(): Promise<DubTimetableEntry[]> {
+  if (!isAnimeScheduleConfigured()) {
+    return [];
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  // Current week catches dub episodes that already aired; next week catches
+  // the upcoming one when the weekly boundary is close.
+  const weekKeys = getWeekKeys(now, now + 7 * 86_400);
+
+  return (
+    await Promise.all(weekKeys.map((key) => getTimetableForWeek(key)))
+  )
+    .flat()
+    .filter(
+      (item) =>
+        item.airType?.toLowerCase() === "dub" &&
+        typeof item.episodeNumber === "number" &&
+        item.episodeNumber > 0 &&
+        isValidScheduleDate(item.episodeDate),
+    )
+    .map((item) => ({
+      titles: getTimetableTitles(item),
+      episode: item.episodeNumber as number,
+      airingAt: Math.floor(Date.parse(item.episodeDate || "") / 1000),
+      totalEpisodes: item.episodes || null,
+    }));
+}
+
+function summarizeDubEntries(
+  entries: DubTimetableEntry[],
+  now: number,
+): DubInfo {
+  const aired = entries.filter((entry) => entry.airingAt <= now);
+  const upcoming = entries
+    .filter((entry) => entry.airingAt > now)
+    .sort((a, b) => a.airingAt - b.airingAt);
+  const airedCount = aired.length
+    ? Math.max(...aired.map((entry) => entry.episode))
+    : null;
+  const nextDub = upcoming[0] || null;
+
+  return {
+    dubbedEpisodes:
+      airedCount ?? (nextDub ? Math.max(0, nextDub.episode - 1) : null),
+    nextDubEpisode: nextDub
+      ? {
+          episode: nextDub.episode,
+          airingAt: nextDub.airingAt,
+          timeUntilAiring: nextDub.airingAt - now,
+        }
+      : null,
+    totalEpisodes:
+      entries.find((entry) => entry.totalEpisodes)?.totalEpisodes || null,
+  };
+}
+
+function getSummaryTitles(anime: AnimeSummary): string[] {
+  return [
+    anime.title?.romaji,
+    anime.title?.english,
+    anime.title?.native,
+    anime.title?.userPreferred,
+  ]
+    .map(normalizeTitle)
+    .filter(Boolean);
+}
+
+/**
+ * Batch-enriches card summaries with real dub counts from the weekly dub
+ * timetable (a single cached fetch). Only shows with a currently-airing dub
+ * get a count; everything else keeps dubCount null ("unknown"), which the
+ * UI hides instead of guessing.
+ */
+export async function enrichSummariesWithDubCounts<T extends AnimeSummary>(
+  summaries: T[],
+): Promise<T[]> {
+  if (!isAnimeScheduleConfigured() || summaries.length === 0) {
+    return summaries;
+  }
+
+  try {
+    const entries = await getDubTimetableEntries();
+
+    if (entries.length === 0) {
+      return summaries;
+    }
+
+    const byTitle = new Map<string, DubTimetableEntry[]>();
+    entries.forEach((entry) => {
+      entry.titles.forEach((title) => {
+        byTitle.set(title, [...(byTitle.get(title) || []), entry]);
+      });
+    });
+
+    const now = Math.floor(Date.now() / 1000);
+
+    return summaries.map((anime) => {
+      const matched = getSummaryTitles(anime).flatMap(
+        (title) => byTitle.get(title) || [],
+      );
+
+      if (matched.length === 0) {
+        return anime;
+      }
+
+      const info = summarizeDubEntries(matched, now);
+
+      return info.dubbedEpisodes != null
+        ? { ...anime, dubCount: info.dubbedEpisodes }
+        : anime;
+    });
+  } catch (error) {
+    console.warn("Dub count enrichment failed", error);
+    return summaries;
+  }
+}
+
+/**
+ * Looks up real dub progress for a show from the AnimeSchedule dub
+ * timetable: how many dubbed episodes have aired and when the next one
+ * arrives. Returns null when the show has no entry in the current dub
+ * timetable (not airing a dub right now, or provider disabled) — callers
+ * must treat that as "unknown", not zero.
+ */
+export async function getDubInfo(
+  titles: Array<string | null | undefined>,
+): Promise<DubInfo | null> {
+  const wantedTitles = new Set(titles.map(normalizeTitle).filter(Boolean));
+
+  if (!isAnimeScheduleConfigured() || wantedTitles.size === 0) {
+    return null;
+  }
+
+  const candidates = (await getDubTimetableEntries()).filter((entry) =>
+    entry.titles.some((title) => wantedTitles.has(title)),
+  );
+
+  if (candidates.length === 0) {
+    return null;
+  }
+
+  return summarizeDubEntries(candidates, Math.floor(Date.now() / 1000));
 }
 
 export async function enrichAiringScheduleWithAnimeSchedule(
