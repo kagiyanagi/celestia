@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
-import { readDb, writeDb } from "@/lib/db";
+import { decryptSecret, encryptSecret, isEncryptedSecret } from "@/lib/crypto";
+import { getStore } from "@/lib/db";
 import type {
-  AppDatabase,
   AniListProfile,
   HistoryEntry,
   LibraryEntry,
@@ -19,6 +19,7 @@ function createId() {
 function sanitizeUser(user: UserRecord): PublicUser {
   return {
     id: user.id,
+    isGuest: user.isGuest,
     email: user.email,
     displayName: user.displayName,
     username: user.username,
@@ -37,35 +38,23 @@ function sanitizeUser(user: UserRecord): PublicUser {
 
 async function updateUserRecord<T>(
   userId: string,
-  updater: (user: UserRecord, db: AppDatabase) => T | Promise<T>,
+  updater: (user: UserRecord) => T | Promise<T>,
 ) {
-  let result: T | undefined;
+  const store = getStore();
+  const user = await store.getUserById(userId);
 
-  await writeDb(async (db) => {
-    const index = db.users.findIndex((user) => user.id === userId);
+  if (!user) {
+    throw new Error("User not found.");
+  }
 
-    if (index === -1) {
-      throw new Error("User not found.");
-    }
+  const result = await updater(user);
+  await store.updateUser(user);
 
-    const user = db.users[index];
-    result = await updater(user, db);
-
-    const nextUsers = [...db.users];
-    nextUsers[index] = user;
-
-    return {
-      ...db,
-      users: nextUsers,
-    };
-  });
-
-  return result as T;
+  return result;
 }
 
 export async function getUserById(userId: string) {
-  const db = await readDb();
-  const user = db.users.find((entry) => entry.id === userId);
+  const user = await getStore().getUserById(userId);
   return user ? sanitizeUser(user) : null;
 }
 
@@ -76,21 +65,30 @@ export async function setAniListConnection(input: {
   libraryEntries: LibraryEntry[];
 }) {
   return updateUserRecord(input.userId, (user) => {
-    user.aniListAccessToken = input.accessToken;
+    user.isGuest = false;
+    // OAuth tokens are encrypted at rest; see src/lib/crypto.ts.
+    user.aniListAccessToken = encryptSecret(input.accessToken);
     user.aniListProfile = input.profile;
     user.avatar = input.profile.avatar || user.avatar;
     user.banner = input.profile.banner || user.banner;
     user.displayName = input.profile.name || user.displayName;
-    user.libraryEntries = mergeLibraryEntries(user.libraryEntries, input.libraryEntries);
+    user.libraryEntries = mergeLibraryEntries(
+      user.libraryEntries,
+      input.libraryEntries,
+    );
     return sanitizeUser(user);
   });
 }
 
 export async function updateProfile(
   userId: string,
-  profile: Partial<Pick<UserRecord, "displayName" | "username" | "pronouns" | "about">>,
+  profile: Partial<
+    Pick<UserRecord, "displayName" | "username" | "pronouns" | "about">
+  >,
 ) {
-  return updateUserRecord(userId, (user, db) => {
+  const store = getStore();
+
+  return updateUserRecord(userId, async (user) => {
     if (profile.displayName !== undefined) {
       const displayName = profile.displayName.trim();
 
@@ -109,11 +107,7 @@ export async function updateProfile(
         );
       }
 
-      if (
-        db.users.some(
-          (entry) => entry.id !== userId && entry.username === username,
-        )
-      ) {
+      if (await store.isUsernameTaken(username, userId)) {
         throw new Error("That username is already taken.");
       }
 
@@ -142,7 +136,10 @@ export async function updatePreferences(
   });
 }
 
-function mergeLibraryEntries(current: LibraryEntry[], incoming: LibraryEntry[]) {
+function mergeLibraryEntries(
+  current: LibraryEntry[],
+  incoming: LibraryEntry[],
+) {
   const map = new Map<number, LibraryEntry>();
   current.forEach((entry) => map.set(entry.animeId, entry));
 
@@ -151,7 +148,8 @@ function mergeLibraryEntries(current: LibraryEntry[], incoming: LibraryEntry[]) 
     map.set(entry.animeId, {
       ...existing,
       ...entry,
-      updatedAt: entry.updatedAt || existing?.updatedAt || new Date().toISOString(),
+      updatedAt:
+        entry.updatedAt || existing?.updatedAt || new Date().toISOString(),
     });
   });
 
@@ -174,7 +172,9 @@ export async function upsertLibraryEntry(input: {
 }) {
   return updateUserRecord(input.userId, (user) => {
     const now = new Date().toISOString();
-    const current = user.libraryEntries.find((entry) => entry.animeId === input.anime.id);
+    const current = user.libraryEntries.find(
+      (entry) => entry.animeId === input.anime.id,
+    );
     const nextEntry: LibraryEntry = {
       id: current?.id || createId(),
       animeId: input.anime.id,
@@ -192,7 +192,9 @@ export async function upsertLibraryEntry(input: {
 
     user.libraryEntries = [
       nextEntry,
-      ...user.libraryEntries.filter((entry) => entry.animeId !== input.anime.id),
+      ...user.libraryEntries.filter(
+        (entry) => entry.animeId !== input.anime.id,
+      ),
     ];
     return nextEntry;
   });
@@ -200,8 +202,11 @@ export async function upsertLibraryEntry(input: {
 
 export async function deleteLibraryEntry(userId: string, animeId: number) {
   return updateUserRecord(userId, (user) => {
-    const removed = user.libraryEntries.find((entry) => entry.animeId === animeId) || null;
-    user.libraryEntries = user.libraryEntries.filter((entry) => entry.animeId !== animeId);
+    const removed =
+      user.libraryEntries.find((entry) => entry.animeId === animeId) || null;
+    user.libraryEntries = user.libraryEntries.filter(
+      (entry) => entry.animeId !== animeId,
+    );
     return removed;
   });
 }
@@ -211,27 +216,39 @@ export async function recordHistory(input: {
   anime: AnimeSummary;
   episode: number;
   episodeTitle: string;
+  episodeImage: string | null;
   durationLabel: string | null;
   progressPercent: number;
 }) {
   return updateUserRecord(input.userId, (user) => {
     const now = new Date().toISOString();
+    const existing = user.historyEntries.find(
+      (entry) =>
+        entry.animeId === input.anime.id && entry.episode === input.episode,
+    );
     const nextEntry: HistoryEntry = {
       id: createId(),
       animeId: input.anime.id,
       anime: input.anime,
       episode: input.episode,
       episodeTitle: input.episodeTitle,
+      episodeImage: input.episodeImage || existing?.episodeImage || null,
       durationLabel: input.durationLabel,
       watchedAt: now,
-      progressPercent: input.progressPercent,
+      // Progress only moves forward — a quick revisit must not wipe it.
+      progressPercent: Math.max(
+        input.progressPercent,
+        existing?.progressPercent ?? 0,
+      ),
     };
 
     user.historyEntries = [
       nextEntry,
       ...user.historyEntries.filter(
         (entry) =>
-          !(entry.animeId === input.anime.id && entry.episode === input.episode),
+          !(
+            entry.animeId === input.anime.id && entry.episode === input.episode
+          ),
       ),
     ].slice(0, 120);
 
@@ -246,9 +263,29 @@ export async function clearHistory(userId: string) {
   });
 }
 
+/**
+ * Returns the full user record with the AniList token decrypted for use.
+ * Legacy plaintext tokens are re-encrypted in storage on first read.
+ */
 export async function getPrivateUser(userId: string) {
-  const db = await readDb();
-  return db.users.find((entry) => entry.id === userId) || null;
+  const store = getStore();
+  const user = await store.getUserById(userId);
+
+  if (!user) {
+    return null;
+  }
+
+  if (user.aniListAccessToken && !isEncryptedSecret(user.aniListAccessToken)) {
+    const plaintext = user.aniListAccessToken;
+    user.aniListAccessToken = encryptSecret(plaintext);
+    await store.updateUser(user);
+    return { ...user, aniListAccessToken: plaintext };
+  }
+
+  return {
+    ...user,
+    aniListAccessToken: decryptSecret(user.aniListAccessToken),
+  };
 }
 
 export async function refreshAniListProfile(

@@ -3,6 +3,10 @@ import {
   streamingAdapter,
   type StreamingAdapterConfig,
 } from "@/lib/providers/streaming-adapter";
+import {
+  getStreamMapping,
+  saveStreamMapping,
+} from "@/lib/stream-mapping-store";
 import type { ProviderHealth } from "@/types/anime";
 import type {
   StreamAudioType,
@@ -103,12 +107,28 @@ const providers = getProviderConfigs()
   )
   .sort((a, b) => a.priority - b.priority || a.id.localeCompare(b.id));
 
+function getRejectionThreshold(expectedEps: number): number {
+  // Short formats (movies, OVAs) must match almost exactly; longer shows get
+  // some slack for specials/recaps counted differently across providers.
+  if (expectedEps <= 3) {
+    return 2;
+  }
+
+  return Math.max(6, Math.round(expectedEps * 0.5));
+}
+
+/**
+ * Scores how well a provider search result lines up with the catalog entry.
+ * Returns null when the episode counts disagree so badly that this is almost
+ * certainly a different entry (wrong season, whole-franchise listing) — a
+ * wrong stream is worse than no stream.
+ */
 function calculateAlignmentScore(
   expectedEps: number | null,
   foundEps: number | null,
   candidateIndex: number,
   providerPriority: number,
-): number {
+): number | null {
   let score = 100 - candidateIndex * 10 - Math.max(0, providerPriority - 100);
 
   if (expectedEps && foundEps) {
@@ -117,12 +137,26 @@ function calculateAlignmentScore(
       score += 50;
     } else if (diff <= 2) {
       score += 20;
+    } else if (diff > getRejectionThreshold(expectedEps)) {
+      return null;
     } else {
       score -= 80;
     }
   }
 
   return score;
+}
+
+function isVerifiedMatch(
+  availability: StreamAvailability,
+  expectedEpisodes: number | null,
+): boolean {
+  return Boolean(
+    availability.providerAnimeId &&
+      expectedEpisodes &&
+      availability.episodeCount &&
+      Math.abs(expectedEpisodes - availability.episodeCount) <= 2,
+  );
 }
 
 function getConfiguredProviders(): StreamingProvider[] {
@@ -248,15 +282,35 @@ function getTitleCandidates(title: string | string[]): string[] {
     return variations.flatMap((v) => [v, toTitleCase(v)]);
   });
 
-  return Array.from(new Set(candidates));
+  // Each candidate costs one provider request, so cap the probe list.
+  // Original titles come first, so the most likely matches are kept.
+  return Array.from(new Set(candidates)).slice(0, 16);
 }
 
 async function findProviderAvailability(input: {
   provider: StreamingProvider;
   candidates: string[];
   expectedEpisodes: number | null;
+  anilistId?: number | null;
 }): Promise<StreamAvailability | null> {
+  // A previously verified mapping skips title guessing entirely.
+  if (input.anilistId) {
+    const stored = await getStreamMapping(input.anilistId, input.provider.id);
+
+    if (stored) {
+      return {
+        available: true,
+        providerId: input.provider.id,
+        provider: input.provider.label,
+        providerAnimeId: stored.providerAnimeId,
+        episodeCount: stored.episodeCount,
+        score: stored.score,
+      };
+    }
+  }
+
   const results: StreamAvailability[] = [];
+  let best: StreamAvailability | null = null;
 
   for (let i = 0; i < input.candidates.length; i += 1) {
     const availability = await input.provider.findAvailability(
@@ -264,27 +318,55 @@ async function findProviderAvailability(input: {
     );
 
     if (availability.available) {
-      availability.score = calculateAlignmentScore(
+      const score = calculateAlignmentScore(
         input.expectedEpisodes,
         availability.episodeCount,
         i,
         input.provider.priority,
       );
+
+      // null score = episode counts irreconcilable; not the same entry.
+      if (score === null) {
+        continue;
+      }
+
+      availability.score = score;
       results.push(availability);
 
-      if (availability.score >= 140) {
-        return availability;
+      if (score >= 140) {
+        best = availability;
+        break;
       }
     }
   }
 
-  return results.sort((a, b) => (b.score || 0) - (a.score || 0))[0] || null;
+  best =
+    best || results.sort((a, b) => (b.score || 0) - (a.score || 0))[0] || null;
+
+  // Persist only episode-count-verified matches so a weak guess never gets
+  // locked in.
+  if (
+    best?.providerAnimeId &&
+    input.anilistId &&
+    isVerifiedMatch(best, input.expectedEpisodes)
+  ) {
+    await saveStreamMapping({
+      anilistId: input.anilistId,
+      providerId: input.provider.id,
+      providerAnimeId: best.providerAnimeId,
+      episodeCount: best.episodeCount,
+      score: best.score || 0,
+    });
+  }
+
+  return best;
 }
 
 export async function findStreamAvailability(
   title: string | string[],
   expectedEpisodes: number | null = null,
   providerId?: string | null,
+  anilistId?: number | null,
 ): Promise<StreamAvailability> {
   const candidates = getTitleCandidates(title);
   const providersToTry = getProviderSearchOrder(providerId);
@@ -295,6 +377,7 @@ export async function findStreamAvailability(
       provider,
       candidates,
       expectedEpisodes,
+      anilistId,
     });
 
     if (availability) {
@@ -324,6 +407,7 @@ async function getSourceFromProvider(input: {
   episode: number;
   audio?: StreamAudioType | null;
   expectedEpisodes?: number | null;
+  anilistId?: number | null;
 }): Promise<StreamSource | null> {
   const providerAnimeId =
     input.providerAnimeId ||
@@ -332,6 +416,7 @@ async function getSourceFromProvider(input: {
         provider: input.provider,
         candidates: input.candidates,
         expectedEpisodes: input.expectedEpisodes ?? null,
+        anilistId: input.anilistId,
       })
     )?.providerAnimeId ||
     null;
@@ -370,6 +455,7 @@ export async function getStreamSource(input: {
   providerId?: string | null;
   audio?: StreamAudioType | null;
   expectedEpisodes?: number | null;
+  anilistId?: number | null;
 }): Promise<StreamSource | null> {
   const candidates = getTitleCandidates(input.animeTitle);
   const providersToTry = getProviderSearchOrder(input.providerId);
@@ -389,6 +475,7 @@ export async function getStreamSource(input: {
       episode: input.episode,
       audio: input.audio,
       expectedEpisodes: input.expectedEpisodes,
+      anilistId: input.anilistId,
     });
 
     if (!source?.embedUrl) {

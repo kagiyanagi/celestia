@@ -73,6 +73,8 @@ export type HistoryEntry = {
   anime: AnimeSummary;
   episode: number;
   episodeTitle: string;
+  /** Episode still from metadata providers; entries saved before this field existed have none. */
+  episodeImage?: string | null;
   durationLabel: string | null;
   watchedAt: string;
   progressPercent: number;
@@ -80,8 +82,9 @@ export type HistoryEntry = {
 
 export type UserRecord = {
   id: string;
-  email: string;
-  passwordHash: string;
+  isGuest: boolean;
+  email: string | null;
+  passwordHash: string | null;
   displayName: string;
   username: string;
   pronouns: string;
@@ -105,9 +108,23 @@ export type SessionRecord = {
   userAgent: string;
 };
 
+export type StreamMappingRecord = {
+  anilistId: number;
+  providerId: string;
+  providerAnimeId: number;
+  episodeCount: number | null;
+  /** Alignment score recorded when the mapping was verified. */
+  score: number;
+  verifiedAt: string;
+};
+
 export type AppDatabase = {
   users: UserRecord[];
   sessions: SessionRecord[];
+  streamMappings?: StreamMappingRecord[];
 };
 
-export type PublicUser = Omit<UserRecord, "passwordHash" | "aniListAccessToken">;
+export type PublicUser = Omit<
+  UserRecord,
+  "passwordHash" | "aniListAccessToken"
+>;

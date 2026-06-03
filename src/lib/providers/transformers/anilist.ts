@@ -41,6 +41,11 @@ export type AniListMedia = {
   trending: number | null;
   favourites: number | null;
   genres: string[] | null;
+  startDate: {
+    year: number | null;
+    month: number | null;
+    day: number | null;
+  } | null;
   nextAiringEpisode: {
     episode: number;
     airingAt: number;
@@ -152,11 +157,10 @@ export function transformAnimeSummary(media: Partial<AniListMedia>): AnimeSummar
       : 0;
   }
 
-  const dubCount = isFinished
-    ? m.episodes ?? 0
-    : airingCount > 0
-      ? Math.max(0, airingCount - 2)
-      : 0;
+  // AniList carries no dub information. Real dub counts come from the
+  // AnimeSchedule dub timetable where available; null means "unknown",
+  // never a fabricated guess.
+  const dubCount: number | null = null;
 
   return {
     id: m.id ?? 0,
@@ -177,6 +181,7 @@ export function transformAnimeSummary(media: Partial<AniListMedia>): AnimeSummar
     duration: m.duration ?? null,
     season: m.season ?? null,
     seasonYear: m.seasonYear ?? null,
+    startDate: m.startDate ?? null,
     averageScore: m.averageScore ?? null,
     meanScore: m.meanScore ?? null,
     popularity: m.popularity ?? null,

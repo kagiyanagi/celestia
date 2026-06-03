@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { requireSessionUser } from "@/lib/auth";
+import { regenerateSession, requireSessionUser } from "@/lib/auth";
 import { setAniListConnection } from "@/lib/account-store";
 import {
   exchangeAniListCode,
@@ -37,6 +37,10 @@ export async function GET(request: Request) {
       profile,
       libraryEntries,
     });
+
+    // Privilege escalation (account now holds an OAuth token) — rotate the
+    // session ID so the pre-connect token can't be replayed.
+    await regenerateSession(user.id);
 
     return NextResponse.redirect(new URL("/profile?connected=1", appOrigin()));
   } catch (error) {

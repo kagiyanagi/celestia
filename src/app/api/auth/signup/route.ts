@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import { createSession, createUser } from "@/lib/auth";
+import { rateLimitResponse } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const limited = await rateLimitResponse("auth:signup", {
+    limit: 5,
+    windowMs: 60_000,
+  });
+  if (limited) return limited;
+
   try {
     const body = (await request.json()) as {
       email?: string;

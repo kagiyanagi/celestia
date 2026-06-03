@@ -1,4 +1,5 @@
-import { getAniZipEpisodes } from "@/lib/providers/anizip";
+import { getAniZipData } from "@/lib/providers/anizip";
+import { getTmdbEpisodeStills, isTmdbConfigured } from "@/lib/providers/tmdb";
 import type {
   AnimeStreamingEpisode,
   EpisodeMetadataField,
@@ -9,7 +10,12 @@ import type {
 type EpisodeMetadataInput = {
   anilistId: number;
   anilistEpisodes: AnimeStreamingEpisode[];
+  /** Total episodes the catalog expects (AniList count or aired count). */
+  expectedEpisodes?: number | null;
 };
+
+// Below this thumbnail coverage we reach for TMDB stills as a gap-filler.
+const TMDB_ENRICHMENT_COVERAGE_THRESHOLD = 0.8;
 
 type EpisodeMetadataResult = {
   episodes: AnimeStreamingEpisode[];
@@ -56,6 +62,21 @@ const TVDB_SOURCE: MetadataSourceSummary = {
   label: "TheTVDB",
   role: "image_metadata",
   confidence: "medium",
+};
+
+const TMDB_SOURCE: SourceDefinition = {
+  source: {
+    provider: "tmdb",
+    label: "TMDB",
+    confidence: "medium",
+    fields: [],
+  },
+  summary: {
+    provider: "tmdb",
+    label: "TMDB",
+    role: "image_metadata",
+    confidence: "medium",
+  },
 };
 
 const TVDB_EPISODE_SOURCE: EpisodeMetadataSource = {
@@ -223,7 +244,40 @@ function collectSourceSummaries(
     summaries.push(TVDB_SOURCE);
   }
 
+  if (providers.has("tmdb")) {
+    summaries.push(TMDB_SOURCE.summary);
+  }
+
   return summaries;
+}
+
+function getThumbnailCoverage(
+  episodeMap: Map<number, AnimeStreamingEpisode>,
+  expectedTotal: number,
+): number {
+  if (!expectedTotal) {
+    return 1;
+  }
+
+  let withThumbnail = 0;
+  episodeMap.forEach((episode) => {
+    if (episode.thumbnail) withThumbnail += 1;
+  });
+
+  return withThumbnail / expectedTotal;
+}
+
+function mergeIntoMap(
+  episodeMap: Map<number, AnimeStreamingEpisode>,
+  episodes: AnimeStreamingEpisode[],
+) {
+  episodes.forEach((episode) => {
+    const existing = episodeMap.get(episode.number);
+    episodeMap.set(
+      episode.number,
+      existing ? mergeEpisode(existing, episode) : episode,
+    );
+  });
 }
 
 export async function getEpisodeMetadata(
@@ -237,18 +291,40 @@ export async function getEpisodeMetadata(
     },
   );
 
+  const aniZipData = await getAniZipData(input.anilistId);
   const aniZipEpisodes = normalizeEpisodes(
-    await getAniZipEpisodes(input.anilistId),
+    aniZipData?.episodes || [],
     ANIZIP_SOURCE.source,
   ).map(withTvdbSource);
 
-  aniZipEpisodes.forEach((episode) => {
-    const existing = episodeMap.get(episode.number);
-    episodeMap.set(
-      episode.number,
-      existing ? mergeEpisode(existing, episode) : episode,
+  mergeIntoMap(episodeMap, aniZipEpisodes);
+
+  // Long-running series (e.g. One Piece) have sparse TVDB image coverage in
+  // ani.zip. When most episodes are missing thumbnails and we know the TMDB
+  // show ID, fill the gaps with TMDB stills.
+  const expectedTotal = Math.max(
+    input.expectedEpisodes || 0,
+    aniZipData?.episodeCount || 0,
+    episodeMap.size ? Math.max(...episodeMap.keys()) : 0,
+  );
+  const coverage = getThumbnailCoverage(episodeMap, expectedTotal);
+  const tmdbId = aniZipData?.mappings.themoviedbId;
+
+  if (
+    isTmdbConfigured() &&
+    tmdbId &&
+    coverage < TMDB_ENRICHMENT_COVERAGE_THRESHOLD
+  ) {
+    const tmdbEpisodes = normalizeEpisodes(
+      await getTmdbEpisodeStills({
+        tmdbId,
+        expectedEpisodes: expectedTotal || null,
+      }),
+      TMDB_SOURCE.source,
     );
-  });
+
+    mergeIntoMap(episodeMap, tmdbEpisodes);
+  }
 
   const episodes = Array.from(episodeMap.values()).sort(
     (first, second) => first.number - second.number,
