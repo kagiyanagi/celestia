@@ -63,11 +63,17 @@ export default async function AnimePage({ params }: AnimePageProps) {
     streamLookupTitle,
     anime.episodes,
   );
-  const watchHref = `/watch/${anime.id}?ep=1${
-    streamAvailability.providerAnimeId
-      ? `&sid=${streamAvailability.providerAnimeId}`
-      : ""
-  }`;
+  const watchParams = new URLSearchParams({ ep: "1" });
+
+  if (streamAvailability.providerAnimeId) {
+    watchParams.set("sid", String(streamAvailability.providerAnimeId));
+  }
+
+  if (streamAvailability.providerId) {
+    watchParams.set("server", streamAvailability.providerId);
+  }
+
+  const watchHref = `/watch/${anime.id}?${watchParams.toString()}`;
 
   return (
     <div className="detail-page">

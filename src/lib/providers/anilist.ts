@@ -4,7 +4,8 @@ import {
   FALLBACK_GENRE_OPTIONS,
   FALLBACK_TAG_OPTIONS,
 } from "@/lib/browse-filters";
-import { getAniZipEpisodes } from "@/lib/providers/anizip";
+import { fetchJson } from "@/lib/http/client";
+import { getEpisodeMetadata } from "@/lib/providers/episode-metadata";
 import {
   transformAnimeDetails,
   transformAnimeSummary,
@@ -422,6 +423,22 @@ class AniListError extends Error {
   }
 }
 
+function getAniListOperationName(query: string): string {
+  return (
+    query.match(/\b(?:query|mutation)\s+([A-Za-z0-9_]+)/)?.[1] ||
+    "AnonymousOperation"
+  );
+}
+
+function getAniListCacheKey(
+  query: string,
+  variables: Record<string, unknown>,
+): string {
+  return `anilist:${getAniListOperationName(query)}:${JSON.stringify(
+    variables,
+  )}`;
+}
+
 async function fetchAniList<T>(
   query: string,
   variables: Record<string, unknown> = {},
@@ -437,15 +454,18 @@ async function fetchAniList<T>(
     next: { revalidate },
   };
 
-  const response = await fetch(ANILIST_ENDPOINT, init);
-
-  if (!response.ok) {
-    throw new AniListError(
-      `AniList request failed with HTTP ${response.status}`,
-    );
-  }
-
-  const payload = (await response.json()) as AniListGraphQLResponse<T>;
+  const payload = await fetchJson<AniListGraphQLResponse<T>>(
+    ANILIST_ENDPOINT,
+    init,
+    {
+      provider: "AniList",
+      timeoutMs: 10_000,
+      retries: 2,
+      retryDelayMs: 500,
+      cacheKey: getAniListCacheKey(query, variables),
+      staleTtlMs: revalidate * 1000 * 6,
+    },
+  );
 
   if (payload.errors?.length) {
     throw new AniListError(
@@ -737,29 +757,6 @@ export async function searchAnime(
   }
 }
 
-async function mergeAniZipEpisodes(anime: AnimeDetails, id: number) {
-  const fullEpisodes = await getAniZipEpisodes(id);
-  if (fullEpisodes.length === 0 || !anime.streamingEpisodes) return;
-
-  const aniListEpsMap = new Map<
-    number,
-    NonNullable<typeof anime.streamingEpisodes>[number]
-  >();
-  anime.streamingEpisodes.forEach((ep) => {
-    if (ep.number > 0) aniListEpsMap.set(ep.number, ep);
-  });
-
-  anime.streamingEpisodes = fullEpisodes.map((ep) => {
-    const aniListEp = aniListEpsMap.get(ep.number);
-    return {
-      ...ep,
-      thumbnail: aniListEp?.thumbnail || ep.thumbnail,
-      url: aniListEp?.url || ep.url,
-      site: aniListEp?.site || ep.site,
-    };
-  });
-}
-
 export async function getAnimeDetails(
   id: number,
 ): Promise<AnimeDetails | null> {
@@ -773,7 +770,12 @@ export async function getAnimeDetails(
     if (!data.Media) return null;
 
     const anime = transformAnimeDetails(data.Media);
-    await mergeAniZipEpisodes(anime, id);
+    const episodeMetadata = await getEpisodeMetadata({
+      anilistId: id,
+      anilistEpisodes: anime.streamingEpisodes || [],
+    });
+    anime.streamingEpisodes = episodeMetadata.episodes;
+    anime.metadataSources = episodeMetadata.sources;
 
     return anime;
   } catch (error) {
@@ -1065,25 +1067,27 @@ async function fetchAniListWithToken<T>(
   accessToken: string,
   query: string,
   variables: Record<string, unknown> = {},
-) {
-  const response = await fetch(ANILIST_ENDPOINT, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      Authorization: `Bearer ${accessToken}`,
+): Promise<T> {
+  const payload = await fetchJson<AniListGraphQLResponse<T>>(
+    ANILIST_ENDPOINT,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ query, variables }),
+      cache: "no-store",
     },
-    body: JSON.stringify({ query, variables }),
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    throw new AniListError(
-      `AniList request failed with HTTP ${response.status}`,
-    );
-  }
-
-  const payload = (await response.json()) as AniListGraphQLResponse<T>;
+    {
+      provider: "AniList",
+      timeoutMs: 10_000,
+      retries: 2,
+      retryDelayMs: 500,
+      dedupe: false,
+    },
+  );
 
   if (payload.errors?.length) {
     throw new AniListError(
@@ -1096,6 +1100,30 @@ async function fetchAniListWithToken<T>(
   }
 
   return payload.data;
+}
+
+async function postAniListToken<T>(
+  body: Record<string, unknown>,
+): Promise<T> {
+  return fetchJson<T>(
+    "https://anilist.co/api/v2/oauth/token",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(body),
+      cache: "no-store",
+    },
+    {
+      provider: "AniList OAuth",
+      timeoutMs: 10_000,
+      retries: 2,
+      retryDelayMs: 500,
+      dedupe: false,
+    },
+  );
 }
 
 export function getAniListAuthorizeUrl(state: string) {
@@ -1123,27 +1151,13 @@ export async function exchangeAniListCode(code: string) {
     throw new Error("AniList OAuth is not configured.");
   }
 
-  const response = await fetch("https://anilist.co/api/v2/oauth/token", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify({
-      grant_type: "authorization_code",
-      client_id: clientId,
-      client_secret: clientSecret,
-      redirect_uri: redirectUri,
-      code,
-    }),
-    cache: "no-store",
+  const payload = await postAniListToken<{ access_token?: string }>({
+    grant_type: "authorization_code",
+    client_id: clientId,
+    client_secret: clientSecret,
+    redirect_uri: redirectUri,
+    code,
   });
-
-  if (!response.ok) {
-    throw new Error(`AniList token exchange failed with HTTP ${response.status}`);
-  }
-
-  const payload = (await response.json()) as { access_token?: string };
 
   if (!payload.access_token) {
     throw new Error("AniList did not return an access token.");

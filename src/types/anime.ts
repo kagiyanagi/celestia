@@ -104,6 +104,37 @@ export type AnimeDate = {
   month?: number | null;
   day?: number | null;
 };
+
+export type MetadataProviderId =
+  | "anilist"
+  | "anizip"
+  | "tvdb"
+  | "generated"
+  | "unknown";
+
+export type MetadataConfidence = "high" | "medium" | "low";
+
+export type EpisodeMetadataField =
+  | "title"
+  | "thumbnail"
+  | "description"
+  | "url"
+  | "site";
+
+export type EpisodeMetadataSource = {
+  provider: MetadataProviderId;
+  label: string;
+  confidence: MetadataConfidence;
+  fields: EpisodeMetadataField[];
+};
+
+export type MetadataSourceSummary = {
+  provider: MetadataProviderId;
+  label: string;
+  role: "catalog" | "episode_metadata" | "image_metadata";
+  confidence: MetadataConfidence;
+};
+
 export type AnimeStreamingEpisode = {
   number: number;
   title?: string | null;
@@ -111,6 +142,7 @@ export type AnimeStreamingEpisode = {
   url?: string | null;
   site?: string | null;
   description?: string | null;
+  sources?: EpisodeMetadataSource[];
 };
 
 export type AnimeDetails = AnimeSummary & {
@@ -134,6 +166,7 @@ export type AnimeDetails = AnimeSummary & {
   relations?: RelationItem[];
   recommendations?: AnimeSummary[];
   externalLinks?: ExternalLink[];
+  metadataSources?: MetadataSourceSummary[];
 };
 
 export type HomeCollections = {
