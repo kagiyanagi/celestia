@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Bookmark, Check, List, Pause, Pencil, Play, RotateCcw, Ban } from "lucide-react";
 import { useMemo, useState } from "react";
+import { LibraryStatusChip } from "@/components/library-status-chip";
 import type { LibraryEntry, LibraryStatus } from "@/types/account";
 import { getDisplayTitle } from "@/lib/format";
 
@@ -63,6 +64,7 @@ export function WatchlistPageClient({ entries }: { entries: LibraryEntry[] }) {
                   <span>{entry.anime.seasonYear || "Now"}</span>
                 </span>
                 <strong>{getDisplayTitle(entry.anime.title)}</strong>
+                <LibraryStatusChip status={entry.status} inline />
               </Link>
             ))}
           </div>

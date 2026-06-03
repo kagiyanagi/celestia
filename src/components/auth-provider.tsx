@@ -4,6 +4,7 @@ import {
   createContext,
   startTransition,
   useContext,
+  useEffect,
   useState,
 } from "react";
 import type { PublicUser } from "@/types/account";
@@ -38,6 +39,24 @@ export function AuthProvider({
       setLoading(false);
     }
   }
+
+  // Handle guest session initialization on first visit
+  useEffect(() => {
+    if (!user) {
+      const initGuest = async () => {
+        try {
+          const response = await fetch("/api/auth/guest", { method: "POST" });
+          if (response.ok) {
+            await refreshUser();
+          }
+        } catch (error) {
+          console.error("Failed to initialize guest session:", error);
+        }
+      };
+      initGuest();
+    }
+  }, [user]);
+
   return (
     <AuthContext.Provider value={{ user, loading, refreshUser, setUser }}>
       {children}

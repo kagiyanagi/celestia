@@ -1,6 +1,6 @@
 "use client";
 
-import { Bookmark, BookmarkCheck, CalendarDays, Play, RotateCcw, Trash2, Pause, Ban, Check } from "lucide-react";
+import { Bookmark, BookmarkCheck, CalendarDays, ChevronDown, Play, RotateCcw, Trash2, Pause, Ban, Check } from "lucide-react";
 import { startTransition, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -36,6 +36,7 @@ export function DetailsSaveButton({
 }) {
   const { refreshUser, user } = useAuth();
   const [open, setOpen] = useState(false);
+  const [statusOpen, setStatusOpen] = useState(false);
   const [entry, setEntry] = useState<LibraryEntry | null>(
     user?.libraryEntries.find((item) => item.animeId === anime.id) || null,
   );
@@ -167,56 +168,94 @@ export function DetailsSaveButton({
     }
   }
 
+  // Saved entries surface their list status (watching, on hold, ...) on the
+  // trigger; unsaved titles get the plain bookmark.
+  const TriggerIcon = entry
+    ? statusOptions.find((option) => option.value === entry.status)?.icon ||
+      BookmarkCheck
+    : Bookmark;
+
   return (
     <>
       <button
         className={`hero-icon-btn ${entry ? "is-active" : ""}`}
-        title="Save to list"
+        title={
+          entry
+            ? `On your list: ${statusOptions.find((option) => option.value === entry.status)?.label || "Saved"}`
+            : "Save to list"
+        }
         type="button"
         onClick={() => {
           setError("");
           setLoading(true);
+          setStatusOpen(false);
           setOpen(true);
         }}
       >
-        {entry ? <BookmarkCheck size={20} /> : <Bookmark size={20} />}
+        <TriggerIcon size={20} />
       </button>
 
       {open ? (
         <div className="dialog-backdrop" role="presentation" onClick={() => setOpen(false)}>
           <div className="save-dialog" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
-            <div className="save-dialog-poster">
-              {anime.coverImage ? (
-                <Image src={anime.coverImage} alt="" fill sizes="320px" className="poster-image" />
-              ) : null}
-            </div>
             <div className="save-dialog-body">
-              <h2>{anime.title?.english || anime.title?.userPreferred || anime.title?.romaji || "Untitled anime"}</h2>
+              <div className="save-dialog-head">
+                {anime.coverImage ? (
+                  <span className="save-dialog-thumb">
+                    <Image src={anime.coverImage} alt="" fill sizes="64px" />
+                  </span>
+                ) : null}
+                <h2>{anime.title?.english || anime.title?.userPreferred || anime.title?.romaji || "Untitled anime"}</h2>
+              </div>
 
               <div className="save-status-menu">
                 <span>Status</span>
-                <div className="save-status-options">
-                  {statusOptions.map((option) => {
-                    const Icon = option.icon;
-                    return (
+                <div className="save-status-dropdown">
+                  <button
+                    type="button"
+                    className="save-status-trigger"
+                    aria-haspopup="listbox"
+                    aria-expanded={statusOpen}
+                    onClick={() => setStatusOpen((current) => !current)}
+                  >
+                    {(() => {
+                      const ActiveStatusIcon = activeStatus.icon;
+                      return <ActiveStatusIcon size={18} />;
+                    })()}
+                    {activeStatus.label}
+                    <ChevronDown size={16} className="save-status-caret" />
+                  </button>
+                  {statusOpen ? (
+                    <>
                       <button
-                        key={option.value}
                         type="button"
-                        className={form.status === option.value ? "active" : ""}
-                        onClick={() => setForm((current) => ({ ...current, status: option.value }))}
-                      >
-                        <Icon size={18} />
-                        {option.label}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="save-status-selected">
-                  {(() => {
-                    const ActiveStatusIcon = activeStatus.icon;
-                    return <ActiveStatusIcon size={18} />;
-                  })()}
-                  {activeStatus.label}
+                        className="save-status-scrim"
+                        aria-label="Close status menu"
+                        onClick={() => setStatusOpen(false)}
+                      />
+                      <div className="save-status-list" role="listbox" aria-label="Status">
+                        {statusOptions.map((option) => {
+                          const Icon = option.icon;
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              role="option"
+                              aria-selected={form.status === option.value}
+                              className={form.status === option.value ? "active" : ""}
+                              onClick={() => {
+                                setForm((current) => ({ ...current, status: option.value }));
+                                setStatusOpen(false);
+                              }}
+                            >
+                              <Icon size={18} />
+                              {option.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  ) : null}
                 </div>
               </div>
 
