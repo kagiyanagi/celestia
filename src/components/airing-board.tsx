@@ -1,13 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Radio } from "lucide-react";
-
-import {
-  formatAiringTime,
-  formatRelativeSeconds,
-  getDisplayTitle,
-} from "@/lib/format";
 import type { AiringItem } from "@/types/anime";
+import { AiringRow } from "./airing-row";
 
 type AiringBoardProps = {
   items: AiringItem[];
@@ -35,31 +29,7 @@ export function AiringBoard({ items }: AiringBoardProps) {
       <div className="airing-list">
         {items.length ? (
           items.map((item) => (
-            <Link
-              href={`/anime/${item.anime.id}`}
-              className="airing-row"
-              key={`${item.anime.id}-${item.episode}`}
-            >
-              {item.anime.bannerImage && (
-                <div className="airing-row-bg">
-                  <Image
-                    src={item.anime.bannerImage}
-                    alt=""
-                    fill
-                    sizes="(max-width: 780px) 100vw, 1480px"
-                    className="airing-row-image"
-                  />
-                </div>
-              )}
-              <span className="airing-episode">EP {item.episode}</span>
-              <span className="airing-info">
-                <strong>{getDisplayTitle(item.anime.title)}</strong>
-                <small>{formatAiringTime(item.airingAt)}</small>
-              </span>
-              <span className="airing-countdown">
-                {formatRelativeSeconds(item.timeUntilAiring)}
-              </span>
-            </Link>
+            <AiringRow key={`${item.anime.id}-${item.episode}`} item={item} />
           ))
         ) : (
           <div className="empty-panel">

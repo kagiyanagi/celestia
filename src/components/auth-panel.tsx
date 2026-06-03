@@ -18,8 +18,8 @@ const defaultLogin = {
 
 export function AuthPanel() {
   const router = useRouter();
-  const { refreshUser } = useAuth();
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const { user, refreshUser } = useAuth();
+  const [mode, setMode] = useState<"login" | "signup" | "anilist">("anilist");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [login, setLogin] = useState(defaultLogin);
@@ -56,7 +56,28 @@ export function AuthPanel() {
 
   return (
     <section className="auth-panel">
+      <div className="auth-header">
+        {user?.isGuest ? (
+          <div className="guest-badge">Guest Session</div>
+        ) : (
+          <div className="user-badge">Signed In</div>
+        )}
+        <h2>{user?.isGuest ? "Welcome to Celestia" : "Account Settings"}</h2>
+        <p>
+          {user?.isGuest
+            ? "Your progress is being saved locally. Connect AniList to sync across devices."
+            : "Manage your connection and account preferences below."}
+        </p>
+      </div>
+
       <div className="auth-switch">
+        <button
+          className={mode === "anilist" ? "active" : ""}
+          type="button"
+          onClick={() => setMode("anilist")}
+        >
+          AniList
+        </button>
         <button
           className={mode === "login" ? "active" : ""}
           type="button"
@@ -73,7 +94,23 @@ export function AuthPanel() {
         </button>
       </div>
 
-      {mode === "login" ? (
+      {mode === "anilist" && (
+        <div className="anilist-flow">
+          <div className="anilist-benefits">
+            <ul>
+              <li>Sync your watch list automatically</li>
+              <li>Track progress in real-time</li>
+              <li>Import your avatar and banner</li>
+              <li>Personalized recommendations</li>
+            </ul>
+          </div>
+          <a href="/api/anilist/connect" className="anilist-connect-btn">
+            Connect AniList Account
+          </a>
+        </div>
+      )}
+
+      {mode === "login" && (
         <form
           className="auth-form"
           onSubmit={(event) => {
@@ -86,7 +123,10 @@ export function AuthPanel() {
             <input
               value={login.email}
               onChange={(event) =>
-                setLogin((current) => ({ ...current, email: event.target.value }))
+                setLogin((current) => ({
+                  ...current,
+                  email: event.target.value,
+                }))
               }
               type="email"
               required
@@ -110,7 +150,9 @@ export function AuthPanel() {
             {busy ? "Signing in..." : "Sign in"}
           </button>
         </form>
-      ) : (
+      )}
+
+      {mode === "signup" && (
         <form
           className="auth-form"
           onSubmit={(event) => {
@@ -149,7 +191,10 @@ export function AuthPanel() {
             <input
               value={signup.email}
               onChange={(event) =>
-                setSignup((current) => ({ ...current, email: event.target.value }))
+                setSignup((current) => ({
+                  ...current,
+                  email: event.target.value,
+                }))
               }
               type="email"
               required
@@ -177,7 +222,6 @@ export function AuthPanel() {
       )}
 
       <div className="auth-footnote">
-        <p>Link AniList after sign in to sync your list, avatar, banner, and recent activity.</p>
         {error ? <p className="auth-error">{error}</p> : null}
       </div>
     </section>

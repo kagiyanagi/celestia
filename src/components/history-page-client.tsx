@@ -1,9 +1,9 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { useMemo, useState } from "react";
+import { EpisodeThumbnail } from "@/components/episode-thumbnail";
 import type { HistoryEntry } from "@/types/account";
 import { getDisplayTitle } from "@/lib/format";
 
@@ -62,16 +62,15 @@ export function HistoryPageClient({ entries }: { entries: HistoryEntry[] }) {
                   key={entry.id}
                 >
                   <span className="history-card-thumb">
-                    {entry.anime.bannerImage || entry.anime.coverImage ? (
-                      <Image
-                        src={entry.anime.bannerImage || entry.anime.coverImage || ""}
-                        alt=""
-                        fill
-                        sizes="240px"
-                        className="poster-image"
-                      />
+                    <EpisodeThumbnail
+                      src={entry.episodeImage || null}
+                      alt={entry.episodeTitle}
+                      fallbackSrc={entry.anime.bannerImage || entry.anime.coverImage || null}
+                    />
+                    <span className="continue-card-episode">EP {entry.episode}</span>
+                    {entry.durationLabel ? (
+                      <span className="continue-card-duration">{entry.durationLabel}</span>
                     ) : null}
-                    <span className="continue-card-duration">{entry.durationLabel || `EP ${entry.episode}`}</span>
                     <span className="continue-card-progress">
                       <span style={{ width: `${entry.progressPercent}%` }} />
                     </span>

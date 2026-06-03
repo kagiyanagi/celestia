@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Monitor, Play, SlidersHorizontal, Smartphone, UserRound, LogOut, Link2 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/components/auth-provider";
+import { CustomSelect } from "@/components/custom-select";
 
 const tabs = [
   { key: "account", label: "My Account", icon: UserRound },
@@ -158,14 +159,16 @@ export function SettingsPageShell() {
                   <h2>Anime Title Language</h2>
                   <p>Choose how anime titles should be displayed throughout the app.</p>
                 </div>
-                <select
+                <CustomSelect
                   value={user.preferences.titleLanguage}
-                  onChange={(event) => void updatePreference({ titleLanguage: event.target.value })}
-                >
-                  <option value="english">English (Attack on Titan)</option>
-                  <option value="romaji">Romaji (Shingeki no Kyojin)</option>
-                  <option value="native">Native</option>
-                </select>
+                  ariaLabel="Anime title language"
+                  options={[
+                    { value: "english", label: "English (Attack on Titan)" },
+                    { value: "romaji", label: "Romaji (Shingeki no Kyojin)" },
+                    { value: "native", label: "Native" },
+                  ]}
+                  onChange={(value) => void updatePreference({ titleLanguage: value })}
+                />
               </div>
               <div className="settings-toggle-row">
                 <div>
@@ -191,11 +194,16 @@ export function SettingsPageShell() {
                   <h2>Video Quality Preference</h2>
                   <p>Choose your preferred video quality. &quot;Auto&quot; adjusts based on network speed.</p>
                 </div>
-                <select value={user.preferences.videoQuality} onChange={(event) => void updatePreference({ videoQuality: event.target.value })}>
-                  <option value="higher_picture_quality">Higher picture quality</option>
-                  <option value="auto">Auto</option>
-                  <option value="data_saver">Data saver</option>
-                </select>
+                <CustomSelect
+                  value={user.preferences.videoQuality}
+                  ariaLabel="Video quality preference"
+                  options={[
+                    { value: "higher_picture_quality", label: "Higher picture quality" },
+                    { value: "auto", label: "Auto" },
+                    { value: "data_saver", label: "Data saver" },
+                  ]}
+                  onChange={(value) => void updatePreference({ videoQuality: value })}
+                />
               </div>
               {[
                 ["autoPlay", "Auto Play", "Automatically start playing media when it loads."],

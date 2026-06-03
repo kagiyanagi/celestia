@@ -1,8 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Captions, Mic, Radio, Star } from "lucide-react";
+import { ArrowRight, CalendarDays, Captions, Mic, Radio, Star } from "lucide-react";
 
-import { getDisplayTitle, scoreLabel } from "@/lib/format";
+import { LibraryStatusChip } from "@/components/library-status-chip";
+import { formatAnimeDate, getDisplayTitle, scoreLabel } from "@/lib/format";
 import type { AnimeSummary } from "@/types/anime";
 
 type HomeShelfProps = {
@@ -27,7 +28,10 @@ export function HomeShelf({ title, href, items }: HomeShelfProps) {
       </div>
 
       <div className="shelf-grid">
-        {items.map((anime) => (
+        {items.map((anime) => {
+          const airedDate = formatAnimeDate(anime.startDate);
+
+          return (
           <Link
             className="shelf-card"
             href={`/anime/${anime.id}`}
@@ -62,18 +66,28 @@ export function HomeShelf({ title, href, items }: HomeShelfProps) {
                   <Captions size={14} aria-hidden />
                   {anime.airingCount || 0}
                 </span>
-                <span>
-                  <Mic size={14} aria-hidden />
-                  {anime.dubCount || 0}
-                </span>
+                {anime.dubCount != null ? (
+                  <span>
+                    <Mic size={14} aria-hidden />
+                    {anime.dubCount}
+                  </span>
+                ) : null}
                 <span>
                   <Star size={14} aria-hidden />
                   {scoreLabel(anime.averageScore)}
                 </span>
+                {airedDate ? (
+                  <span title="Started airing">
+                    <CalendarDays size={14} aria-hidden />
+                    {airedDate}
+                  </span>
+                ) : null}
+                <LibraryStatusChip animeId={anime.id} inline />
               </span>
             </span>
           </Link>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
