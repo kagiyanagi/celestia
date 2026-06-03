@@ -1,3 +1,4 @@
+import { fetchJson } from "@/lib/http/client";
 import type { AnimeStreamingEpisode } from "@/types/anime";
 
 const ANIZIP_ENDPOINT = "https://api.ani.zip/mappings";
@@ -29,13 +30,21 @@ export async function getAniZipEpisodes(
   anilistId: number,
 ): Promise<AnimeStreamingEpisode[]> {
   try {
-    const response = await fetch(`${ANIZIP_ENDPOINT}?anilist_id=${anilistId}`, {
-      next: { revalidate: 86400 },
-    });
+    const data = await fetchJson<AniZipResponse>(
+      `${ANIZIP_ENDPOINT}?anilist_id=${anilistId}`,
+      {
+        next: { revalidate: 86400 },
+      },
+      {
+        provider: "AniZip",
+        timeoutMs: 7_000,
+        retries: 2,
+        retryDelayMs: 500,
+        cacheKey: `anizip:${anilistId}`,
+        staleTtlMs: 86400 * 1000 * 7,
+      },
+    );
 
-    if (!response.ok) return [];
-
-    const data = (await response.json()) as AniZipResponse;
     if (!data || !data.episodes) return [];
 
     const episodes = data.episodes;

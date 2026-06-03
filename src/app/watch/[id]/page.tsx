@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { HeaderImageSetter } from "@/components/header-image-setter";
+import { StreamPlayer } from "@/components/stream-player";
 import { WatchHistoryRecorder } from "@/components/watch-history-recorder";
 import {
   type WatchAudioOption,
@@ -450,7 +451,7 @@ export default async function WatchPage({
       id: provider.id,
       label: provider.label,
       active,
-      available: active ? Boolean(source?.embedUrl) : true,
+      available: active ? Boolean(source?.embedUrl) : provider.available,
       href: watchHref({
         animeId: anime.id,
         episode,
@@ -515,12 +516,10 @@ export default async function WatchPage({
 
         <div className="watch-player-frame">
           {source?.embedUrl ? (
-            <iframe
-              src={source.embedUrl}
+            <StreamPlayer
+              primaryUrl={source.embedUrl}
+              fallbacks={source.fallbacks || []}
               title={`${title} episode ${episode}`}
-              allow="autoplay; fullscreen; picture-in-picture"
-              allowFullScreen
-              referrerPolicy="no-referrer"
             />
           ) : (
             <div className="watch-player-empty">

@@ -7,10 +7,19 @@ export type StreamEpisode = {
 
 export type StreamAvailability = {
   available: boolean;
+  providerId: string | null;
   provider: string;
   providerAnimeId: number | null;
   episodeCount: number | null;
   score?: number;
+};
+
+export type StreamFallbackSource = {
+  providerId: string;
+  provider: string;
+  animeId: number;
+  embedUrl: string;
+  audio: StreamAudioType | null;
 };
 
 export type StreamSource = {
@@ -22,16 +31,21 @@ export type StreamSource = {
   availableAudio: StreamAudioType[];
   embedUrl: string | null;
   episodes: StreamEpisode[];
+  fallbacks?: StreamFallbackSource[];
+  attemptedProviders?: string[];
 };
 
 export type StreamProviderOption = {
   id: string;
   label: string;
+  available: boolean;
 };
 
 export type StreamingProvider = {
   id: string;
   label: string;
+  priority: number;
+  isConfigured: boolean;
   findAvailability(title: string): Promise<StreamAvailability>;
   getSource(input: {
     animeTitle: string;
