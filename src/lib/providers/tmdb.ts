@@ -23,6 +23,8 @@ type TmdbSeasonResponse = {
     overview?: string;
     still_path?: string | null;
     runtime?: number | null;
+    air_date?: string | null;
+    vote_average?: number | null;
   }>;
 };
 
@@ -154,6 +156,12 @@ export async function getTmdbEpisodeStills(input: {
           description: episode.overview || null,
           url: null,
           site: "TMDB",
+          airDate: episode.air_date || null,
+          rating:
+            typeof episode.vote_average === "number" &&
+            episode.vote_average > 0
+              ? Math.round(episode.vote_average * 10) / 10
+              : null,
         };
       }),
   );

@@ -147,6 +147,10 @@ export type AnimeStreamingEpisode = {
   url?: string | null;
   site?: string | null;
   description?: string | null;
+  /** ISO date (yyyy-mm-dd) the episode aired; null when unknown. */
+  airDate?: string | null;
+  /** Community rating on a 10-point scale; null when unknown. */
+  rating?: number | null;
   sources?: EpisodeMetadataSource[];
 };
 
@@ -169,9 +173,17 @@ export type MalStats = {
   url: string;
 };
 
+/** Filler/recap episode numbers sourced from MAL via Jikan. */
+export type EpisodeFlags = {
+  filler: number[];
+  recap: number[];
+};
+
 export type AnimeDetails = AnimeSummary & {
   malStats?: MalStats | null;
   dubInfo?: DubInfo | null;
+  /** Null when MAL has no episode list — unknown, not "no fillers". */
+  episodeFlags?: EpisodeFlags | null;
   description?: string | null;
   source?: string | null;
   countryOfOrigin?: string | null;

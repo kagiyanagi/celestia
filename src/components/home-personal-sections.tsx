@@ -85,7 +85,6 @@ export function HomePersonalSections({
                     alt={entry.episodeTitle}
                     fallbackSrc={entry.anime.bannerImage || entry.anime.coverImage || null}
                   />
-                  <span className="continue-card-episode">EP {entry.episode}</span>
                   {entry.durationLabel ? (
                     <span className="continue-card-duration">{entry.durationLabel}</span>
                   ) : null}
@@ -94,7 +93,12 @@ export function HomePersonalSections({
                   </span>
                 </span>
                 <span className="continue-card-copy">
-                  <small>{getDisplayTitle(entry.anime.title)}</small>
+                  <span className="continue-card-meta">
+                    <span className="continue-card-ep-pill">
+                      EP {entry.episode}
+                    </span>
+                    <small>{getDisplayTitle(entry.anime.title)}</small>
+                  </span>
                   <strong>{entry.episodeTitle}</strong>
                 </span>
               </Link>

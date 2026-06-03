@@ -42,8 +42,11 @@ type AniZipRawEpisode = {
   overview?: string;
   summary?: string;
   image?: string;
+  airdate?: string;
+  airDate?: string;
   airDateUtc?: string;
   runtime?: number;
+  rating?: string;
 };
 
 type AniZipResponse = {
@@ -116,6 +119,8 @@ function toEpisodes(
           ? getTvdbEpisodeImage(ep.tvdbShowId, ep.tvdbId)
           : null;
 
+      const ratingValue = Number.parseFloat(ep.rating || "");
+
       return {
         number,
         title,
@@ -123,6 +128,12 @@ function toEpisodes(
         description: ep.overview || ep.summary || null,
         url: null,
         site: "TVDB",
+        airDate:
+          ep.airdate || ep.airDate || ep.airDateUtc?.slice(0, 10) || null,
+        rating:
+          Number.isFinite(ratingValue) && ratingValue > 0
+            ? Math.round(ratingValue * 10) / 10
+            : null,
       };
     });
 }
@@ -138,8 +149,8 @@ export async function getAniZipData(
       },
       {
         provider: "AniZip",
-        timeoutMs: 7_000,
-        retries: 2,
+        timeoutMs: 6_000,
+        retries: 1,
         retryDelayMs: 500,
         cacheKey: `anizip:${anilistId}`,
         staleTtlMs: 86400 * 1000 * 7,
