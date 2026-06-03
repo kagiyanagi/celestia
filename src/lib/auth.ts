@@ -1,6 +1,6 @@
 import { cookies, headers } from "next/headers";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
-import { writeDb, readDb } from "@/lib/db";
+import { getStore } from "@/lib/db";
 import type {
   DeviceSession,
   PublicUser,
@@ -10,6 +10,8 @@ import type {
 } from "@/types/account";
 
 const SESSION_COOKIE = "celestia_session";
+// Avoid a session write on every request; bump activity at most hourly.
+const SESSION_TOUCH_INTERVAL_MS = 60 * 60 * 1000;
 
 function createId(size = 16) {
   return randomBytes(size).toString("hex");
@@ -50,7 +52,9 @@ function verifyPassword(password: string, storedHash: string) {
   );
 }
 
-function parseUserAgent(userAgent: string | null): Pick<DeviceSession, "platform" | "browser" | "label"> {
+function parseUserAgent(
+  userAgent: string | null,
+): Pick<DeviceSession, "platform" | "browser" | "label"> {
   const source = userAgent || "Unknown device";
   const platform = /android/i.test(source)
     ? "Android"
@@ -83,6 +87,7 @@ function parseUserAgent(userAgent: string | null): Pick<DeviceSession, "platform
 function redactUser(user: UserRecord): PublicUser {
   return {
     id: user.id,
+    isGuest: user.isGuest,
     email: user.email,
     displayName: user.displayName,
     username: user.username,
@@ -104,6 +109,35 @@ export function getDefaultProfileAssets() {
     avatar: null,
     banner: null,
   };
+}
+
+export async function createGuestUser() {
+  const now = new Date().toISOString();
+  const assets = getDefaultProfileAssets();
+  const id = createId();
+  const user: UserRecord = {
+    id,
+    isGuest: true,
+    email: null,
+    passwordHash: null,
+    displayName: "Guest",
+    username: `guest_${id.slice(0, 8)}`,
+    pronouns: "",
+    about: "",
+    avatar: assets.avatar,
+    banner: assets.banner,
+    joinedAt: now,
+    aniListAccessToken: null,
+    aniListProfile: null,
+    preferences: defaultPreferences(),
+    devices: [],
+    libraryEntries: [],
+    historyEntries: [],
+  };
+
+  await getStore().insertUser(user);
+
+  return user;
 }
 
 export async function createUser(input: {
@@ -138,6 +172,7 @@ export async function createUser(input: {
   const assets = getDefaultProfileAssets();
   const user: UserRecord = {
     id: createId(),
+    isGuest: false,
     email,
     passwordHash: hashPassword(input.password),
     displayName,
@@ -155,33 +190,50 @@ export async function createUser(input: {
     historyEntries: [],
   };
 
-  await writeDb((current) => {
-    if (current.users.some((entry) => entry.email === email)) {
-      throw new Error("An account with that email already exists.");
-    }
-
-    if (current.users.some((entry) => entry.username === username)) {
-      throw new Error("That username is already taken.");
-    }
-
-    return {
-      ...current,
-      users: [...current.users, user],
-    };
-  });
+  await getStore().insertUser(user);
 
   return redactUser(user);
 }
 
 export async function authenticateUser(email: string, password: string) {
-  const db = await readDb();
-  const user = db.users.find((entry) => entry.email === email.trim().toLowerCase());
+  const user = await getStore().getUserByEmail(email.trim().toLowerCase());
 
-  if (!user || !verifyPassword(password, user.passwordHash)) {
+  if (
+    !user ||
+    !user.passwordHash ||
+    !verifyPassword(password, user.passwordHash)
+  ) {
     throw new Error("Invalid email or password.");
   }
 
   return redactUser(user);
+}
+
+async function registerDevice(userId: string, sessionId: string, now: string) {
+  const store = getStore();
+  const headerStore = await headers();
+  const userAgent = headerStore.get("user-agent") || "";
+  const ua = parseUserAgent(userAgent);
+  const user = await store.getUserById(userId);
+
+  if (user) {
+    user.devices = [
+      {
+        id: sessionId,
+        platform: ua.platform,
+        browser: ua.browser,
+        label: ua.label,
+        locationLabel: "IN",
+        lastActiveAt: now,
+        current: true,
+      },
+      ...user.devices
+        .filter((device) => device.id !== sessionId)
+        .map((device) => ({ ...device, current: false })),
+    ].slice(0, 6);
+
+    await store.updateUser(user);
+  }
 }
 
 export async function createSession(userId: string) {
@@ -190,40 +242,16 @@ export async function createSession(userId: string) {
   const sessionId = createId();
   const userAgent = headerStore.get("user-agent") || "";
   const now = new Date().toISOString();
-  const nextSession: SessionRecord = {
+  const session: SessionRecord = {
     id: sessionId,
     userId,
     createdAt: now,
     lastSeenAt: now,
     userAgent,
   };
-  const ua = parseUserAgent(userAgent);
 
-  await writeDb((db) => ({
-    ...db,
-    sessions: [...db.sessions.filter((session) => session.userId !== userId || session.userAgent !== userAgent), nextSession],
-    users: db.users.map((user) =>
-      user.id === userId
-        ? {
-            ...user,
-            devices: [
-              {
-                id: sessionId,
-                platform: ua.platform,
-                browser: ua.browser,
-                label: ua.label,
-                locationLabel: "IN",
-                lastActiveAt: now,
-                current: true,
-              },
-              ...user.devices
-                .filter((device) => device.id !== sessionId)
-                .map((device) => ({ ...device, current: false })),
-            ].slice(0, 6),
-          }
-        : user,
-    ),
-  }));
+  await getStore().insertSession(session, { replaceForUserAgent: true });
+  await registerDevice(userId, sessionId, now);
 
   cookieStore.set(SESSION_COOKIE, sessionId, {
     httpOnly: true,
@@ -232,6 +260,34 @@ export async function createSession(userId: string) {
     secure: process.env.NODE_ENV === "production",
     maxAge: 60 * 60 * 24 * 30,
   });
+
+  return sessionId;
+}
+
+/**
+ * Rotates the current session ID (e.g. after privilege escalation such as
+ * linking an OAuth account) so a pre-escalation session token can never be
+ * replayed with the new privileges.
+ */
+export async function regenerateSession(userId: string) {
+  const cookieStore = await cookies();
+  const currentSessionId = cookieStore.get(SESSION_COOKIE)?.value;
+
+  if (currentSessionId) {
+    await getStore().deleteSession(currentSessionId);
+  }
+
+  return createSession(userId);
+}
+
+export async function initGuestSession() {
+  const cookieStore = await cookies();
+  const sessionId = cookieStore.get(SESSION_COOKIE)?.value;
+
+  if (sessionId) return null;
+
+  const guest = await createGuestUser();
+  return createSession(guest.id);
 }
 
 export async function clearSession() {
@@ -239,17 +295,20 @@ export async function clearSession() {
   const sessionId = cookieStore.get(SESSION_COOKIE)?.value;
 
   if (sessionId) {
-    await writeDb((db) => ({
-      ...db,
-      sessions: db.sessions.filter((session) => session.id !== sessionId),
-      users: db.users.map((user) => ({
-        ...user,
-        devices: user.devices.map((device) => ({
+    const store = getStore();
+    const session = await store.getSession(sessionId);
+    await store.deleteSession(sessionId);
+
+    if (session) {
+      const user = await store.getUserById(session.userId);
+      if (user) {
+        user.devices = user.devices.map((device) => ({
           ...device,
           current: device.id === sessionId ? false : device.current,
-        })),
-      })),
-    }));
+        }));
+        await store.updateUser(user);
+      }
+    }
   }
 
   cookieStore.delete(SESSION_COOKIE);
@@ -263,39 +322,27 @@ export async function getSessionUser() {
     return null;
   }
 
-  const db = await readDb();
-  const session = db.sessions.find((entry) => entry.id === sessionId);
+  const store = getStore();
+  const session = await store.getSession(sessionId);
 
   if (!session) {
     return null;
   }
 
-  const user = db.users.find((entry) => entry.id === session.userId);
+  const now = Date.now();
+  if (now - Date.parse(session.lastSeenAt) > SESSION_TOUCH_INTERVAL_MS) {
+    // Throttled activity bump keeps guest cleanup honest without writing
+    // on every request.
+    store
+      .touchSession(sessionId, new Date(now).toISOString())
+      .catch(() => undefined);
+  }
+
+  const user = await store.getUserById(session.userId);
 
   if (!user) {
     return null;
   }
-
-  const now = new Date().toISOString();
-
-  await writeDb((current) => ({
-    ...current,
-    sessions: current.sessions.map((entry) =>
-      entry.id === sessionId ? { ...entry, lastSeenAt: now } : entry,
-    ),
-    users: current.users.map((entry) =>
-      entry.id === user.id
-        ? {
-            ...entry,
-            devices: entry.devices.map((device) => ({
-              ...device,
-              current: device.id === sessionId,
-              lastActiveAt: device.id === sessionId ? now : device.lastActiveAt,
-            })),
-          }
-        : entry,
-    ),
-  }));
 
   return redactUser(user);
 }

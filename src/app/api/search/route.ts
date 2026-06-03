@@ -1,7 +1,14 @@
 import { searchAnime } from "@/lib/providers/anilist";
+import { rateLimitResponse } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
+  const limited = await rateLimitResponse("search", {
+    limit: 40,
+    windowMs: 60_000,
+  });
+  if (limited) return limited;
+
   const { searchParams } = new URL(request.url);
   const query = searchParams.get("q");
 

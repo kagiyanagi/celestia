@@ -6,9 +6,12 @@ Celestia is an anime watching and tracking website. AniList is the primary metad
 
 - Next.js App Router with TypeScript.
 - AniList GraphQL provider for trending, seasonal, search, detail, characters, relations, recommendations, and airing data.
+- Multi-source metadata enrichment: ani.zip episode data and cross-platform ID mappings, Jikan (MyAnimeList) rating comparison, TMDB episode stills for long-running series, and AnimeSchedule sub/dub timetables.
+- Real dub tracking: dub episode counts and next-dub arrival times come from the AnimeSchedule dub timetable. Unknown dub data is shown as unknown, never guessed.
 - Local browser tracking on anime detail pages as the first progress ledger.
 - Provider health endpoint at `/api/health`.
 - Streaming is supported through a swappable adapter. Configure your own API in the environment variables.
+- Verified stream matches are persisted per provider (episode-count verified), so title guessing only happens once per anime and wrong-season matches are rejected.
 
 ## Commands
 
@@ -30,9 +33,12 @@ ANILIST_CLIENT_SECRET=
 ANILIST_REDIRECT_URI=http://localhost:3000/api/auth/callback/anilist
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-# Optional airing timetable enrichment
+# Optional airing + dub timetable enrichment (free token from animeschedule.net)
 ANIMESCHEDULE_API_BASE_URL=https://animeschedule.net/api/v3
 ANIMESCHEDULE_API_TOKEN=
+
+# Optional episode stills for long-running series (free key from themoviedb.org)
+TMDB_API_KEY=
 
 # Optional durable app state storage
 DATABASE_URL=
