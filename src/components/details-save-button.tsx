@@ -2,6 +2,7 @@
 
 import { Bookmark, BookmarkCheck, CalendarDays, ChevronDown, Play, RotateCcw, Trash2, Pause, Ban, Check } from "lucide-react";
 import { startTransition, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/components/auth-provider";
@@ -195,7 +196,9 @@ export function DetailsSaveButton({
         <TriggerIcon size={20} />
       </button>
 
-      {open ? (
+      {/* Portaled to <body> so ancestor transforms (e.g. the hero carousel
+          track) can't hijack the fixed-position backdrop. */}
+      {open && typeof document !== "undefined" ? createPortal(
         <div className="dialog-backdrop" role="presentation" onClick={() => setOpen(false)}>
           <div className="save-dialog" role="dialog" aria-modal="true" onClick={(event) => event.stopPropagation()}>
             <div className="save-dialog-body">
@@ -372,7 +375,8 @@ export function DetailsSaveButton({
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       ) : null}
     </>
   );

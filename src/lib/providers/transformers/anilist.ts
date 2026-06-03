@@ -92,6 +92,9 @@ export type AniListDetailsMedia = AniListMedia & {
   }> | null;
   externalLinks: ExternalLink[] | null;
   characters: {
+    pageInfo?: {
+      hasNextPage?: boolean | null;
+    } | null;
     edges: Array<{
       role: string | null;
       node: {

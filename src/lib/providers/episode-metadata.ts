@@ -179,6 +179,8 @@ function mergeEpisode(
     url: existing.url || candidate.url || null,
     site: existing.site || candidate.site || null,
     description: candidate.description || existing.description || null,
+    airDate: existing.airDate || candidate.airDate || null,
+    rating: existing.rating ?? candidate.rating ?? null,
     sources: mergeSources(existing.sources, candidate.sources),
   };
 }

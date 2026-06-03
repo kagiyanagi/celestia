@@ -1,5 +1,7 @@
 import Image from "next/image";
-import { AnimeDetails } from "@/types/anime";
+import { Search } from "lucide-react";
+import { useState } from "react";
+import { AnimeDetails, CharacterCredit } from "@/types/anime";
 
 interface DetailsCastProps {
   anime: AnimeDetails;
@@ -7,7 +9,26 @@ interface DetailsCastProps {
   onShowMore?: () => void;
 }
 
+function characterUrl(char: CharacterCredit): string {
+  return `https://anilist.co/character/${char.id}`;
+}
+
+function matchesCastQuery(char: CharacterCredit, query: string): boolean {
+  return [
+    char.name,
+    char.nativeName,
+    char.voiceActors?.japanese?.name,
+    char.voiceActors?.english?.name,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+    .includes(query);
+}
+
 export function DetailsCast({ anime, mode, onShowMore }: DetailsCastProps) {
+  const [query, setQuery] = useState("");
+
   if (mode === "preview") {
     return (
       <>
@@ -20,7 +41,13 @@ export function DetailsCast({ anime, mode, onShowMore }: DetailsCastProps) {
           </div>
           <div className="cast-grid">
             {(anime.characters ?? []).slice(0, 12).map((char) => (
-              <div className="cast-card" key={char.id}>
+              <a
+                className="cast-card"
+                key={char.id}
+                href={characterUrl(char)}
+                target="_blank"
+                rel="noreferrer"
+              >
                 <div className="cast-image-pair">
                   <div className="char-img">
                     {char.image && (
@@ -57,7 +84,7 @@ export function DetailsCast({ anime, mode, onShowMore }: DetailsCastProps) {
                     <span>Japanese</span>
                   </div>
                 </div>
-              </div>
+              </a>
             ))}
           </div>
         </div>
@@ -84,18 +111,48 @@ export function DetailsCast({ anime, mode, onShowMore }: DetailsCastProps) {
     );
   }
 
+  const allCharacters = anime.characters ?? [];
+  const normalizedQuery = query.trim().toLowerCase();
+  const visibleCharacters = normalizedQuery
+    ? allCharacters.filter((char) => matchesCastQuery(char, normalizedQuery))
+    : allCharacters;
+
   return (
     <div className="tab-characters">
       <div className="section-header-row">
         <h2>Characters</h2>
+        <label className="ep-search cast-search">
+          <Search size={16} aria-hidden />
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search character or voice actor..."
+            aria-label="Search characters"
+          />
+        </label>
         <span className="characters-count">
-          {(anime.characters ?? []).length} total
+          {normalizedQuery
+            ? `${visibleCharacters.length} of ${allCharacters.length}`
+            : `${allCharacters.length} total`}
         </span>
       </div>
 
+      {!visibleCharacters.length ? (
+        <div className="empty-panel">
+          No characters match &quot;{query.trim()}&quot;.
+        </div>
+      ) : null}
+
       <div className="character-tab-grid">
-        {(anime.characters ?? []).map((char) => (
-          <article className="character-tab-card" key={char.id}>
+        {visibleCharacters.map((char) => (
+          <a
+            className="character-tab-card"
+            key={char.id}
+            href={characterUrl(char)}
+            target="_blank"
+            rel="noreferrer"
+          >
             <div className="character-tab-top">
               <div className="character-tab-image">
                 {char.image ? (
@@ -149,7 +206,7 @@ export function DetailsCast({ anime, mode, onShowMore }: DetailsCastProps) {
                 </div>
               </div>
             </div>
-          </article>
+          </a>
         ))}
       </div>
     </div>
