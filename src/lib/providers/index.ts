@@ -1,3 +1,4 @@
+import { getAnimeScheduleProviderHealth } from "@/lib/providers/anime-schedule";
 import { getStreamingProviderHealth } from "@/lib/providers/streaming";
 import type { ProviderHealth } from "@/types/anime";
 
@@ -9,6 +10,7 @@ export function getProviderHealth(): ProviderHealth[] {
       status: "ready",
       notes: "Primary catalog, account tracking, discovery, characters, and airing data."
     },
+    getAnimeScheduleProviderHealth(),
     getStreamingProviderHealth()
   ];
 }
