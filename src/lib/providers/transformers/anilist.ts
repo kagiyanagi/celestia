@@ -151,13 +151,14 @@ export function transformAnimeSummary(media: Partial<AniListMedia>): AnimeSummar
   const isFinished = m.status === "FINISHED";
   const isReleasing = m.status === "RELEASING";
 
-  let airingCount = 0;
+  // Episodes aired so far. Null means "unknown" — e.g. an unreleased, cancelled
+  // or hiatus show, or a releasing one AniList has no airing schedule for. We
+  // never substitute 0, which would read as a confident "no episodes yet".
+  let airingCount: number | null = null;
   if (isFinished) {
-    airingCount = m.episodes ?? 0;
-  } else if (isReleasing) {
-    airingCount = m.nextAiringEpisode
-      ? Math.max(0, m.nextAiringEpisode.episode - 1)
-      : 0;
+    airingCount = m.episodes ?? null;
+  } else if (isReleasing && m.nextAiringEpisode) {
+    airingCount = Math.max(0, m.nextAiringEpisode.episode - 1);
   }
 
   // AniList carries no dub information. Real dub counts come from the

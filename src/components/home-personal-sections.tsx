@@ -88,9 +88,6 @@ export function HomePersonalSections({
                   {entry.durationLabel ? (
                     <span className="continue-card-duration">{entry.durationLabel}</span>
                   ) : null}
-                  <span className="continue-card-progress">
-                    <span style={{ width: `${entry.progressPercent}%` }} />
-                  </span>
                 </span>
                 <span className="continue-card-copy">
                   <span className="continue-card-meta">

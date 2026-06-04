@@ -115,6 +115,21 @@ export type FranchiseGraph = {
   height: number;
 };
 
+export type AnimeNotificationType = "episode" | "dub";
+
+/** A new-release notice for an anime on the user's list. */
+export type AnimeNotification = {
+  id: string;
+  type: AnimeNotificationType;
+  animeId: number;
+  title: string;
+  coverImage: string | null;
+  episode: number;
+  /** When the episode aired, epoch seconds. */
+  airedAt: number;
+  read: boolean;
+};
+
 export type ExternalLink = {
   id: number;
   site: string;

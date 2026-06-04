@@ -197,6 +197,8 @@ function buildEpisodeList(input: {
   fallbackTotal: number;
   releasedEpisodeLimit: number | null;
   animeTitle: string;
+  /** Only a finished show has its full episode set; otherwise don't invent rows. */
+  trustFullCount: boolean;
 }): WatchEpisode[] {
   const episodesByNumber = new Map<number, WatchEpisode>();
 
@@ -245,9 +247,14 @@ function buildEpisodeList(input: {
   const largestKnownEpisode = episodesByNumber.size
     ? Math.max(...episodesByNumber.keys())
     : 0;
+  // Pad up to the catalog total only for finished shows, whose full episode set
+  // genuinely exists. For hiatus/cancelled/unknown shows, never synthesize past
+  // the episodes we actually have — that would invent never-aired episodes.
   const totalEpisodes =
     input.releasedEpisodeLimit ??
-    Math.max(input.fallbackTotal, largestKnownEpisode);
+    (input.trustFullCount
+      ? Math.max(input.fallbackTotal, largestKnownEpisode)
+      : largestKnownEpisode);
 
   for (let number = 1; number <= totalEpisodes; number += 1) {
     if (!episodesByNumber.has(number)) {
@@ -402,6 +409,7 @@ export default async function WatchPage({
     fallbackTotal,
     releasedEpisodeLimit,
     animeTitle: title,
+    trustFullCount: anime.status === "FINISHED",
   });
   const ascendingEpisodes = episodes;
   const currentEpisode =

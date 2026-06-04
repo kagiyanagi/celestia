@@ -347,6 +347,19 @@ async function findProviderAvailability(input: {
   best =
     best || results.sort((a, b) => (b.score || 0) - (a.score || 0))[0] || null;
 
+  // A wrong stream is worse than no stream. When we know the expected episode
+  // count, only serve a count-verified match (the same bar we persist at) — a
+  // title-guessed candidate whose count merely "isn't bad enough to reject" is
+  // refused. Without an expected count we can't verify, so the best-scored
+  // candidate stands.
+  if (
+    best &&
+    input.expectedEpisodes &&
+    !isVerifiedMatch(best, input.expectedEpisodes)
+  ) {
+    return null;
+  }
+
   // Persist only episode-count-verified matches so a weak guess never gets
   // locked in.
   if (

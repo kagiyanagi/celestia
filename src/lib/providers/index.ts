@@ -1,4 +1,5 @@
 import { getAnimeScheduleProviderHealth } from "@/lib/providers/anime-schedule";
+import { getDubStatusProviderHealth } from "@/lib/providers/dub-status";
 import { getJikanProviderHealth } from "@/lib/providers/jikan";
 import { getStreamingProviderHealth } from "@/lib/providers/streaming";
 import { getTmdbProviderHealth } from "@/lib/providers/tmdb";
@@ -21,6 +22,7 @@ export function getProviderHealth(): ProviderHealth[] {
     getJikanProviderHealth(),
     getTmdbProviderHealth(),
     getAnimeScheduleProviderHealth(),
+    getDubStatusProviderHealth(),
     getStreamingProviderHealth()
   ];
 }

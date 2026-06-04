@@ -27,6 +27,7 @@ export async function GET() {
         devices: user.devices,
         libraryEntries: user.libraryEntries,
         historyEntries: user.historyEntries,
+        notificationsLastReadAt: user.notificationsLastReadAt ?? null,
       },
     });
   } catch {

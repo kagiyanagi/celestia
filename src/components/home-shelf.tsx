@@ -62,10 +62,12 @@ export function HomeShelf({ title, href, items }: HomeShelfProps) {
                 {getDisplayTitle(anime.title)}
               </strong>
               <span className="shelf-card-meta">
-                <span>
-                  <Captions size={14} aria-hidden />
-                  {anime.airingCount || 0}
-                </span>
+                {anime.airingCount != null ? (
+                  <span>
+                    <Captions size={14} aria-hidden />
+                    {anime.airingCount}
+                  </span>
+                ) : null}
                 {anime.dubCount != null ? (
                   <span>
                     <Mic size={14} aria-hidden />

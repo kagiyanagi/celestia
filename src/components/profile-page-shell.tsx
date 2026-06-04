@@ -41,11 +41,10 @@ export function ProfilePageShell({
   const finishedCount = libraryEntries.filter(
     (entry) => entry.status === "completed",
   ).length;
-  const totalEpisodes = libraryEntries.reduce(
-    (total, entry) => total + entry.progress,
-    0,
-  );
-  const daysWatched = (totalEpisodes * 24) / (60 * 24);
+  // Real watch time is only available from AniList. We don't track per-episode
+  // runtime locally, so for non-AniList profiles this stays unknown rather than
+  // being faked from an assumed 24-min episode length.
+  const daysWatched = profile?.daysWatched ?? null;
 
   return (
     <div className="profile-page">
@@ -82,7 +81,7 @@ export function ProfilePageShell({
           <div className="profile-overview-grid">
             <div className="profile-stats-card">
               <div>
-                <strong>{(profile?.daysWatched || daysWatched).toFixed(1)}</strong>
+                <strong>{daysWatched != null ? daysWatched.toFixed(1) : "—"}</strong>
                 <span>Days Watched</span>
               </div>
               <div>

@@ -163,10 +163,12 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
                     </p>
                     <div className="celestia-pills">
                       <span>{item.format || "Anime"}</span>
-                      <span>
-                        <Captions size={14} aria-hidden />
-                        {item.airingCount || 0}
-                      </span>
+                      {item.airingCount != null ? (
+                        <span>
+                          <Captions size={14} aria-hidden />
+                          {item.airingCount}
+                        </span>
+                      ) : null}
                       {item.dubCount != null ? (
                         <span>
                           <Mic size={14} aria-hidden />
