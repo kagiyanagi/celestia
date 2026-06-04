@@ -3850,6 +3850,159 @@ main {
     color: var(--muted);
 }
 
+/* Franchise relation graph */
+.franchise-graph {
+    position: relative;
+}
+
+.franchise-graph--message {
+    display: grid;
+    place-items: center;
+    min-height: 240px;
+}
+
+.franchise-message {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.franchise-viewport {
+    position: relative;
+    width: 100%;
+    height: min(70vh, 620px);
+    overflow: hidden;
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    background:
+        radial-gradient(circle at center, rgba(255, 255, 255, 0.06) 1px, transparent 1px)
+            0 0 / 22px 22px,
+        var(--bg-soft);
+    cursor: grab;
+    touch-action: none;
+}
+
+.franchise-viewport:active {
+    cursor: grabbing;
+}
+
+.franchise-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+    will-change: transform;
+}
+
+.franchise-edges {
+    position: absolute;
+    top: 0;
+    left: 0;
+    overflow: visible;
+    pointer-events: none;
+}
+
+.franchise-edge path {
+    fill: none;
+    stroke: var(--line-strong);
+    stroke-width: 1.5;
+}
+
+.franchise-edge text {
+    fill: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.franchise-node {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    color: var(--text);
+    text-decoration: none;
+    transition:
+        border-color 140ms var(--ease-spring),
+        background 140ms var(--ease-spring);
+}
+
+.franchise-node:hover {
+    background: var(--panel-2);
+    border-color: var(--line-strong);
+}
+
+.franchise-node.is-root {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--text);
+    box-shadow: 0 0 0 1px var(--text);
+}
+
+.franchise-node-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.franchise-node-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.franchise-node-meta {
+    color: var(--muted-strong);
+    white-space: nowrap;
+}
+
+.franchise-controls {
+    position: absolute;
+    left: 16px;
+    bottom: 16px;
+    display: flex;
+    gap: 6px;
+    padding: 6px;
+    border-radius: 12px;
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--line);
+}
+
+.franchise-controls button {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--muted-strong);
+    cursor: pointer;
+    transition:
+        background 130ms var(--ease-spring),
+        color 130ms var(--ease-spring);
+}
+
+.franchise-controls button:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text);
+}
+
 @media (max-width: 1000px) {
     .anime-hero-new {
         grid-template-columns: 1fr;

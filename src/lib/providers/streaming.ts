@@ -283,8 +283,12 @@ function getTitleCandidates(title: string | string[]): string[] {
   });
 
   // Each candidate costs one provider request, so cap the probe list.
-  // Original titles come first, so the most likely matches are kept.
-  return Array.from(new Set(candidates)).slice(0, 16);
+  // Original titles come first, so the most likely matches are kept. Drop
+  // blanks — a CJK-only title can normalize to "" and would otherwise probe
+  // the provider with an empty query (a guaranteed 404).
+  return Array.from(new Set(candidates))
+    .filter((candidate) => candidate.trim().length > 0)
+    .slice(0, 16);
 }
 
 async function findProviderAvailability(input: {

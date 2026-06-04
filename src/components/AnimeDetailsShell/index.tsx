@@ -10,7 +10,7 @@ import { DetailsTabs, TabKey } from "./DetailsTabs";
 import { DetailsOverview } from "./DetailsOverview";
 import { DetailsEpisodes } from "./DetailsEpisodes";
 import { DetailsCast } from "./DetailsCast";
-import { DetailsRelations } from "./DetailsRelations";
+import { DetailsFranchise } from "./DetailsFranchise";
 import { DetailsSimilar } from "./DetailsSimilar";
 import { getRelatedItems } from "./helpers";
 
@@ -57,8 +57,12 @@ export function AnimeDetailsShell({
             <DetailsEpisodes anime={anime} watchHref={watchHref} />
           )}
 
-          {activeTab === "related" && (
-            <DetailsRelations relatedItems={relatedItems} />
+          {activeTab === "franchise" && (
+            <DetailsFranchise
+              key={anime.id}
+              animeId={anime.id}
+              relatedItems={relatedItems}
+            />
           )}
 
           {activeTab === "similar" && (
