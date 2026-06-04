@@ -11,6 +11,7 @@ import { SearchModal } from "./search-modal";
 export function SiteHeader() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
@@ -46,6 +47,30 @@ export function SiteHeader() {
     };
   }, []);
 
+  // Refresh the unread badge per route change (provider data is cached, so
+  // repeat lookups are cheap) and clear it when signed out.
+  useEffect(() => {
+    if (!user) {
+      return;
+    }
+
+    let cancelled = false;
+    fetch("/api/notifications")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: { unreadCount?: number } | null) => {
+        if (!cancelled && data) {
+          setUnreadCount(data.unreadCount || 0);
+        }
+      })
+      .catch(() => undefined);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, pathname]);
+
+  const badgeCount = user ? unreadCount : 0;
+
   return (
     <>
       <header
@@ -77,11 +102,20 @@ export function SiteHeader() {
               <Search size={18} aria-hidden />
             </button>
             <Link
-              className="header-icon-button header-link-button"
-              href="/airing"
-              aria-label="Airing"
+              className="header-icon-button header-link-button header-notif-button"
+              href="/notifications"
+              aria-label={
+                badgeCount > 0
+                  ? `Notifications, ${badgeCount} unread`
+                  : "Notifications"
+              }
             >
               <Bell size={18} aria-hidden />
+              {badgeCount > 0 ? (
+                <span className="notif-badge">
+                  {badgeCount > 9 ? "9+" : badgeCount}
+                </span>
+              ) : null}
             </Link>
             <Link className="header-avatar" href="/profile" aria-label="Profile">
               {user?.avatar ? (

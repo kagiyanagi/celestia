@@ -31,13 +31,15 @@ export function HomeUpcomingGrid({ items }: HomeUpcomingGridProps) {
           const studio = anime.studios?.[0]?.name;
           const themeColor = anime.color || "rgba(255, 255, 255, 0.1)";
 
-          const countdown = anime.nextAiringEpisode
-            ? formatRelativeSeconds(
-                anime.nextAiringEpisode.timeUntilAiring,
-              ).replace("in ", "")
+          const next = anime.nextAiringEpisode;
+          const countdown = next
+            ? formatRelativeSeconds(next.timeUntilAiring).replace("in ", "")
             : anime.season && anime.seasonYear
               ? formatSeasonLabel(anime.season, anime.seasonYear)
               : anime.seasonYear || "Soon";
+          // Only frame it as an episode countdown when we know the next episode;
+          // otherwise it's a premiere window, not "Ep 1 airing in <season>".
+          const kicker = next ? `Ep ${next.episode} airing in` : "Premieres";
 
           return (
             <Link
@@ -86,7 +88,7 @@ export function HomeUpcomingGrid({ items }: HomeUpcomingGridProps) {
 
               <div className="upcoming-card-right">
                 <div className="upcoming-card-top">
-                  <span className="upcoming-kicker">Ep 1 airing in</span>
+                  <span className="upcoming-kicker">{kicker}</span>
                   <span className="upcoming-countdown">{countdown}</span>
                   <span className="upcoming-source">
                     Source : {anime.source?.replaceAll("_", " ") || "Original"}

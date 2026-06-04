@@ -201,3 +201,22 @@ export async function getAnimeMappings(
   const data = await getAniZipData(anilistId);
   return data?.mappings || null;
 }
+
+// Wide artwork that works as a hero backdrop, best first. Fanart is 16:9
+// background art; the TVDB "Banner" is thin but still wide. Portrait posters
+// are intentionally excluded — they do not work as a banner.
+const BANNER_COVER_PRIORITY = ["fanart", "banner"];
+
+/**
+ * Picks the best wide artwork from ani.zip's image set to use as a banner when
+ * AniList has none. Returns null when only portrait artwork is available.
+ */
+export function pickAniZipBanner(images: AniZipArtwork[]): string | null {
+  for (const coverType of BANNER_COVER_PRIORITY) {
+    const match = images.find(
+      (image) => image.url && image.coverType.toLowerCase() === coverType,
+    );
+    if (match) return match.url;
+  }
+  return null;
+}

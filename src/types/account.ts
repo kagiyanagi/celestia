@@ -98,6 +98,8 @@ export type UserRecord = {
   devices: DeviceSession[];
   libraryEntries: LibraryEntry[];
   historyEntries: HistoryEntry[];
+  /** ISO timestamp the user last marked notifications as read. */
+  notificationsLastReadAt?: string | null;
 };
 
 export type SessionRecord = {

@@ -160,17 +160,11 @@ export function HistoryPageClient({ entries }: { entries: HistoryEntry[] }) {
                           null
                         }
                       />
-                      <span className="continue-card-progress">
-                        <span style={{ width: `${entry.progressPercent}%` }} />
-                      </span>
                     </span>
                     <span className="history-card-copy">
                       <span className="ep-meta-row">
                         <span className="ep-meta-item">
                           Ep {entry.episode}
-                        </span>
-                        <span className="ep-meta-item">
-                          {entry.progressPercent}% watched
                         </span>
                         {entry.durationLabel ? (
                           <span className="ep-meta-item">
