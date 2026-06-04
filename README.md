@@ -2,6 +2,8 @@
 
 Celestia is an anime watching and tracking website. AniList is the primary metadata and tracking source, while streaming is routed through a swappable provider adapter.
 
+> **No streaming source is bundled with this project.** Celestia is a metadata, tracking, and discovery app. Video playback is entirely bring-your-own: you must supply your own provider API through environment variables (`STREAMING_PROVIDER_*` or `STREAMING_PROVIDERS`). No endpoint is included, referenced, or enabled by default — with none configured, the watch page simply reports that streaming is not configured. The maintainers do not host, provide, proxy, or endorse any streaming source.
+
 ## Current Build
 
 - Next.js App Router with TypeScript.
