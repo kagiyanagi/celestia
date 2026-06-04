@@ -33,6 +33,7 @@ function sanitizeUser(user: UserRecord): PublicUser {
     devices: user.devices,
     libraryEntries: user.libraryEntries,
     historyEntries: user.historyEntries,
+    notificationsLastReadAt: user.notificationsLastReadAt ?? null,
   };
 }
 
@@ -259,6 +260,13 @@ export async function recordHistory(input: {
 export async function clearHistory(userId: string) {
   return updateUserRecord(userId, (user) => {
     user.historyEntries = [];
+    return sanitizeUser(user);
+  });
+}
+
+export async function markNotificationsRead(userId: string) {
+  return updateUserRecord(userId, (user) => {
+    user.notificationsLastReadAt = new Date().toISOString();
     return sanitizeUser(user);
   });
 }

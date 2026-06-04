@@ -1,5 +1,4 @@
 import { getAniZipData } from "@/lib/providers/anizip";
-import { getTmdbEpisodeStills, isTmdbConfigured } from "@/lib/providers/tmdb";
 import type {
   AnimeStreamingEpisode,
   EpisodeMetadataField,
@@ -13,9 +12,6 @@ type EpisodeMetadataInput = {
   /** Total episodes the catalog expects (AniList count or aired count). */
   expectedEpisodes?: number | null;
 };
-
-// Below this thumbnail coverage we reach for TMDB stills as a gap-filler.
-const TMDB_ENRICHMENT_COVERAGE_THRESHOLD = 0.8;
 
 type EpisodeMetadataResult = {
   episodes: AnimeStreamingEpisode[];
@@ -62,21 +58,6 @@ const TVDB_SOURCE: MetadataSourceSummary = {
   label: "TheTVDB",
   role: "image_metadata",
   confidence: "medium",
-};
-
-const TMDB_SOURCE: SourceDefinition = {
-  source: {
-    provider: "tmdb",
-    label: "TMDB",
-    confidence: "medium",
-    fields: [],
-  },
-  summary: {
-    provider: "tmdb",
-    label: "TMDB",
-    role: "image_metadata",
-    confidence: "medium",
-  },
 };
 
 const TVDB_EPISODE_SOURCE: EpisodeMetadataSource = {
@@ -175,7 +156,10 @@ function mergeEpisode(
   return {
     number: existing.number,
     title: preferEpisodeTitle(candidate.title, existing.title, existing.number),
-    thumbnail: existing.thumbnail || candidate.thumbnail || null,
+    // ani.zip's TVDB still is keyed by AniList episode number and is therefore
+    // season-correct; prefer it over AniList's streamingEpisodes thumbnail,
+    // which for sequels is often a stale franchise/previous-season image.
+    thumbnail: candidate.thumbnail || existing.thumbnail || null,
     url: existing.url || candidate.url || null,
     site: existing.site || candidate.site || null,
     description: candidate.description || existing.description || null,
@@ -246,27 +230,7 @@ function collectSourceSummaries(
     summaries.push(TVDB_SOURCE);
   }
 
-  if (providers.has("tmdb")) {
-    summaries.push(TMDB_SOURCE.summary);
-  }
-
   return summaries;
-}
-
-function getThumbnailCoverage(
-  episodeMap: Map<number, AnimeStreamingEpisode>,
-  expectedTotal: number,
-): number {
-  if (!expectedTotal) {
-    return 1;
-  }
-
-  let withThumbnail = 0;
-  episodeMap.forEach((episode) => {
-    if (episode.thumbnail) withThumbnail += 1;
-  });
-
-  return withThumbnail / expectedTotal;
 }
 
 function mergeIntoMap(
@@ -301,33 +265,12 @@ export async function getEpisodeMetadata(
 
   mergeIntoMap(episodeMap, aniZipEpisodes);
 
-  // Long-running series (e.g. One Piece) have sparse TVDB image coverage in
-  // ani.zip. When most episodes are missing thumbnails and we know the TMDB
-  // show ID, fill the gaps with TMDB stills.
-  const expectedTotal = Math.max(
-    input.expectedEpisodes || 0,
-    aniZipData?.episodeCount || 0,
-    episodeMap.size ? Math.max(...episodeMap.keys()) : 0,
-  );
-  const coverage = getThumbnailCoverage(episodeMap, expectedTotal);
-  const tmdbId = aniZipData?.mappings.themoviedbId;
-
-  if (
-    isTmdbConfigured() &&
-    tmdbId &&
-    coverage < TMDB_ENRICHMENT_COVERAGE_THRESHOLD
-  ) {
-    const tmdbEpisodes = normalizeEpisodes(
-      await getTmdbEpisodeStills({
-        tmdbId,
-        expectedEpisodes: expectedTotal || null,
-      }),
-      TMDB_SOURCE.source,
-    );
-
-    mergeIntoMap(episodeMap, tmdbEpisodes);
-  }
-
+  // Episode stills come only from ani.zip (TVDB), which is keyed by AniList
+  // episode number and is therefore season-correct. We deliberately do NOT
+  // fall back to TMDB stills: TMDB models a franchise as a single show with
+  // absolute episode numbering, so mapping it onto one AniList cour stamps an
+  // earlier season's images onto later seasons. A missing thumbnail is better
+  // than a wrong one (accuracy over fabrication).
   const episodes = Array.from(episodeMap.values()).sort(
     (first, second) => first.number - second.number,
   );

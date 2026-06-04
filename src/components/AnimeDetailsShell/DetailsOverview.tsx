@@ -84,13 +84,13 @@ export function DetailsOverview({
         <div className="fact-item">
           <span>Season:</span>
           <strong className="uppercase">
-            {anime.season} {anime.seasonYear}
+            {[anime.season, anime.seasonYear].filter(Boolean).join(" ") || "?"}
           </strong>
         </div>
         <div className="fact-item">
           <span>Status:</span>
           <strong className={anime.status === "RELEASING" ? "text-green" : ""}>
-            {anime.status?.replaceAll("_", " ")}
+            {anime.status?.replaceAll("_", " ") || "?"}
           </strong>
         </div>
         <div className="fact-item">
@@ -122,15 +122,15 @@ export function DetailsOverview({
         )}
         <div className="fact-item">
           <span>Source:</span>
-          <strong>{anime.source?.replaceAll("_", " ")}</strong>
+          <strong>{anime.source?.replaceAll("_", " ") || "?"}</strong>
         </div>
         <div className="fact-item">
           <span>Country:</span>
-          <strong>{anime.countryOfOrigin}</strong>
+          <strong>{anime.countryOfOrigin || "?"}</strong>
         </div>
         <div className="fact-item">
           <span>Hashtag:</span>
-          <strong>{anime.hashtag}</strong>
+          <strong>{anime.hashtag || "?"}</strong>
         </div>
         <div className="fact-item">
           <span>Native Title:</span>

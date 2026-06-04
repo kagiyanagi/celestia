@@ -242,7 +242,7 @@ export function EpisodeBrowser({
                     </span>
                   ) : null}
                   {watched ? (
-                    <span className="ep-meta-item">{progress}% watched</span>
+                    <span className="ep-meta-item">Watched</span>
                   ) : null}
                   {ep.number === activeEpisode ? (
                     <span className="ep-meta-item ep-now-playing">
@@ -260,11 +260,6 @@ export function EpisodeBrowser({
                 <p className="ep-description-text">
                   {ep.description || `Watch episode ${ep.number}.`}
                 </p>
-                {watched ? (
-                  <span className="ep-progress-bar inline">
-                    <span style={{ width: `${progress}%` }} />
-                  </span>
-                ) : null}
               </div>
             </Link>
           );

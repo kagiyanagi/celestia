@@ -14,6 +14,10 @@ import {
   getDubInfo,
 } from "@/lib/providers/anime-schedule";
 import { getAnimeMappings } from "@/lib/providers/anizip";
+import {
+  enrichSummaryBanners,
+  resolveBannerFallback,
+} from "@/lib/providers/banner";
 import { getEpisodeMetadata } from "@/lib/providers/episode-metadata";
 import { getJikanEpisodeFlags, getMalStats } from "@/lib/providers/jikan";
 import {
@@ -542,12 +546,32 @@ export async function getHomeCollections(): Promise<HomeCollections> {
       900,
     );
 
-    // Card-level dub counts come from one cached weekly dub timetable
-    // fetch; shows without an active dub keep dubCount null (chip hidden).
-    const [topAiring, trending, season] = await Promise.all([
+    // Card-level dub counts: AnimeSchedule for active dubs + MyDubList for
+    // finished catalog titles. Shows without a verifiable dub keep dubCount
+    // null (chip hidden). The finished/movies shelves are enriched too so their
+    // dub badges aren't missing relative to the /finished and /movies pages.
+    const [topAiring, trending, season, finished, movies] = await Promise.all([
       enrichSummariesWithDubCounts(data.topAiring.media.map(transformAnimeSummary)),
       enrichSummariesWithDubCounts(data.trending.media.map(transformAnimeSummary)),
       enrichSummariesWithDubCounts(data.season.media.map(transformAnimeSummary)),
+      enrichSummariesWithDubCounts(data.finished.media.map(transformAnimeSummary)),
+      enrichSummariesWithDubCounts(data.movies.media.map(transformAnimeSummary)),
+    ]);
+
+    const airingSoon = data.airing.airingSchedules
+      .filter((item) => item.media.type === "ANIME")
+      .map<AiringItem>((item) => ({
+        episode: item.episode,
+        airingAt: item.airingAt,
+        timeUntilAiring: item.airingAt - Math.floor(Date.now() / 1000),
+        anime: transformAnimeSummary(item.media),
+      }));
+
+    // Banner-backed surfaces on the home page: the hero carousel (topAiring)
+    // and the airing board (airingSoon). Fill banners AniList is missing.
+    await Promise.all([
+      enrichSummaryBanners(topAiring),
+      enrichSummaryBanners(airingSoon.map((item) => item.anime)),
     ]);
 
     return {
@@ -555,16 +579,9 @@ export async function getHomeCollections(): Promise<HomeCollections> {
       trending,
       season,
       upcoming: data.upcoming.media.map(transformAnimeSummary),
-      finished: data.finished.media.map(transformAnimeSummary),
-      movies: data.movies.media.map(transformAnimeSummary),
-      airingSoon: data.airing.airingSchedules
-        .filter((item) => item.media.type === "ANIME")
-        .map<AiringItem>((item) => ({
-          episode: item.episode,
-          airingAt: item.airingAt,
-          timeUntilAiring: item.airingAt - Math.floor(Date.now() / 1000),
-          anime: transformAnimeSummary(item.media),
-        })),
+      finished,
+      movies,
+      airingSoon,
     };
   } catch (error) {
     console.error(error);
@@ -603,15 +620,129 @@ export async function getAiringSchedule(
 
       if (!data.Page.pageInfo?.hasNextPage) break;
     }
-    return enrichAiringScheduleWithAnimeSchedule(
+    const enriched = await enrichAiringScheduleWithAnimeSchedule(
       items.sort((a, b) => a.airingAt - b.airingAt),
       startAt,
       endAt,
     );
+    // Fill missing banners (AniList has none for many titles) so the airing
+    // board renders backdrops instead of blank rows.
+    await enrichSummaryBanners(
+      enriched.map((item) => item.anime),
+      { timeoutMs: 6_000 },
+    );
+    return enriched;
   } catch (error) {
     console.error(error);
     return [];
   }
+}
+
+export type RecentEpisodeDrop = {
+  animeId: number;
+  anime: AnimeSummary;
+  episode: number;
+  airedAt: number;
+};
+
+// Media.airingSchedule takes no sort arg, so query the top-level
+// Page.airingSchedules connection (filterable by media + airing window).
+const RECENT_DROPS_QUERY = `
+  query ($ids: [Int!], $airingAtGreater: Int, $airingAtLesser: Int, $page: Int) {
+    Page(perPage: 50, page: $page) {
+      pageInfo {
+        hasNextPage
+      }
+      airingSchedules(
+        mediaId_in: $ids
+        airingAt_greater: $airingAtGreater
+        airingAt_lesser: $airingAtLesser
+        sort: TIME_DESC
+      ) {
+        episode
+        airingAt
+        mediaId
+        media {
+          id
+          title {
+            romaji
+            english
+            native
+            userPreferred
+          }
+          coverImage {
+            extraLarge
+            large
+            color
+          }
+        }
+      }
+    }
+  }
+`;
+
+type RecentDropsQueryResult = {
+  Page: {
+    pageInfo: { hasNextPage: boolean | null } | null;
+    airingSchedules: Array<{
+      episode: number;
+      airingAt: number;
+      mediaId: number;
+      media: AniListMedia | null;
+    }> | null;
+  } | null;
+};
+
+/**
+ * Returns episodes that aired on or after `sinceEpoch` for the given anime
+ * ids, used to build "new episode" notifications. Bounded to the airing
+ * window in-query; failures degrade to empty.
+ */
+export async function getRecentEpisodeDrops(
+  animeIds: number[],
+  sinceEpoch: number,
+): Promise<RecentEpisodeDrop[]> {
+  if (animeIds.length === 0) {
+    return [];
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const drops: RecentEpisodeDrop[] = [];
+  const maxPages = 5;
+
+  for (let page = 1; page <= maxPages; page += 1) {
+    let result: RecentDropsQueryResult;
+    try {
+      result = await fetchAniList<RecentDropsQueryResult>(
+        RECENT_DROPS_QUERY,
+        {
+          ids: animeIds,
+          airingAtGreater: sinceEpoch,
+          airingAtLesser: now,
+          page,
+        },
+        300,
+      );
+    } catch {
+      break;
+    }
+
+    for (const schedule of result.Page?.airingSchedules ?? []) {
+      if (!schedule.media) continue;
+      drops.push({
+        animeId: schedule.mediaId,
+        anime: transformAnimeSummary(schedule.media),
+        episode: schedule.episode,
+        airedAt: schedule.airingAt,
+      });
+    }
+
+    if (!result.Page?.pageInfo?.hasNextPage) {
+      break;
+    }
+  }
+
+  return drops;
 }
 
 function resolveBrowseSort(
@@ -905,10 +1036,17 @@ export const getAnimeDetails = cache(async function getAnimeDetails(
     if (!data.Media) return null;
 
     const anime = transformAnimeDetails(data.Media);
+    const needsBanner = !anime.bannerImage;
     // Enrichment providers are optional and independent — run them
     // concurrently and tolerate individual failures.
-    const [episodeMetadata, malStats, dubInfo, episodeFlags, extraCharacters] =
-      await Promise.all([
+    const [
+      episodeMetadata,
+      malStats,
+      dubInfo,
+      episodeFlags,
+      extraCharacters,
+      bannerFallback,
+    ] = await Promise.all([
         withSoftTimeout(
           getEpisodeMetadata({
             anilistId: id,
@@ -920,13 +1058,11 @@ export const getAnimeDetails = cache(async function getAnimeDetails(
         ),
         withSoftTimeout(resolveMalStats(id, anime.idMal ?? null), 4_000, null),
         withSoftTimeout(
-          getDubInfo([
-            anime.title?.romaji,
-            anime.title?.english,
-            anime.title?.native,
-            anime.title?.userPreferred,
-            ...(anime.synonyms || []),
-          ]),
+          getDubInfo(id, {
+            expectedEpisodes: anime.episodes ?? anime.airingCount ?? null,
+            idMal: anime.idMal ?? null,
+            status: anime.status ?? null,
+          }),
           4_000,
           null,
         ),
@@ -943,7 +1079,13 @@ export const getAnimeDetails = cache(async function getAnimeDetails(
           5_000,
           [],
         ),
+        needsBanner
+          ? withSoftTimeout(resolveBannerFallback(id), 4_000, null)
+          : Promise.resolve(null),
       ]);
+    if (needsBanner && bannerFallback) {
+      anime.bannerImage = bannerFallback;
+    }
     anime.streamingEpisodes = episodeMetadata.episodes;
     anime.metadataSources = episodeMetadata.sources;
     anime.malStats = malStats;
@@ -1371,8 +1513,9 @@ export async function getAniListViewerProfile(accessToken: string) {
   const completedCount =
     animeStats?.statuses?.find((status) => status.status === "COMPLETED")
       ?.count || 0;
-  const watchedMinutes =
-    animeStats?.minutesWatched || (animeStats?.episodesWatched || 0) * 24;
+  // AniList reports real watch time; never estimate it from an assumed 24-min
+  // episode length (movies, shorts and long finales would all be wrong).
+  const watchedMinutes = animeStats?.minutesWatched || 0;
   const activity: SyncedActivity[] = activityData.Page.activities
     .filter((item) => item.media)
     .map((item) => {

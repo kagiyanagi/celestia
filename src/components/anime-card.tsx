@@ -51,10 +51,12 @@ export function AnimeCard({ anime, priority = false }: AnimeCardProps) {
             <Star size={12} aria-hidden />
             {scoreLabel(anime.averageScore)}
           </span>
-          <span title="Airing/Sub">
-            <Captions size={12} aria-hidden />
-            {anime.airingCount || 0}
-          </span>
+          {anime.airingCount != null ? (
+            <span title="Airing/Sub">
+              <Captions size={12} aria-hidden />
+              {anime.airingCount}
+            </span>
+          ) : null}
           {anime.dubCount != null ? (
             <span title="Dubbed">
               <Mic size={12} aria-hidden />
