@@ -87,6 +87,34 @@ export type RelationItem = {
   anime: AnimeSummary;
 };
 
+/** A single anime entry in the franchise relation graph. */
+export type FranchiseNode = {
+  anime: AnimeSummary;
+  isRoot: boolean;
+  /** Top-left position assigned by the layout pass. */
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+/** A connection between two franchise entries, oriented older -> newer. */
+export type FranchiseEdge = {
+  from: number;
+  to: number;
+  relationType: string;
+};
+
+/** The full connected franchise graph for a root anime. */
+export type FranchiseGraph = {
+  rootId: number;
+  nodes: FranchiseNode[];
+  edges: FranchiseEdge[];
+  /** Overall layout bounds (filled by the layout pass). */
+  width: number;
+  height: number;
+};
+
 export type ExternalLink = {
   id: number;
   site: string;

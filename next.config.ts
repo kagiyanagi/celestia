@@ -11,6 +11,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Allow HMR/dev resources when testing from another device on the LAN.
+  allowedDevOrigins: ["192.168.1.38"],
   async headers() {
     return [
       {
