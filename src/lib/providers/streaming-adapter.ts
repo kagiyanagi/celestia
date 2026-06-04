@@ -4,6 +4,7 @@ import type {
   StreamAvailability,
   StreamEpisode,
   StreamingProvider,
+  StreamReferrerPolicy,
   StreamSource,
 } from "@/types/streaming";
 
@@ -12,6 +13,12 @@ export type StreamingAdapterConfig = {
   label: string;
   url: string;
   priority?: number;
+  // "search" (default) = title search + episode-count verification against the
+  // provider's catalog. "embed" = deterministic AniList-id-keyed URL template.
+  kind?: "search" | "embed";
+  // Iframe referrer policy for this provider's sources. Omit for the default
+  // "no-referrer"; set it when an embed host only resolves with a Referer.
+  referrerPolicy?: StreamReferrerPolicy;
 };
 
 type StreamingFindResponse = {

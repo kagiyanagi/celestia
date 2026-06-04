@@ -506,6 +506,7 @@ export default async function WatchPage({
           {source?.embedUrl ? (
             <StreamPlayer
               primaryUrl={source.embedUrl}
+              primaryReferrerPolicy={source.referrerPolicy}
               fallbacks={source.fallbacks || []}
               title={`${title} episode ${episode}`}
             />
