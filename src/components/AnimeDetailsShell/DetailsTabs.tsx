@@ -2,7 +2,7 @@ export type TabKey =
   | "overview"
   | "characters"
   | "episodes"
-  | "related"
+  | "franchise"
   | "similar";
 
 interface DetailsTabsProps {
@@ -15,7 +15,7 @@ export function DetailsTabs({ activeTab, setActiveTab }: DetailsTabsProps) {
     "overview",
     "characters",
     "episodes",
-    "related",
+    "franchise",
     "similar",
   ];
 

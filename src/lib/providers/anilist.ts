@@ -43,7 +43,7 @@ import type {
 const ANILIST_ENDPOINT =
   process.env.ANILIST_GRAPHQL_ENDPOINT || "https://graphql.anilist.co";
 
-const MEDIA_CARD_FIELDS = `
+export const MEDIA_CARD_FIELDS = `
   id
   idMal
   title {
@@ -458,7 +458,7 @@ function getAniListCacheKey(
   )}`;
 }
 
-async function fetchAniList<T>(
+export async function fetchAniList<T>(
   query: string,
   variables: Record<string, unknown> = {},
   revalidate = 300,
