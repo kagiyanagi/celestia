@@ -1,26 +1,35 @@
 "use client";
 
 import { startTransition, useEffect, useState } from "react";
-import type { StreamFallbackSource } from "@/types/streaming";
+import type {
+  StreamFallbackSource,
+  StreamReferrerPolicy,
+} from "@/types/streaming";
 
 type StreamPlayerProps = {
   title: string;
   primaryUrl: string;
+  primaryReferrerPolicy?: StreamReferrerPolicy;
   fallbacks: StreamFallbackSource[];
 };
 
+const DEFAULT_REFERRER_POLICY: StreamReferrerPolicy = "no-referrer";
 const LOAD_TIMEOUT_MS = 8_000;
 
 export function StreamPlayer({
   title,
   primaryUrl,
+  primaryReferrerPolicy,
   fallbacks,
 }: StreamPlayerProps) {
   const [sourceIndex, setSourceIndex] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const sources = [
-    { embedUrl: primaryUrl },
-    ...fallbacks.map((fallback) => ({ embedUrl: fallback.embedUrl })),
+    { embedUrl: primaryUrl, referrerPolicy: primaryReferrerPolicy },
+    ...fallbacks.map((fallback) => ({
+      embedUrl: fallback.embedUrl,
+      referrerPolicy: fallback.referrerPolicy,
+    })),
   ];
   const activeSource = sources[sourceIndex] || sources[0];
   const sourceKey = [primaryUrl, ...fallbacks.map((fallback) => fallback.embedUrl)].join(
@@ -66,7 +75,7 @@ export function StreamPlayer({
       title={title}
       allow="autoplay; fullscreen; picture-in-picture"
       allowFullScreen
-      referrerPolicy="no-referrer"
+      referrerPolicy={activeSource.referrerPolicy ?? DEFAULT_REFERRER_POLICY}
       onError={switchToFallback}
       onLoad={() => setLoaded(true)}
     />

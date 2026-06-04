@@ -3,6 +3,7 @@ import {
   streamingAdapter,
   type StreamingAdapterConfig,
 } from "@/lib/providers/streaming-adapter";
+import { createEmbedAdapter } from "@/lib/providers/streaming-embed-adapter";
 import {
   getStreamMapping,
   saveStreamMapping,
@@ -14,8 +15,24 @@ import type {
   StreamFallbackSource,
   StreamingProvider,
   StreamProviderOption,
+  StreamReferrerPolicy,
   StreamSource,
 } from "@/types/streaming";
+
+const REFERRER_POLICIES: StreamReferrerPolicy[] = [
+  "no-referrer",
+  "origin",
+  "origin-when-cross-origin",
+  "strict-origin-when-cross-origin",
+  "unsafe-url",
+];
+
+function toReferrerPolicy(value: unknown): StreamReferrerPolicy | undefined {
+  return typeof value === "string" &&
+    (REFERRER_POLICIES as string[]).includes(value)
+    ? (value as StreamReferrerPolicy)
+    : undefined;
+}
 
 const LEGACY_PROVIDER_ID = process.env.STREAMING_PROVIDER_ID || "custom";
 
@@ -24,6 +41,8 @@ type RawStreamingProviderConfig = {
   label?: unknown;
   url?: unknown;
   priority?: unknown;
+  kind?: unknown;
+  referrerPolicy?: unknown;
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -52,6 +71,8 @@ function toProviderConfig(
       typeof value.priority === "number" && Number.isFinite(value.priority)
         ? value.priority
         : 100 + index,
+    kind: value.kind === "embed" ? "embed" : "search",
+    referrerPolicy: toReferrerPolicy(value.referrerPolicy),
   };
 }
 
@@ -94,17 +115,29 @@ function getProviderConfigs(): StreamingAdapterConfig[] {
       label: process.env.STREAMING_PROVIDER_LABEL || "Custom Provider",
       url: process.env.STREAMING_PROVIDER_URL || "",
       priority: 100,
+      kind:
+        process.env.STREAMING_PROVIDER_KIND === "embed" ? "embed" : "search",
+      referrerPolicy: toReferrerPolicy(
+        process.env.STREAMING_PROVIDER_REFERRER_POLICY,
+      ),
     },
   ];
 }
 
-const providers = getProviderConfigs()
-  .map((config) =>
-    config.id === streamingAdapter.id &&
+function createProvider(config: StreamingAdapterConfig): StreamingProvider {
+  if (config.kind === "embed") {
+    return createEmbedAdapter(config);
+  }
+
+  // Reuse the prebuilt singleton when it matches the single-provider env vars.
+  return config.id === streamingAdapter.id &&
     config.url === process.env.STREAMING_PROVIDER_URL
-      ? streamingAdapter
-      : createStreamingAdapter(config),
-  )
+    ? streamingAdapter
+    : createStreamingAdapter(config);
+}
+
+const providers = getProviderConfigs()
+  .map(createProvider)
   .sort((a, b) => a.priority - b.priority || a.id.localeCompare(b.id));
 
 function getRejectionThreshold(expectedEps: number): number {
@@ -297,6 +330,17 @@ async function findProviderAvailability(input: {
   expectedEpisodes: number | null;
   anilistId?: number | null;
 }): Promise<StreamAvailability | null> {
+  // AniList-id-keyed embed providers resolve deterministically from the id —
+  // no title guessing, no episode-count verification, no mapping to persist.
+  // Without an id there is nothing to key on.
+  if (input.provider.keysByAnilistId) {
+    if (!input.anilistId) {
+      return null;
+    }
+
+    return input.provider.findAvailability("", input.anilistId);
+  }
+
   // A previously verified mapping skips title guessing entirely.
   if (input.anilistId) {
     const stored = await getStreamMapping(input.anilistId, input.provider.id);
@@ -448,6 +492,7 @@ async function getSourceFromProvider(input: {
     episode: input.episode,
     audio: input.audio,
     expectedEpisodes: input.expectedEpisodes,
+    anilistId: input.anilistId,
   });
 }
 
@@ -462,6 +507,7 @@ function toFallbackSource(source: StreamSource): StreamFallbackSource | null {
     animeId: source.animeId,
     embedUrl: source.embedUrl,
     audio: source.audio,
+    referrerPolicy: source.referrerPolicy,
   };
 }
 
