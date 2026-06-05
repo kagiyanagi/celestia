@@ -2,16 +2,30 @@ import {
   EpisodeBrowser,
   type BrowserEpisode,
 } from "@/components/episode-browser";
+import { CLIENT_EPISODE_CAP } from "@/lib/episode-pagination";
 import { AnimeDetails } from "@/types/anime";
 
 interface DetailsEpisodesProps {
   anime: AnimeDetails;
   watchHref: string;
+  /** Real episode count when the list was trimmed from the payload upstream. */
+  episodeTotal?: number;
 }
 
-export function DetailsEpisodes({ anime, watchHref }: DetailsEpisodesProps) {
-  const episodes: BrowserEpisode[] =
-    anime.streamingEpisodes && anime.streamingEpisodes.length > 0
+export function DetailsEpisodes({
+  anime,
+  watchHref,
+  episodeTotal,
+}: DetailsEpisodesProps) {
+  // Mega-shows (1000+ eps) have their episode list stripped from the page
+  // payload upstream; `episodeTotal` carries the real count and the browser
+  // pages/searches via the API. Don't synthesize a list in that case.
+  const total = episodeTotal ?? anime.streamingEpisodes?.length ?? 0;
+  const paginated = total > CLIENT_EPISODE_CAP;
+
+  const allEpisodes: BrowserEpisode[] = paginated
+    ? []
+    : anime.streamingEpisodes && anime.streamingEpisodes.length > 0
       ? anime.streamingEpisodes
           .slice(0, anime.airingCount || anime.streamingEpisodes.length)
           .map((ep) => ({
@@ -38,7 +52,9 @@ export function DetailsEpisodes({ anime, watchHref }: DetailsEpisodesProps) {
   return (
     <EpisodeBrowser
       anime={anime}
-      episodes={episodes}
+      episodes={allEpisodes}
+      paginated={paginated}
+      totalEpisodes={total}
       watchQuery={{
         sid: watchSearch.get("sid"),
         server: watchSearch.get("server"),

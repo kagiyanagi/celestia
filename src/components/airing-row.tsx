@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useBannerFallback } from "@/components/banner-fallback-provider";
 import { formatAiringTime, getDisplayTitle } from "@/lib/format";
 import type { AiringItem } from "@/types/anime";
 import Image from "next/image";
@@ -38,16 +39,18 @@ function LiveCountdown({ airingAt }: { airingAt: number }) {
 }
 
 export function AiringRow({ item }: { item: AiringItem }) {
+  const banner = useBannerFallback(item.anime.id, item.anime.bannerImage);
+
   return (
     <Link
       href={`/anime/${item.anime.id}`}
       className="airing-row"
       key={`${item.anime.id}-${item.episode}`}
     >
-      {item.anime.bannerImage && (
+      {banner && (
         <div className="airing-row-bg">
           <Image
-            src={item.anime.bannerImage}
+            src={banner}
             alt=""
             fill
             sizes="(max-width: 780px) 100vw, 1480px"

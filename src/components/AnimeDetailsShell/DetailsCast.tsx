@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { Search } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimeDetails, CharacterCredit } from "@/types/anime";
 
 interface DetailsCastProps {
@@ -28,6 +28,70 @@ function matchesCastQuery(char: CharacterCredit, query: string): boolean {
 
 export function DetailsCast({ anime, mode, onShowMore }: DetailsCastProps) {
   const [query, setQuery] = useState("");
+  const [extraCharacters, setExtraCharacters] = useState<CharacterCredit[]>([]);
+  const loadStartedRef = useRef(false);
+
+  // The detail render ships only character page 1; once the full Cast tab is
+  // shown, lazy-load the remaining pages from the API and append them. Keeps a
+  // large ensemble cast off the server render path.
+  useEffect(() => {
+    if (
+      mode !== "full" ||
+      loadStartedRef.current ||
+      !anime.charactersHasNextPage
+    ) {
+      return;
+    }
+    loadStartedRef.current = true;
+    let cancelled = false;
+
+    (async () => {
+      const collected: CharacterCredit[] = [];
+      let page = 2;
+      let hasNext = true;
+      while (hasNext && page <= 10) {
+        try {
+          const response = await fetch(
+            `/api/anime/${anime.id}/characters?page=${page}`,
+          );
+          if (!response.ok) {
+            break;
+          }
+          const data = (await response.json()) as {
+            characters: CharacterCredit[];
+            hasNextPage: boolean;
+          };
+          collected.push(...(data.characters ?? []));
+          hasNext = Boolean(data.hasNextPage);
+          page += 1;
+        } catch {
+          break;
+        }
+      }
+      if (!cancelled && collected.length) {
+        setExtraCharacters(collected);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, anime.id, anime.charactersHasNextPage]);
+
+  // Page 1 (server) + lazily-loaded pages, deduped: AniList's RELEVANCE sort
+  // can repeat a character across pages.
+  const mergedCharacters = useMemo(() => {
+    const seen = new Set<number>();
+    const merged: CharacterCredit[] = [];
+    for (const credit of [...(anime.characters ?? []), ...extraCharacters]) {
+      if (seen.has(credit.id)) {
+        continue;
+      }
+      seen.add(credit.id);
+      merged.push(credit);
+    }
+    return merged;
+  }, [anime.characters, extraCharacters]);
 
   if (mode === "preview") {
     return (
@@ -111,7 +175,7 @@ export function DetailsCast({ anime, mode, onShowMore }: DetailsCastProps) {
     );
   }
 
-  const allCharacters = anime.characters ?? [];
+  const allCharacters = mergedCharacters;
   const normalizedQuery = query.trim().toLowerCase();
   const visibleCharacters = normalizedQuery
     ? allCharacters.filter((char) => matchesCastQuery(char, normalizedQuery))

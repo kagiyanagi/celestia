@@ -8,6 +8,7 @@ import { HeaderImageSetter } from "@/components/header-image-setter";
 import { WatchHistoryRecorder } from "@/components/watch-history-recorder";
 import { WatchPlayerPanel } from "@/components/watch-player-panel";
 import { WatchSelectionProvider } from "@/components/watch-selection-context";
+import { CLIENT_EPISODE_CAP } from "@/lib/episode-pagination";
 import { getDisplayTitle, getSecondaryTitle } from "@/lib/format";
 import { getAnimeDetails } from "@/lib/providers/anilist";
 import {
@@ -417,11 +418,16 @@ export default async function WatchPage({
     .slice(0, 8);
   const recommendations = (anime.recommendations ?? []).slice(0, 8);
 
+  // The history recorder only needs summary fields; drop the episode list
+  // (huge for mega-shows) before it crosses to the client and into its POST.
+  const recorderAnime = { ...anime };
+  delete recorderAnime.streamingEpisodes;
+
   return (
     <div className="watch-page">
       <HeaderImageSetter image={anime.bannerImage || anime.coverImage} />
       <WatchHistoryRecorder
-        anime={anime}
+        anime={recorderAnime}
         episode={episode}
         episodeTitle={currentEpisode?.title || `Episode ${episode}`}
         episodeImage={currentEpisode?.thumbnail || null}
@@ -448,7 +454,9 @@ export default async function WatchPage({
           nextEpisode={nextEpisodeLink}
           providerOptions={providerOptions}
           streamingConfigured={isStreamingConfigured()}
-          initialSource={source}
+          // The player only needs the current embed; drop the provider's full
+          // episode list (huge for mega-shows) — the browser owns navigation.
+          initialSource={source ? { ...source, episodes: [] } : null}
         />
 
         <section className="watch-section-panel" id="episodes">
@@ -460,14 +468,22 @@ export default async function WatchPage({
               dubInfo: anime.dubInfo,
               episodeFlags: anime.episodeFlags,
             }}
-            episodes={episodes.map((item) => ({
-              number: item.number,
-              title: item.title,
-              description: item.description,
-              thumbnail: item.thumbnail,
-              airDate: item.airDate,
-              rating: item.rating,
-            }))}
+            // Mega-shows ship no episode payload — the browser pages/searches
+            // them via the API. The full list above still drives prev/next.
+            episodes={
+              episodes.length > CLIENT_EPISODE_CAP
+                ? []
+                : episodes.map((item) => ({
+                    number: item.number,
+                    title: item.title,
+                    description: item.description,
+                    thumbnail: item.thumbnail,
+                    airDate: item.airDate,
+                    rating: item.rating,
+                  }))
+            }
+            paginated={episodes.length > CLIENT_EPISODE_CAP}
+            totalEpisodes={episodes.length}
             activeEpisode={episode}
           />
         </section>
