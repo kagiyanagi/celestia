@@ -2,17 +2,12 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ChevronLeft, ChevronRight, ListVideo, Play } from "lucide-react";
 
 import { EpisodeBrowser } from "@/components/episode-browser";
 import { HeaderImageSetter } from "@/components/header-image-setter";
-import { StreamPlayer } from "@/components/stream-player";
 import { WatchHistoryRecorder } from "@/components/watch-history-recorder";
-import {
-  type WatchAudioOption,
-  WatchControls,
-  type WatchServerOption,
-} from "@/components/watch-controls";
+import { WatchPlayerPanel } from "@/components/watch-player-panel";
+import { WatchSelectionProvider } from "@/components/watch-selection-context";
 import { getDisplayTitle, getSecondaryTitle } from "@/lib/format";
 import { getAnimeDetails } from "@/lib/providers/anilist";
 import {
@@ -99,36 +94,6 @@ function getOrderValue(value: string | undefined): "asc" | "desc" {
 
 function getAudioValue(value: string | undefined): StreamAudioType | null {
   return value === "sub" || value === "dub" ? value : null;
-}
-
-function watchHref(input: {
-  animeId: number;
-  episode: number;
-  page: number;
-  providerAnimeId: number | null;
-  providerId: string | null;
-  order: "asc" | "desc";
-  audio: StreamAudioType | null;
-}): string {
-  const params = new URLSearchParams({
-    ep: String(input.episode),
-    page: String(input.page),
-    order: input.order,
-  });
-
-  if (input.providerAnimeId) {
-    params.set("sid", String(input.providerAnimeId));
-  }
-
-  if (input.providerId) {
-    params.set("server", input.providerId);
-  }
-
-  if (input.audio) {
-    params.set("audio", input.audio);
-  }
-
-  return `/watch/${input.animeId}?${params.toString()}`;
 }
 
 function isGenericEpisodeTitle(
@@ -391,11 +356,6 @@ export default async function WatchPage({
     null;
   const activeProviderAnimeId = source?.animeId || providerAnimeId;
   const activeAudio = source?.audio || audioPreference || null;
-  const activeServerLabel =
-    providerOptions.find((provider) => provider.id === activeProviderId)
-      ?.label ||
-    source?.provider ||
-    "Current server";
   const fallbackTotal =
     releasedEpisodeLimit ??
     (source?.episodes.length ||
@@ -440,42 +400,18 @@ export default async function WatchPage({
     Math.ceil(displayEpisodes.length / EPISODES_PER_PAGE),
   );
   const episodePage = Math.min(getPageValue(page, defaultPage), pageCount);
-  const serverOptions: WatchServerOption[] = providerOptions.map((provider) => {
-    const active = provider.id === activeProviderId;
-
-    return {
-      id: provider.id,
-      label: provider.label,
-      active,
-      available: active ? Boolean(source?.embedUrl) : provider.available,
-      href: watchHref({
-        animeId: anime.id,
-        episode,
-        page: episodePage,
-        providerAnimeId: active ? activeProviderAnimeId : null,
-        providerId: provider.id,
-        order: episodeOrder,
-        audio: activeAudio,
-      }),
-    };
-  });
-  const audioOptions: WatchAudioOption[] = (["sub", "dub"] as const).map(
-    (option) => ({
-      id: option,
-      label: option === "sub" ? "Sub" : "Dub",
-      active: activeAudio === option,
-      available: source?.availableAudio.includes(option) ?? false,
-      href: watchHref({
-        animeId: anime.id,
-        episode,
-        page: episodePage,
-        providerAnimeId: activeProviderAnimeId,
-        providerId: activeProviderId,
-        order: episodeOrder,
-        audio: option,
-      }),
-    }),
-  );
+  const previousEpisodeLink = previousEpisode
+    ? {
+        number: previousEpisode.number,
+        page: episodePages.get(previousEpisode.number) || episodePage,
+      }
+    : null;
+  const nextEpisodeLink = nextEpisode
+    ? {
+        number: nextEpisode.number,
+        page: episodePages.get(nextEpisode.number) || episodePage,
+      }
+    : null;
   const relatedItems = (anime.relations ?? [])
     .filter((item) => RELATED_TYPES.has(item.relationType))
     .slice(0, 8);
@@ -493,123 +429,49 @@ export default async function WatchPage({
         durationMinutes={anime.duration ?? null}
       />
 
-      <section className="watch-player-stage">
-        <div className="watch-player-top">
-          <Link className="watch-back-link" href={`/anime/${anime.id}`}>
-            <ChevronLeft size={18} aria-hidden />
-            Details
-          </Link>
-          <span className="watch-provider-badge">{activeServerLabel}</span>
-        </div>
-
-        <div className="watch-player-frame">
-          {source?.embedUrl ? (
-            <StreamPlayer
-              primaryUrl={source.embedUrl}
-              primaryReferrerPolicy={source.referrerPolicy}
-              fallbacks={source.fallbacks || []}
-              title={`${title} episode ${episode}`}
-            />
-          ) : (
-            <div className="watch-player-empty">
-              <Play size={44} aria-hidden />
-              <h1>
-                {isStreamingConfigured()
-                  ? "Episode source is not ready."
-                  : "Streaming is not configured."}
-              </h1>
-              <p>
-                {isStreamingConfigured()
-                  ? "Try another episode or switch servers when another provider is enabled."
-                  : "Bring your own API here by setting the STREAMING_PROVIDER_URL environment variable."}
-              </p>
-            </div>
-          )}
-        </div>
-
-        <div className="watch-now-playing">
-          <div>
-            <span className="section-kicker">
-              <ListVideo size={16} aria-hidden />
-              Episode {episode}
-            </span>
-            <h1>{currentEpisode?.title || `Episode ${episode}`}</h1>
-            <p>
-              {title}
-              {secondaryTitle ? ` / ${secondaryTitle}` : ""}
-            </p>
-          </div>
-
-          <div className="watch-episode-nav">
-            {previousEpisode ? (
-              <Link
-                href={watchHref({
-                  animeId: anime.id,
-                  episode: previousEpisode.number,
-                  page: episodePages.get(previousEpisode.number) || episodePage,
-                  providerAnimeId: activeProviderAnimeId,
-                  providerId: activeProviderId,
-                  order: episodeOrder,
-                  audio: activeAudio,
-                })}
-              >
-                <ChevronLeft size={16} aria-hidden />
-                Previous
-              </Link>
-            ) : null}
-            {nextEpisode ? (
-              <Link
-                href={watchHref({
-                  animeId: anime.id,
-                  episode: nextEpisode.number,
-                  page: episodePages.get(nextEpisode.number) || episodePage,
-                  providerAnimeId: activeProviderAnimeId,
-                  providerId: activeProviderId,
-                  order: episodeOrder,
-                  audio: activeAudio,
-                })}
-              >
-                Next
-                <ChevronRight size={16} aria-hidden />
-              </Link>
-            ) : null}
-          </div>
-        </div>
-      </section>
-
-      <WatchControls
-        activeServerLabel={activeServerLabel}
-        audioOptions={audioOptions}
-        episode={episode}
-        serverOptions={serverOptions}
-        title={title}
-      />
-
-      <section className="watch-section-panel" id="episodes">
-        <EpisodeBrowser
-          anime={{
-            id: anime.id,
-            bannerImage: anime.bannerImage,
-            coverImage: anime.coverImage,
-            dubInfo: anime.dubInfo,
-            episodeFlags: anime.episodeFlags,
-          }}
-          episodes={episodes.map((item) => ({
-            number: item.number,
-            title: item.title,
-            description: item.description,
-            thumbnail: item.thumbnail,
-            airDate: item.airDate,
-            rating: item.rating,
-          }))}
-          watchQuery={{
-            sid: activeProviderAnimeId ? String(activeProviderAnimeId) : null,
-            server: activeProviderId,
-            audio: activeAudio,
-          }}
-          activeEpisode={episode}
+      <WatchSelectionProvider
+        initial={{
+          server: activeProviderId,
+          audio: activeAudio,
+          sid: activeProviderAnimeId,
+        }}
+      >
+        <WatchPlayerPanel
+          animeId={anime.id}
+          title={title}
+          secondaryTitle={secondaryTitle}
+          episode={episode}
+          page={episodePage}
+          order={episodeOrder}
+          currentEpisodeTitle={currentEpisode?.title || `Episode ${episode}`}
+          previousEpisode={previousEpisodeLink}
+          nextEpisode={nextEpisodeLink}
+          providerOptions={providerOptions}
+          streamingConfigured={isStreamingConfigured()}
+          initialSource={source}
         />
-      </section>
+
+        <section className="watch-section-panel" id="episodes">
+          <EpisodeBrowser
+            anime={{
+              id: anime.id,
+              bannerImage: anime.bannerImage,
+              coverImage: anime.coverImage,
+              dubInfo: anime.dubInfo,
+              episodeFlags: anime.episodeFlags,
+            }}
+            episodes={episodes.map((item) => ({
+              number: item.number,
+              title: item.title,
+              description: item.description,
+              thumbnail: item.thumbnail,
+              airDate: item.airDate,
+              rating: item.rating,
+            }))}
+            activeEpisode={episode}
+          />
+        </section>
+      </WatchSelectionProvider>
 
       {relatedItems.length > 0 ? (
         <section className="watch-section-panel" id="related">
