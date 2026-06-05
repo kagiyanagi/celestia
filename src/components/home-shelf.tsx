@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, CalendarDays, Captions, Mic, Radio, Star } from "lucide-react";
+import { ArrowRight, CalendarDays, Captions, Radio, Star } from "lucide-react";
 
+import { DubBadge } from "@/components/dub-badge";
 import { LibraryStatusChip } from "@/components/library-status-chip";
 import { formatAnimeDate, getDisplayTitle, scoreLabel } from "@/lib/format";
 import type { AnimeSummary } from "@/types/anime";
@@ -68,12 +69,7 @@ export function HomeShelf({ title, href, items }: HomeShelfProps) {
                     {anime.airingCount}
                   </span>
                 ) : null}
-                {anime.dubCount != null ? (
-                  <span>
-                    <Mic size={14} aria-hidden />
-                    {anime.dubCount}
-                  </span>
-                ) : null}
+                <DubBadge animeId={anime.id} initial={anime.dubCount ?? null} iconSize={14} />
                 <span>
                   <Star size={14} aria-hidden />
                   {scoreLabel(anime.averageScore)}

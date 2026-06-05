@@ -3,9 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Captions, Mic } from "lucide-react";
+import { Captions } from "lucide-react";
 
+import { useBannerContext } from "@/components/banner-fallback-provider";
 import { DetailsSaveButton } from "@/components/details-save-button";
+import { DubBadge } from "@/components/dub-badge";
 
 import { getDisplayTitle } from "@/lib/format";
 import type { AnimeSummary } from "@/types/anime";
@@ -21,9 +23,21 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
   const [dragOffset, setDragOffset] = useState(0);
   const [isClickPrevented, setIsClickPrevented] = useState(false);
 
+  // Banners AniList is missing resolve client-side (off the render path); slides
+  // with an AniList banner show it immediately, the rest swap in when resolved.
+  const bannerCtx = useBannerContext();
   useEffect(() => {
-    const activeImage = items[activeIndex]?.bannerImage;
+    items.forEach((item) => {
+      if (!item.bannerImage) {
+        bannerCtx?.register(item.id);
+      }
+    });
+  }, [items, bannerCtx]);
+  const bannerFor = (item: AnimeSummary): string | null =>
+    item.bannerImage ?? bannerCtx?.banners.get(item.id) ?? null;
+  const activeImage = bannerFor(items[activeIndex] ?? items[0]);
 
+  useEffect(() => {
     if (!activeImage) {
       document.documentElement.style.removeProperty("--site-header-image");
       return;
@@ -41,7 +55,7 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
     return () => {
       document.documentElement.style.removeProperty("--site-header-image");
     };
-  }, [activeIndex, items]);
+  }, [activeImage]);
 
   useEffect(() => {
     if (items.length < 2) {
@@ -136,9 +150,9 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
                   } as React.CSSProperties
                 }
               >
-                {item.bannerImage ? (
+                {bannerFor(item) ? (
                   <Image
-                    src={item.bannerImage}
+                    src={bannerFor(item) as string}
                     alt=""
                     fill
                     priority={index === 0}
@@ -169,12 +183,7 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
                           {item.airingCount}
                         </span>
                       ) : null}
-                      {item.dubCount != null ? (
-                        <span>
-                          <Mic size={14} aria-hidden />
-                          {item.dubCount}
-                        </span>
-                      ) : null}
+                      <DubBadge animeId={item.id} initial={item.dubCount ?? null} iconSize={14} />
                       <span>{item.seasonYear || "Now"}</span>
                     </div>
                   </div>

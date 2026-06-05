@@ -84,3 +84,12 @@ Under `src/app/api/`. They authenticate with `requireSessionUser()`, delegate to
 ## Conventions
 
 Kebab-case file names (`home-hero-carousel.tsx`, `watch/[id]/page.tsx`); the one PascalCase exception is the `AnimeDetailsShell/` component directory. 2-space indent, double quotes, app-owned data shapes in `src/types`. See `AGENTS.md` for the full contributor guide and `docs/ARCHITECTURE.md` for provider strategy and the tracking/sync data model.
+
+### Styling
+There is **no Tailwind and no CSS modules** — styling is plain global CSS driven by CSS custom properties. `src/app/globals.css` defines the design tokens (`--bg`, `--panel`, `--line`, `--text`, `--radius`, easing curves, the Manrope font) plus base layout; `src/app/polish.css` is the monochrome design layer that *overrides* globals and is imported **after** it in `layout.tsx` (order matters). The palette is deliberately black/white/greys — style against the variables (`var(--panel)`, `var(--muted)`, the expanded `--surface-*`/`--border-*` scales in `polish.css`) rather than hardcoding colors, and match the existing design language.
+
+### Display formatting
+User-facing strings go through `src/lib/format.ts` (`getDisplayTitle`, `formatAnimeDate` for AniList fuzzy dates, relative-time helpers) so titles, dates, and durations render consistently and handle the "unknown" cases — don't format AniList shapes inline in components.
+
+### Image hosts (`next.config.ts`)
+`next/image` rejects any remote host not listed in `images.remotePatterns`. When adding a new image source — especially a **streaming provider's thumbnail/poster hostname** — register it there or images silently fail to load. `next.config.ts` also sets the global security headers (X-Frame-Options `SAMEORIGIN`, etc.) and `allowedDevOrigins` for LAN device testing.

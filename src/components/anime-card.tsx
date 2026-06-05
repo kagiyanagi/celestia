@@ -1,7 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
-import { Captions, Mic, Radio, Star } from "lucide-react";
+import { Captions, Radio, Star } from "lucide-react";
 
+import { DubBadge } from "@/components/dub-badge";
 import { LibraryStatusChip } from "@/components/library-status-chip";
 import { getDisplayTitle, scoreLabel } from "@/lib/format";
 import type { AnimeSummary } from "@/types/anime";
@@ -57,12 +58,7 @@ export function AnimeCard({ anime, priority = false }: AnimeCardProps) {
               {anime.airingCount}
             </span>
           ) : null}
-          {anime.dubCount != null ? (
-            <span title="Dubbed">
-              <Mic size={12} aria-hidden />
-              {anime.dubCount}
-            </span>
-          ) : null}
+          <DubBadge animeId={anime.id} initial={anime.dubCount ?? null} withTitle />
         </span>
       </span>
     </Link>

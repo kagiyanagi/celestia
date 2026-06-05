@@ -43,8 +43,11 @@ export async function getMalStats(malId: number): Promise<MalStats | null> {
       },
       {
         provider: "Jikan",
-        timeoutMs: 6_000,
-        retries: 1,
+        // Jikan is heavily rate-limited and this is optional enrichment behind
+        // a soft timeout — fail fast instead of burning a retry delay (~1s) on
+        // a 429/down response.
+        timeoutMs: 4_000,
+        retries: 0,
         retryDelayMs: 1_000,
         cacheKey: `jikan:anime:${malId}`,
         staleTtlMs: 21_600 * 1000 * 8,

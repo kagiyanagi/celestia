@@ -3,10 +3,17 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowLeft, Bell, Search, UserRound } from "lucide-react";
+import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
-import { SearchModal } from "./search-modal";
+
+// The search modal is interaction-only — keep its code out of the every-page
+// baseline bundle and load it on first open. It renders null while closed, so
+// deferring its mount is behaviorally identical.
+const SearchModal = dynamic(() =>
+  import("./search-modal").then((module) => module.SearchModal),
+);
 
 export function SiteHeader() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -128,10 +135,12 @@ export function SiteHeader() {
         </div>
       </header>
 
-      <SearchModal
-        isOpen={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
-      />
+      {isSearchOpen && (
+        <SearchModal
+          isOpen={isSearchOpen}
+          onClose={() => setIsSearchOpen(false)}
+        />
+      )}
     </>
   );
 }

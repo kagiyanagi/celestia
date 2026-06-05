@@ -243,6 +243,9 @@ export type AnimeDetails = AnimeSummary & {
   tags?: string[];
   rankings?: string[];
   characters?: CharacterCredit[];
+  /** True when AniList has character pages beyond the first; the Cast tab
+   *  lazy-loads the remainder client-side instead of blocking the render. */
+  charactersHasNextPage?: boolean;
   staff?: StaffCredit[];
   relations?: RelationItem[];
   recommendations?: AnimeSummary[];
