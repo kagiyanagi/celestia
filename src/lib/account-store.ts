@@ -34,7 +34,22 @@ function sanitizeUser(user: UserRecord): PublicUser {
     libraryEntries: user.libraryEntries,
     historyEntries: user.historyEntries,
     notificationsLastReadAt: user.notificationsLastReadAt ?? null,
+    notificationReadIds: user.notificationReadIds ?? [],
+    notificationDismissedIds: user.notificationDismissedIds ?? [],
   };
+}
+
+// Cap persisted per-notification state. Notifications leave the 30-day window
+// on their own, so old ids can never reappear — this is just a runaway guard.
+const MAX_NOTIFICATION_STATE = 500;
+
+function appendBoundedIds(current: string[] | undefined, ids: string[]) {
+  const merged = new Set(current ?? []);
+  ids.forEach((id) => merged.add(id));
+  const list = Array.from(merged);
+  return list.length > MAX_NOTIFICATION_STATE
+    ? list.slice(list.length - MAX_NOTIFICATION_STATE)
+    : list;
 }
 
 async function updateUserRecord<T>(
@@ -149,6 +164,8 @@ function mergeLibraryEntries(
     map.set(entry.animeId, {
       ...existing,
       ...entry,
+      addedAt:
+        existing?.addedAt || entry.addedAt || new Date().toISOString(),
       updatedAt:
         entry.updatedAt || existing?.updatedAt || new Date().toISOString(),
     });
@@ -188,6 +205,7 @@ export async function upsertLibraryEntry(input: {
       startedAt: input.startedAt,
       completedAt: input.completedAt,
       updatedAt: now,
+      addedAt: current?.addedAt || now,
       aniListEntryId: input.aniListEntryId ?? current?.aniListEntryId ?? null,
     };
 
@@ -264,9 +282,29 @@ export async function clearHistory(userId: string) {
   });
 }
 
-export async function markNotificationsRead(userId: string) {
+/**
+ * Marks notifications read. With no ids, marks everything read via a single
+ * timestamp; with ids, records just those (so "tick one read" persists without
+ * touching the rest).
+ */
+export async function markNotificationsRead(userId: string, ids?: string[]) {
   return updateUserRecord(userId, (user) => {
-    user.notificationsLastReadAt = new Date().toISOString();
+    if (ids && ids.length > 0) {
+      user.notificationReadIds = appendBoundedIds(user.notificationReadIds, ids);
+    } else {
+      user.notificationsLastReadAt = new Date().toISOString();
+    }
+    return sanitizeUser(user);
+  });
+}
+
+/** Dismisses (deletes) notifications by id so they stay hidden in-window. */
+export async function dismissNotifications(userId: string, ids: string[]) {
+  return updateUserRecord(userId, (user) => {
+    user.notificationDismissedIds = appendBoundedIds(
+      user.notificationDismissedIds,
+      ids,
+    );
     return sanitizeUser(user);
   });
 }

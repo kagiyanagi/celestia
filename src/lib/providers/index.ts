@@ -19,6 +19,12 @@ export function getProviderHealth(): ProviderHealth[] {
       status: "ready",
       notes: "Episode metadata and cross-platform ID mappings (MAL, TVDB, TMDB, Kitsu)."
     },
+    {
+      name: "Kitsu",
+      role: "metadata",
+      status: "ready",
+      notes: "Episode still fallback (via ani.zip's per-entry Kitsu id) where TVDB and AniList have none."
+    },
     getJikanProviderHealth(),
     getTmdbProviderHealth(),
     getAnimeScheduleProviderHealth(),

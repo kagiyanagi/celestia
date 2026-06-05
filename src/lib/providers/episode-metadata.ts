@@ -1,4 +1,5 @@
 import { getAniZipData } from "@/lib/providers/anizip";
+import { getKitsuEpisodeStills, type KitsuEpisode } from "@/lib/providers/kitsu";
 import type {
   AnimeStreamingEpisode,
   EpisodeMetadataField,
@@ -65,6 +66,20 @@ const TVDB_EPISODE_SOURCE: EpisodeMetadataSource = {
   label: "TheTVDB",
   confidence: "medium",
   fields: [],
+};
+
+const KITSU_SOURCE_SUMMARY: MetadataSourceSummary = {
+  provider: "kitsu",
+  label: "Kitsu",
+  role: "image_metadata",
+  confidence: "medium",
+};
+
+const KITSU_EPISODE_SOURCE: EpisodeMetadataSource = {
+  provider: "kitsu",
+  label: "Kitsu",
+  confidence: "medium",
+  fields: ["thumbnail"],
 };
 
 function getKnownFields(
@@ -231,7 +246,91 @@ function collectSourceSummaries(
     summaries.push(TVDB_SOURCE);
   }
 
+  if (providers.has("kitsu")) {
+    summaries.push(KITSU_SOURCE_SUMMARY);
+  }
+
   return summaries;
+}
+
+function normalizeTitleForCompare(value: string | null | undefined): string {
+  return (value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+/**
+ * Confirms Kitsu's episode numbering lines up with the catalog before we trust
+ * its stills. ani.zip already maps the precise per-entry `kitsu_id`, so this is
+ * a safety net for the rare bad mapping, not the primary defense: we compare
+ * overlapping episodes by air date (most robust) or title, and require a
+ * majority to agree. With no comparable overlap we trust the mapping.
+ */
+function isKitsuAligned(
+  kitsuEpisodes: KitsuEpisode[],
+  episodeMap: Map<number, AnimeStreamingEpisode>,
+): boolean {
+  let comparable = 0;
+  let matched = 0;
+
+  for (const kitsuEpisode of kitsuEpisodes) {
+    const existing = episodeMap.get(kitsuEpisode.number);
+    if (!existing) continue;
+
+    if (kitsuEpisode.airDate && existing.airDate) {
+      comparable += 1;
+      if (kitsuEpisode.airDate === existing.airDate) matched += 1;
+      continue;
+    }
+
+    const kitsuTitle = normalizeTitleForCompare(kitsuEpisode.title);
+    const existingTitle = normalizeTitleForCompare(existing.title);
+    const generic =
+      isGenericEpisodeTitle(kitsuEpisode.title, kitsuEpisode.number) ||
+      isGenericEpisodeTitle(existing.title, existing.number);
+
+    if (kitsuTitle && existingTitle && !generic) {
+      comparable += 1;
+      if (
+        kitsuTitle === existingTitle ||
+        kitsuTitle.includes(existingTitle) ||
+        existingTitle.includes(kitsuTitle)
+      ) {
+        matched += 1;
+      }
+    }
+  }
+
+  if (comparable === 0) return true;
+  return matched / comparable >= 0.5;
+}
+
+/**
+ * Fills still-less episodes with Kitsu thumbnails. Existing stills (TVDB via
+ * ani.zip, or AniList's streaming thumbnails) always win — Kitsu only fills
+ * gaps — and the thumbnail is attributed to Kitsu for source transparency.
+ */
+function fillFromKitsu(
+  episodeMap: Map<number, AnimeStreamingEpisode>,
+  kitsuEpisodes: KitsuEpisode[],
+): void {
+  if (!kitsuEpisodes.length || !isKitsuAligned(kitsuEpisodes, episodeMap)) {
+    return;
+  }
+
+  for (const kitsuEpisode of kitsuEpisodes) {
+    if (!kitsuEpisode.thumbnail) continue;
+
+    const existing = episodeMap.get(kitsuEpisode.number);
+    if (!existing || existing.thumbnail) continue;
+
+    episodeMap.set(kitsuEpisode.number, {
+      ...existing,
+      thumbnail: kitsuEpisode.thumbnail,
+      sources: mergeSources(existing.sources, [KITSU_EPISODE_SOURCE]),
+    });
+  }
 }
 
 function mergeIntoMap(
@@ -266,12 +365,27 @@ export async function getEpisodeMetadata(
 
   mergeIntoMap(episodeMap, aniZipEpisodes);
 
-  // Episode stills come only from ani.zip (TVDB), which is keyed by AniList
-  // episode number and is therefore season-correct. We deliberately do NOT
-  // fall back to TMDB stills: TMDB models a franchise as a single show with
-  // absolute episode numbering, so mapping it onto one AniList cour stamps an
-  // earlier season's images onto later seasons. A missing thumbnail is better
-  // than a wrong one (accuracy over fabrication).
+  // Episode stills come from ani.zip (TVDB) and AniList first, both keyed by
+  // AniList episode number and therefore season-correct. Kitsu fills the gaps
+  // they leave (long-running shows like One Piece have TVDB stills for only
+  // the first cour): it is reached via ani.zip's per-entry `kitsu_id`, so its
+  // numbering aligns with this exact catalog entry — unlike TMDB, which models
+  // a franchise as one show with absolute numbering and would stamp an earlier
+  // season's images onto later seasons. Alignment is still verified before any
+  // Kitsu still is trusted, and Kitsu only fills genuinely empty slots. We
+  // deliberately never reach for TMDB stills here (accuracy over fabrication).
+  const stillLessNumbers = Array.from(episodeMap.values())
+    .filter((episode) => !episode.thumbnail)
+    .map((episode) => episode.number);
+  const kitsuId = aniZipData?.mappings.kitsuId ?? null;
+
+  if (stillLessNumbers.length && kitsuId) {
+    const kitsuEpisodes = await getKitsuEpisodeStills(kitsuId, {
+      maxNumber: Math.max(...stillLessNumbers),
+    });
+    fillFromKitsu(episodeMap, kitsuEpisodes);
+  }
+
   const episodes = Array.from(episodeMap.values()).sort(
     (first, second) => first.number - second.number,
   );

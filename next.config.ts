@@ -31,6 +31,8 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "artworks.thetvdb.com" },
       { protocol: "https", hostname: "img1.ak.crunchyroll.com" },
       { protocol: "https", hostname: "image.tmdb.org" },
+      { protocol: "https", hostname: "media.kitsu.app" },
+      { protocol: "https", hostname: "media.kitsu.io" },
     ],
   },
 };

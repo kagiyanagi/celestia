@@ -157,6 +157,7 @@ export type MetadataProviderId =
   | "anizip"
   | "tvdb"
   | "tmdb"
+  | "kitsu"
   | "generated"
   | "unknown";
 
@@ -222,6 +223,21 @@ export type MalStats = {
 export type EpisodeFlags = {
   filler: number[];
   recap: number[];
+};
+
+/** A news article about an anime, sourced from MyAnimeList via Jikan. */
+export type AnimeNewsArticle = {
+  id: number;
+  title: string;
+  url: string;
+  /** ISO timestamp of publication. */
+  date: string;
+  excerpt: string | null;
+  imageUrl: string | null;
+  author: string | null;
+  authorUrl: string | null;
+  forumUrl: string | null;
+  comments: number | null;
 };
 
 export type AnimeDetails = AnimeSummary & {
