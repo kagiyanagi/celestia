@@ -26,6 +26,40 @@ export async function resolveBannerFallback(
 }
 
 /**
+ * Resolves fallback banners for a set of AniList ids off the render path.
+ * Backs `/api/banners`, which the client `BannerFallbackProvider` calls for
+ * cards/rows that AniList has no banner for — so the home hero, airing board,
+ * and schedule paint immediately instead of blocking on a per-id ani.zip/TMDB
+ * walk. Returns only ids that resolved to a banner.
+ */
+export async function getBannerFallbacksByIds(
+  ids: number[],
+): Promise<Record<number, string>> {
+  const unique = Array.from(
+    new Set(ids.filter((id) => Number.isFinite(id) && id > 0)),
+  ).slice(0, 50);
+  if (unique.length === 0) {
+    return {};
+  }
+
+  const result: Record<number, string> = {};
+  const concurrency = Math.min(6, unique.length);
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < unique.length) {
+      const id = unique[cursor];
+      cursor += 1;
+      const banner = await resolveBannerFallback(id).catch(() => null);
+      if (banner) {
+        result[id] = banner;
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: concurrency }, worker));
+  return result;
+}
+
+/**
  * Fills missing banners on a list of summaries in place, with bounded
  * concurrency and an overall soft timeout. Summaries that already have a
  * banner are skipped, so warm/banner-complete lists cost nothing. On timeout

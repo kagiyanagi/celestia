@@ -3,8 +3,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import { BadgeAlert, Check, ChevronRight, Radio, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
+import { useBannerContext } from "@/components/banner-fallback-provider";
 import { getDisplayTitle } from "@/lib/format";
 import {
   addDays,
@@ -81,6 +82,19 @@ export function SchedulePageShell({
   weekDateKeys,
 }: SchedulePageShellProps) {
   const [activeDateKey, setActiveDateKey] = useState(selectedDateKey);
+
+  // Backdrops AniList is missing resolve client-side, off the render path.
+  const bannerCtx = useBannerContext();
+  useEffect(() => {
+    items.forEach((item) => {
+      if (!item.anime.bannerImage) {
+        bannerCtx?.register(item.anime.id);
+      }
+    });
+  }, [items, bannerCtx]);
+  const bannerFor = (item: AiringItem): string | null =>
+    item.anime.bannerImage ?? bannerCtx?.banners.get(item.anime.id) ?? null;
+
   const activeDate = parseDateKey(activeDateKey) || new Date();
   const todayDate = parseDateKey(todayDateKey) || new Date();
   const selectedItems = items.filter(
@@ -125,9 +139,9 @@ export function SchedulePageShell({
                 href={`/anime/${item.anime.id}`}
                 key={`${item.anime.id}-${item.episode}-${item.airingAt}`}
               >
-                {item.anime.bannerImage && (
+                {bannerFor(item) && (
                   <Image
-                    src={item.anime.bannerImage}
+                    src={bannerFor(item) as string}
                     alt=""
                     fill
                     sizes="(max-width: 780px) 100vw, 33vw"
@@ -216,9 +230,9 @@ export function SchedulePageShell({
                       href={`/anime/${item.anime.id}`}
                       key={`${item.anime.id}-${item.episode}-${item.airingAt}`}
                     >
-                      {item.anime.bannerImage && (
+                      {bannerFor(item) && (
                         <Image
-                          src={item.anime.bannerImage}
+                          src={bannerFor(item) as string}
                           alt=""
                           fill
                           sizes="(max-width: 780px) 100vw, 34vw"

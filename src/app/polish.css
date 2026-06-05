@@ -519,8 +519,67 @@ body {
     grid-template-columns: repeat(2, 1fr);
   }
 
+  .anime-grid,
+  .loader-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
   .search-modal-footer .search-modal-keybinds {
     display: none;
+  }
+}
+
+/* ── Mobile: 640px — dense grids & panel padding ─────────────────────────── */
+
+@media (max-width: 640px) {
+  /* The shared discovery/search/browse grid sits at 4 columns down to
+     780px; 4 posters is too cramped on a phone, so step to 3 here (and
+     to 2 below 480px above). */
+  .anime-grid,
+  .loader-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  /* Reclaim horizontal space inside panels. */
+  .home-section,
+  .airing-board,
+  .search-hero,
+  .tracker-panel,
+  .stream-card,
+  .episode-panel {
+    padding: 18px 16px;
+  }
+
+  .tab-content {
+    padding: 24px 16px;
+  }
+
+  /* Shrink the fixed thumbnail track so the copy keeps a usable width. */
+  .episode-card-new {
+    grid-template-columns: 132px minmax(0, 1fr);
+  }
+
+  .character-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* The detail tab bar uses 40px gaps + 48px side padding, which crushes
+     its five labels ("Overview"… "More like this") into one-letter-wide
+     vertical columns on a phone. Turn it into a horizontal scroll strip
+     (scrollbars are hidden globally) with a gutter matching .tab-content. */
+  .anime-tabs-nav {
+    gap: 20px;
+    padding: 0 16px;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+  }
+
+  .anime-tabs-nav button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    font-size: 0.9rem;
   }
 }
 

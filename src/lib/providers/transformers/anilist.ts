@@ -304,6 +304,7 @@ export function transformAnimeDetails(media: AniListDetailsMedia): AnimeDetails 
         ?.slice(0, 4)
         .map((ranking) => `#${ranking.rank} ${ranking.context}`) || [],
     characters: transformCharacterCredits(media),
+    charactersHasNextPage: media.characters?.pageInfo?.hasNextPage ?? false,
     staff: transformStaffCredits(media),
     relations: transformRelations(media),
     recommendations:

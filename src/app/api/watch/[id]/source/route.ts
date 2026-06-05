@@ -63,7 +63,11 @@ export async function GET(
       anilistId: anime.id,
     });
 
-    return NextResponse.json({ source });
+    // The player consumes the embed/fallbacks, not the provider episode list;
+    // drop it so an in-place switch on a mega-show doesn't ship ~1 MB it ignores.
+    return NextResponse.json({
+      source: source ? { ...source, episodes: [] } : null,
+    });
   } catch (error) {
     console.error("Stream source switch failed", error);
     return NextResponse.json({ source: null });

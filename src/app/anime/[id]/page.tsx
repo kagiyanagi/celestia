@@ -4,10 +4,10 @@ import { notFound } from "next/navigation";
 import { AnimeDetailsShell } from "@/components/AnimeDetailsShell";
 import { HeaderImageSetter } from "@/components/header-image-setter";
 import { ScrollToTop } from "@/components/scroll-to-top";
-import { withSoftTimeout } from "@/lib/async";
+import { CLIENT_EPISODE_CAP } from "@/lib/episode-pagination";
 import { getDisplayTitle } from "@/lib/format";
 import { getAnimeDetails } from "@/lib/providers/anilist";
-import { findStreamAvailability } from "@/lib/providers/streaming";
+import { buildWatchHref } from "@/lib/watch-href";
 
 type AnimePageProps = {
   params: Promise<{
@@ -53,50 +53,30 @@ export default async function AnimePage({ params }: AnimePageProps) {
     notFound();
   }
 
-  const title = getDisplayTitle(anime.title);
-  const streamLookupTitle = [
-    anime.title?.romaji,
-    anime.title?.english,
-    anime.title?.userPreferred,
-    title,
-    ...(anime.synonyms || []),
-  ].filter((value): value is string => Boolean(value));
-  // The details page only needs availability to prefill the watch href —
-  // never hold the render hostage to a slow provider probe. The watch page
-  // re-resolves the source itself.
-  const streamAvailability = await withSoftTimeout(
-    findStreamAvailability(
-      streamLookupTitle,
-      anime.episodes ?? anime.airingCount ?? null,
-      null,
-      anime.id,
-    ),
-    4_000,
-    {
-      available: false,
-      providerId: null,
-      provider: "unknown",
-      providerAnimeId: null,
-      episodeCount: null,
-    },
-  );
-  const watchParams = new URLSearchParams({ ep: "1" });
+  // The watch page resolves the stream source itself on first render, so the
+  // details page no longer blocks on a streaming title-guess probe just to
+  // prefill the href — that previously cost up to 4s of TTFB. Link straight to
+  // episode 1 and let the watch page (and its in-place switcher) resolve.
+  const watchHref = buildWatchHref({ animeId: anime.id, episode: 1 });
 
-  if (streamAvailability.providerAnimeId) {
-    watchParams.set("sid", String(streamAvailability.providerAnimeId));
-  }
-
-  if (streamAvailability.providerId) {
-    watchParams.set("server", streamAvailability.providerId);
-  }
-
-  const watchHref = `/watch/${anime.id}?${watchParams.toString()}`;
+  // Mega-shows (1000+ eps) would serialize ~1 MB of episode data into the
+  // client shell payload. Drop the list above the cap and pass the count — the
+  // Episodes tab pages/searches them via /api/anime/[id]/episodes instead.
+  const episodeTotal = anime.streamingEpisodes?.length ?? 0;
+  const shellAnime =
+    episodeTotal > CLIENT_EPISODE_CAP
+      ? { ...anime, streamingEpisodes: [] }
+      : anime;
 
   return (
     <div className="detail-page">
       <ScrollToTop />
       <HeaderImageSetter image={anime.bannerImage || anime.coverImage} />
-      <AnimeDetailsShell anime={anime} watchHref={watchHref} />
+      <AnimeDetailsShell
+        anime={shellAnime}
+        watchHref={watchHref}
+        episodeTotal={episodeTotal}
+      />
     </div>
   );
 }

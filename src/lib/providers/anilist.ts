@@ -14,10 +14,7 @@ import {
   getDubInfo,
 } from "@/lib/providers/anime-schedule";
 import { getAnimeMappings } from "@/lib/providers/anizip";
-import {
-  enrichSummaryBanners,
-  resolveBannerFallback,
-} from "@/lib/providers/banner";
+import { resolveBannerFallback } from "@/lib/providers/banner";
 import { getEpisodeMetadata } from "@/lib/providers/episode-metadata";
 import { getJikanEpisodeFlags, getMalStats } from "@/lib/providers/jikan";
 import {
@@ -37,6 +34,7 @@ import type {
   AnimeDetails,
   AnimeSeason,
   AnimeSummary,
+  CharacterCredit,
   BrowseCollection,
   BrowseFilterOptions,
   BrowseFilters,
@@ -546,17 +544,15 @@ export async function getHomeCollections(): Promise<HomeCollections> {
       900,
     );
 
-    // Card-level dub counts: AnimeSchedule for active dubs + MyDubList for
-    // finished catalog titles. Shows without a verifiable dub keep dubCount
-    // null (chip hidden). The finished/movies shelves are enriched too so their
-    // dub badges aren't missing relative to the /finished and /movies pages.
-    const [topAiring, trending, season, finished, movies] = await Promise.all([
-      enrichSummariesWithDubCounts(data.topAiring.media.map(transformAnimeSummary)),
-      enrichSummariesWithDubCounts(data.trending.media.map(transformAnimeSummary)),
-      enrichSummariesWithDubCounts(data.season.media.map(transformAnimeSummary)),
-      enrichSummariesWithDubCounts(data.finished.media.map(transformAnimeSummary)),
-      enrichSummariesWithDubCounts(data.movies.media.map(transformAnimeSummary)),
-    ]);
+    // Card-level dub counts are resolved off the render path: each card
+    // hydrates its own dub badge client-side via /api/dub-badges (see
+    // DubBadgeProvider), so the home shell paints immediately instead of
+    // blocking on a per-card AnimeSchedule fan-out across five shelves.
+    const topAiring = data.topAiring.media.map(transformAnimeSummary);
+    const trending = data.trending.media.map(transformAnimeSummary);
+    const season = data.season.media.map(transformAnimeSummary);
+    const finished = data.finished.media.map(transformAnimeSummary);
+    const movies = data.movies.media.map(transformAnimeSummary);
 
     const airingSoon = data.airing.airingSchedules
       .filter((item) => item.media.type === "ANIME")
@@ -567,13 +563,9 @@ export async function getHomeCollections(): Promise<HomeCollections> {
         anime: transformAnimeSummary(item.media),
       }));
 
-    // Banner-backed surfaces on the home page: the hero carousel (topAiring)
-    // and the airing board (airingSoon). Fill banners AniList is missing.
-    await Promise.all([
-      enrichSummaryBanners(topAiring),
-      enrichSummaryBanners(airingSoon.map((item) => item.anime)),
-    ]);
-
+    // Banners AniList is missing for the hero/airing board now resolve
+    // client-side (BannerFallbackProvider, /api/banners), off the render path —
+    // the home shell no longer blocks on a per-title ani.zip/TMDB walk.
     return {
       topAiring,
       trending,
@@ -600,14 +592,21 @@ export async function getAiringSchedule(
   const maxPages = 4;
 
   try {
-    for (let page = 1; page <= maxPages; page += 1) {
-      const data = await fetchAniList<AiringScheduleQueryResult>(
-        AIRING_SCHEDULE_QUERY,
-        { page, perPage, startAt, endAt },
-        300,
-      );
+    // Fetch the (bounded) pages concurrently rather than serially — they're
+    // independent windows of the same airing query, so this turns ~4 serial
+    // round trips into one. Empty/overflow pages just contribute nothing.
+    const pages = await Promise.all(
+      Array.from({ length: maxPages }, (_, index) =>
+        fetchAniList<AiringScheduleQueryResult>(
+          AIRING_SCHEDULE_QUERY,
+          { page: index + 1, perPage, startAt, endAt },
+          300,
+        ).catch(() => null),
+      ),
+    );
 
-      data.Page.airingSchedules.forEach((item) => {
+    for (const data of pages) {
+      data?.Page.airingSchedules.forEach((item) => {
         if (item.media.type !== "ANIME" || seen.has(item.id)) return;
         seen.add(item.id);
         items.push({
@@ -617,21 +616,16 @@ export async function getAiringSchedule(
           anime: transformAnimeSummary(item.media),
         });
       });
-
-      if (!data.Page.pageInfo?.hasNextPage) break;
     }
-    const enriched = await enrichAiringScheduleWithAnimeSchedule(
+
+    // Banners AniList is missing now resolve client-side (BannerFallbackProvider,
+    // /api/banners), off the render path — the board no longer blocks on a
+    // per-row ani.zip/TMDB walk.
+    return enrichAiringScheduleWithAnimeSchedule(
       items.sort((a, b) => a.airingAt - b.airingAt),
       startAt,
       endAt,
     );
-    // Fill missing banners (AniList has none for many titles) so the airing
-    // board renders backdrops instead of blank rows.
-    await enrichSummaryBanners(
-      enriched.map((item) => item.anime),
-      { timeoutMs: 6_000 },
-    );
-    return enriched;
   } catch (error) {
     console.error(error);
     return [];
@@ -875,9 +869,9 @@ export async function getBrowseCollection(
     );
 
     return {
-      items: await enrichSummariesWithDubCounts(
-        data.Page.media.map(transformAnimeSummary),
-      ),
+      // Dub badges hydrate client-side (see DubBadgeProvider) — keep the
+      // listing render path free of the per-card AnimeSchedule fan-out.
+      items: data.Page.media.map(transformAnimeSummary),
       pageInfo: {
         total: data.Page.pageInfo?.total ?? null,
         currentPage: data.Page.pageInfo?.currentPage || safePage,
@@ -898,6 +892,58 @@ export async function getBrowseCollection(
         perPage,
       },
     };
+  }
+}
+
+const DUB_BADGE_QUERY = `
+  query ($ids: [Int!]) {
+    Page(perPage: 50) {
+      media(id_in: $ids, type: ANIME) {
+        ${MEDIA_CARD_FIELDS}
+      }
+    }
+  }
+`;
+
+/**
+ * Resolves dub episode counts for a set of AniList ids off the render path.
+ * Backs the `/api/dub-badges` endpoint that card dub badges hydrate from, so
+ * the expensive per-id AnimeSchedule lookup never blocks a listing's first
+ * paint. Returns only ids with a verifiable dub; the rest stay "unknown"
+ * (badge hidden), preserving the accuracy-over-fabrication rule.
+ */
+export async function getDubCountsByAniListIds(
+  ids: number[],
+): Promise<Record<number, number>> {
+  const unique = Array.from(
+    new Set(ids.filter((id) => Number.isFinite(id) && id > 0)),
+  ).slice(0, 50);
+
+  if (unique.length === 0) {
+    return {};
+  }
+
+  try {
+    const data = await fetchAniList<{ Page: { media: AniListMedia[] | null } }>(
+      DUB_BADGE_QUERY,
+      { ids: unique },
+      900,
+    );
+
+    const enriched = await enrichSummariesWithDubCounts(
+      (data.Page?.media ?? []).map(transformAnimeSummary),
+    );
+
+    const counts: Record<number, number> = {};
+    for (const summary of enriched) {
+      if (summary.dubCount != null) {
+        counts[summary.id] = summary.dubCount;
+      }
+    }
+    return counts;
+  } catch (error) {
+    console.error(error);
+    return {};
   }
 }
 
@@ -979,42 +1025,44 @@ type CharactersPageResult = {
 // characters) covers even ensemble casts without unbounded fan-out.
 const MAX_CHARACTER_PAGES = 10;
 
-/** Fetches character pages 2..N so large casts are complete. */
-async function fetchRemainingCharacterCredits(id: number, hasMore: boolean) {
-  if (!hasMore) {
-    return [];
-  }
-
-  const extra = [];
+/**
+ * Fetches a single character page (2..N) for the lazy Cast tab. Page 1 ships
+ * with the detail render; this backs `/api/anime/[id]/characters` so large
+ * casts load after first paint instead of blocking the server render.
+ */
+export async function getCharacterCreditsPage(
+  id: number,
+  page: number,
+): Promise<{ characters: CharacterCredit[]; hasNextPage: boolean }> {
+  const safePage = Math.min(
+    MAX_CHARACTER_PAGES,
+    Math.max(2, Math.floor(page) || 2),
+  );
 
   try {
-    for (let page = 2; page <= MAX_CHARACTER_PAGES; page += 1) {
-      const data = await fetchAniList<CharactersPageResult>(
-        CHARACTERS_PAGE_QUERY,
-        { id, page },
-        900,
-      );
-      const characters = data.Media?.characters;
+    const data = await fetchAniList<CharactersPageResult>(
+      CHARACTERS_PAGE_QUERY,
+      { id, page: safePage },
+      900,
+    );
+    const characters = data.Media?.characters;
 
-      if (!characters?.edges?.length) {
-        break;
-      }
-
-      extra.push(
-        ...transformCharacterCredits({
-          characters,
-        } as AniListDetailsMedia),
-      );
-
-      if (!characters.pageInfo?.hasNextPage) {
-        break;
-      }
+    if (!characters?.edges?.length) {
+      return { characters: [], hasNextPage: false };
     }
-  } catch (error) {
-    console.warn(`Character pagination failed for AniList ${id}`, error);
-  }
 
-  return extra;
+    return {
+      characters: transformCharacterCredits({
+        characters,
+      } as AniListDetailsMedia),
+      hasNextPage:
+        safePage < MAX_CHARACTER_PAGES &&
+        Boolean(characters.pageInfo?.hasNextPage),
+    };
+  } catch (error) {
+    console.warn(`Character page ${safePage} failed for AniList ${id}`, error);
+    return { characters: [], hasNextPage: false };
+  }
 }
 
 /**
@@ -1039,14 +1087,8 @@ export const getAnimeDetails = cache(async function getAnimeDetails(
     const needsBanner = !anime.bannerImage;
     // Enrichment providers are optional and independent — run them
     // concurrently and tolerate individual failures.
-    const [
-      episodeMetadata,
-      malStats,
-      dubInfo,
-      episodeFlags,
-      extraCharacters,
-      bannerFallback,
-    ] = await Promise.all([
+    const [episodeMetadata, malStats, dubInfo, episodeFlags, bannerFallback] =
+      await Promise.all([
         withSoftTimeout(
           getEpisodeMetadata({
             anilistId: id,
@@ -1071,14 +1113,6 @@ export const getAnimeDetails = cache(async function getAnimeDetails(
           4_000,
           null,
         ),
-        withSoftTimeout(
-          fetchRemainingCharacterCredits(
-            id,
-            Boolean(data.Media.characters?.pageInfo?.hasNextPage),
-          ),
-          5_000,
-          [],
-        ),
         needsBanner
           ? withSoftTimeout(resolveBannerFallback(id), 4_000, null)
           : Promise.resolve(null),
@@ -1093,23 +1127,10 @@ export const getAnimeDetails = cache(async function getAnimeDetails(
     anime.dubCount = dubInfo?.dubbedEpisodes ?? null;
     anime.episodeFlags = episodeFlags;
 
-    if (extraCharacters.length) {
-      // AniList's RELEVANCE sort is unstable across pages — the same
-      // character can appear on several pages, so dedupe the merged list.
-      const seenCharacterIds = new Set<number>();
-      anime.characters = [
-        ...(anime.characters || []),
-        ...extraCharacters,
-      ].filter((credit) => {
-        if (seenCharacterIds.has(credit.id)) {
-          return false;
-        }
-
-        seenCharacterIds.add(credit.id);
-        return true;
-      });
-    }
-
+    // Only character page 1 (25 credits) ships with the initial render; the
+    // Cast tab lazy-loads the remainder from /api/anime/[id]/characters. This
+    // keeps a large ensemble cast (e.g. One Piece, ~9 pages) off the render
+    // path, where it previously cost several seconds of serial AniList calls.
     return anime;
   } catch (error) {
     console.error(error);
