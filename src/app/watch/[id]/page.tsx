@@ -443,6 +443,12 @@ export default async function WatchPage({
         }}
       >
         <WatchPlayerPanel
+          // Episode switches are real route navigations, so the panel stays
+          // mounted and its `useState(initialSource)` seed would otherwise go
+          // stale (player keeps the old episode while metadata updates). Keying
+          // on the episode remounts it with the freshly resolved source; server/
+          // audio swaps keep the same ep, so they still swap in place.
+          key={`${anime.id}:${episode}`}
           animeId={anime.id}
           title={title}
           secondaryTitle={secondaryTitle}
