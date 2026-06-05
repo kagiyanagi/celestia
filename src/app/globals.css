@@ -4556,6 +4556,240 @@ main {
         rgba(0, 0, 0, 0.72);
 }
 
+/* ── Watch episode tabs (overview / episodes / comments) ─────────────────── */
+
+.watch-ep-tabs {
+    display: grid;
+    gap: 24px;
+}
+
+.watch-ep-tabs-nav {
+    display: flex;
+    gap: 28px;
+    border-bottom: 1px solid var(--line);
+    overflow-x: auto;
+}
+
+.watch-ep-tabs-nav button {
+    background: transparent;
+    border: 0;
+    padding: 2px 0 14px;
+    color: var(--muted);
+    font-weight: 700;
+    font-size: 0.98rem;
+    cursor: pointer;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+    transition: color 160ms var(--ease-spring);
+}
+
+.watch-ep-tabs-nav button:hover,
+.watch-ep-tabs-nav button.active {
+    color: var(--text);
+}
+
+.watch-ep-tabs-nav button.active::after {
+    content: "";
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--text);
+}
+
+/* Overview tab */
+.watch-ep-overview {
+    display: grid;
+    gap: 24px;
+}
+
+.watch-ep-overview-head {
+    display: grid;
+    gap: 8px;
+}
+
+.watch-ep-overview-head h2 {
+    font-size: clamp(1.4rem, 3vw, 2rem);
+    line-height: 1.1;
+}
+
+.watch-ep-stat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.watch-ep-stat {
+    display: grid;
+    gap: 8px;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px 20px;
+}
+
+.watch-ep-stat-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.watch-ep-stat-value {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: var(--text);
+}
+
+.watch-ep-stat-value small {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--muted);
+}
+
+.watch-ep-synopsis {
+    display: grid;
+    gap: 12px;
+}
+
+.watch-ep-synopsis h3 {
+    font-size: 1.1rem;
+}
+
+.watch-ep-synopsis p {
+    margin: 0;
+    color: var(--muted-strong);
+    line-height: 1.7;
+    font-size: 0.95rem;
+}
+
+/* Comments tab (dummy / not yet wired) */
+.watch-ep-comments {
+    display: grid;
+    gap: 20px;
+}
+
+.watch-ep-comments-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--muted-strong);
+    font-size: 0.88rem;
+    font-weight: 600;
+}
+
+.watch-ep-comment-form {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    gap: 12px;
+    align-items: start;
+}
+
+.watch-ep-comment-input {
+    width: 100%;
+    resize: vertical;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--panel);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.92rem;
+}
+
+.watch-ep-comment-input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.watch-ep-comment-submit {
+    padding: 0 20px;
+    height: 44px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--muted);
+    font-weight: 700;
+    cursor: not-allowed;
+}
+
+.watch-ep-comment-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 18px;
+}
+
+.watch-ep-comment {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 12px;
+}
+
+.watch-ep-comment-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--surface-3, rgba(255, 255, 255, 0.06));
+    border: 1px solid var(--line);
+    display: grid;
+    place-items: center;
+    color: var(--muted-strong);
+    font-weight: 800;
+    font-size: 0.95rem;
+}
+
+.watch-ep-comment-body {
+    display: grid;
+    gap: 6px;
+}
+
+.watch-ep-comment-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.watch-ep-comment-meta strong {
+    font-size: 0.92rem;
+    font-weight: 800;
+}
+
+.watch-ep-comment-meta span {
+    color: var(--muted);
+    font-size: 0.78rem;
+}
+
+.watch-ep-comment-body p {
+    margin: 0;
+    color: var(--muted-strong);
+    line-height: 1.6;
+    font-size: 0.92rem;
+}
+
+@media (max-width: 640px) {
+    .watch-ep-comment-form {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .watch-ep-comment-form .watch-ep-comment-avatar {
+        display: none;
+    }
+}
+
 .watch-episodes-title {
     display: grid;
     gap: 8px;
