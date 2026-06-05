@@ -192,6 +192,8 @@ export type AnimeStreamingEpisode = {
   description?: string | null;
   /** ISO date (yyyy-mm-dd) the episode aired; null when unknown. */
   airDate?: string | null;
+  /** Full ISO timestamp (with time, UTC) the episode aired; null when unknown. */
+  airDateTime?: string | null;
   /** Community rating on a 10-point scale; null when unknown. */
   rating?: number | null;
   sources?: EpisodeMetadataSource[];

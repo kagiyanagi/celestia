@@ -43,7 +43,7 @@ export type EpisodeWatchQuery = {
   audio?: string | null;
 };
 
-type EpisodeBrowserAnime = Pick<
+export type EpisodeBrowserAnime = Pick<
   AnimeDetails,
   "id" | "bannerImage" | "coverImage" | "dubInfo" | "episodeFlags"
 >;

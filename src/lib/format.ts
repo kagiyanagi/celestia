@@ -147,6 +147,33 @@ export function formatIsoDate(value: string | null | undefined): string | null {
   return month ? `${Number(match[3])} ${month} ${match[1]}` : null;
 }
 
+/**
+ * Full ISO timestamp → "4 Oct 2024, 3:00 PM" in the viewer's locale; null when
+ * unparseable. Use only for values that genuinely carry a time (e.g. ani.zip's
+ * airDateUtc) — never for a date-only string, which would fabricate midnight.
+ */
+export function formatIsoDateTime(
+  value: string | null | undefined,
+): string | null {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat("en", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
 export function cleanDescription(
   value: string | null | undefined,
 ): string | null {

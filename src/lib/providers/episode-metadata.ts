@@ -164,6 +164,7 @@ function mergeEpisode(
     site: existing.site || candidate.site || null,
     description: candidate.description || existing.description || null,
     airDate: existing.airDate || candidate.airDate || null,
+    airDateTime: existing.airDateTime || candidate.airDateTime || null,
     rating: existing.rating ?? candidate.rating ?? null,
     sources: mergeSources(existing.sources, candidate.sources),
   };
