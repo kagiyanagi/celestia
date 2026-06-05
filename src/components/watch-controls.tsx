@@ -1,23 +1,29 @@
 "use client";
 
 import { Download, Flag, Mic, Server, Share2 } from "lucide-react";
-import { startTransition, useEffect, useState } from "react";
+import {
+  type MouseEvent as ReactMouseEvent,
+  startTransition,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import type { StreamAudioType } from "@/types/streaming";
 
 export type WatchServerOption = {
   id: string;
   label: string;
-  href: string;
   active: boolean;
   available: boolean;
+  href: string;
 };
 
 export type WatchAudioOption = {
   id: StreamAudioType;
   label: string;
-  href: string;
   active: boolean;
   available: boolean;
+  href: string;
 };
 
 type WatchControlsProps = {
@@ -26,7 +32,22 @@ type WatchControlsProps = {
   activeServerLabel: string;
   title: string;
   episode: number;
+  switching: boolean;
+  onSelectServer: (id: string) => void;
+  onSelectAudio: (id: StreamAudioType) => void;
 };
+
+// Let the browser handle modifier / non-left clicks (open in new tab, etc.) so
+// the in-place switch is a progressive enhancement over a real navigation.
+function isModifiedEvent(event: ReactMouseEvent): boolean {
+  return (
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey ||
+    event.button !== 0
+  );
+}
 
 export function WatchControls({
   serverOptions,
@@ -34,9 +55,13 @@ export function WatchControls({
   activeServerLabel,
   title,
   episode,
+  switching,
+  onSelectServer,
+  onSelectAudio,
 }: WatchControlsProps) {
   const [serverOpen, setServerOpen] = useState(false);
   const [shareLabel, setShareLabel] = useState("Share");
+  const serverMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (shareLabel === "Share") {
@@ -47,6 +72,37 @@ export function WatchControls({
 
     return () => window.clearTimeout(timer);
   }, [shareLabel]);
+
+  // The popover now persists (no navigation closes it), so dismiss it on an
+  // outside click or Escape.
+  useEffect(() => {
+    if (!serverOpen) {
+      return;
+    }
+
+    function handlePointerDown(event: PointerEvent) {
+      if (
+        serverMenuRef.current &&
+        !serverMenuRef.current.contains(event.target as Node)
+      ) {
+        setServerOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setServerOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [serverOpen]);
 
   function shareWatchLink() {
     const text = `${title} episode ${episode}`;
@@ -78,11 +134,23 @@ export function WatchControls({
             }
             href={option.href}
             key={option.id}
+            aria-current={option.active ? "true" : undefined}
+            aria-busy={switching || undefined}
             title={
               option.available
                 ? `Switch to ${option.label}`
                 : `${option.label} may not be available from this provider`
             }
+            onClick={(event) => {
+              if (isModifiedEvent(event)) {
+                return;
+              }
+              event.preventDefault();
+              if (switching || option.active) {
+                return;
+              }
+              onSelectAudio(option.id);
+            }}
           >
             <Mic size={17} aria-hidden />
             {option.label}
@@ -90,7 +158,7 @@ export function WatchControls({
         ))}
       </div>
 
-      <div className="watch-server-menu">
+      <div className="watch-server-menu" ref={serverMenuRef}>
         <button
           className="watch-action-button"
           type="button"
@@ -117,6 +185,19 @@ export function WatchControls({
                 href={server.href}
                 key={server.id}
                 role="menuitem"
+                aria-current={server.active ? "true" : undefined}
+                aria-busy={switching || undefined}
+                onClick={(event) => {
+                  if (isModifiedEvent(event)) {
+                    return;
+                  }
+                  event.preventDefault();
+                  if (switching || server.active) {
+                    return;
+                  }
+                  onSelectServer(server.id);
+                  setServerOpen(false);
+                }}
               >
                 <span>{server.label}</span>
                 <small>{server.available ? "Ready" : "Checking on open"}</small>

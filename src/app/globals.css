@@ -4297,10 +4297,9 @@ main {
 
 .watch-player-frame iframe {
     position: absolute;
-    top: 0;
-    left: -2px;
-    width: calc(100% + 4px);
-    height: calc(100% + 16px);
+    inset: 0;
+    width: 100%;
+    height: 100%;
     border: 0;
     border-radius: inherit;
     display: block;
@@ -4316,6 +4315,38 @@ main {
     padding: 24px;
     color: var(--muted-strong);
     text-align: center;
+}
+
+.watch-player-loading {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+    color: var(--text);
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(2px);
+    border-radius: inherit;
+    pointer-events: none;
+}
+
+.watch-player-spinner {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.25);
+    border-top-color: rgba(255, 255, 255, 0.9);
+    animation: watch-player-spin 0.7s linear infinite;
+}
+
+@keyframes watch-player-spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .watch-player-empty h1 {
@@ -4799,10 +4830,9 @@ main {
     }
 
     .watch-player-frame iframe {
-        top: 0;
-        left: -1px;
-        width: calc(100% + 2px);
-        height: calc(100% + 12px);
+        inset: 0;
+        width: 100%;
+        height: 100%;
     }
 
     .watch-now-playing,

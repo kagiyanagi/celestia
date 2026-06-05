@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { EpisodeThumbnail } from "@/components/episode-thumbnail";
+import { useWatchSelection } from "@/components/watch-selection-context";
+import { buildWatchHref } from "@/lib/watch-href";
 import { formatIsoDate } from "@/lib/format";
 import type { AnimeDetails } from "@/types/anime";
 
@@ -60,6 +62,16 @@ export function EpisodeBrowser({
 }) {
   const router = useRouter();
   const { user } = useAuth();
+  // On the watch page, the live in-place server/audio selection wins so episode
+  // links match what's actually playing; elsewhere fall back to the prop.
+  const selection = useWatchSelection();
+  const activeQuery: EpisodeWatchQuery = selection
+    ? {
+        sid: selection.sid ? String(selection.sid) : null,
+        server: selection.server,
+        audio: selection.audio,
+      }
+    : watchQuery ?? {};
   const [epPage, setEpPage] = useState(() => {
     const index = activeEpisode
       ? episodes.findIndex((ep) => ep.number === activeEpisode)
@@ -99,21 +111,16 @@ export function EpisodeBrowser({
   const totalPages = Math.max(1, Math.ceil(filtered.length / EP_PER_PAGE));
 
   function episodeHref(episodeNumber: number): string {
-    const params = new URLSearchParams({ ep: String(episodeNumber) });
-
-    if (watchQuery?.sid) {
-      params.set("sid", watchQuery.sid);
-    }
-
-    if (watchQuery?.server) {
-      params.set("server", watchQuery.server);
-    }
-
-    if (watchQuery?.audio) {
-      params.set("audio", watchQuery.audio);
-    }
-
-    return `/watch/${anime.id}?${params.toString()}`;
+    return buildWatchHref({
+      animeId: anime.id,
+      episode: episodeNumber,
+      providerAnimeId: activeQuery.sid ? Number(activeQuery.sid) : null,
+      providerId: activeQuery.server ?? null,
+      audio:
+        activeQuery.audio === "sub" || activeQuery.audio === "dub"
+          ? activeQuery.audio
+          : null,
+    });
   }
 
   return (

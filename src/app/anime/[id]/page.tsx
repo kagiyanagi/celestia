@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 
 import { AnimeDetailsShell } from "@/components/AnimeDetailsShell";
 import { HeaderImageSetter } from "@/components/header-image-setter";
+import { ScrollToTop } from "@/components/scroll-to-top";
 import { withSoftTimeout } from "@/lib/async";
 import { getDisplayTitle } from "@/lib/format";
 import { getAnimeDetails } from "@/lib/providers/anilist";
@@ -93,6 +94,7 @@ export default async function AnimePage({ params }: AnimePageProps) {
 
   return (
     <div className="detail-page">
+      <ScrollToTop />
       <HeaderImageSetter image={anime.bannerImage || anime.coverImage} />
       <AnimeDetailsShell anime={anime} watchHref={watchHref} />
     </div>
