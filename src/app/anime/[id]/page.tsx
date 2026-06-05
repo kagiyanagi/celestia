@@ -4,7 +4,6 @@ import { notFound } from "next/navigation";
 import { AnimeDetailsShell } from "@/components/AnimeDetailsShell";
 import { HeaderImageSetter } from "@/components/header-image-setter";
 import { ScrollToTop } from "@/components/scroll-to-top";
-import { CLIENT_EPISODE_CAP } from "@/lib/episode-pagination";
 import { getDisplayTitle } from "@/lib/format";
 import { getAnimeDetails } from "@/lib/providers/anilist";
 import { buildWatchHref } from "@/lib/watch-href";
@@ -59,24 +58,11 @@ export default async function AnimePage({ params }: AnimePageProps) {
   // episode 1 and let the watch page (and its in-place switcher) resolve.
   const watchHref = buildWatchHref({ animeId: anime.id, episode: 1 });
 
-  // Mega-shows (1000+ eps) would serialize ~1 MB of episode data into the
-  // client shell payload. Drop the list above the cap and pass the count — the
-  // Episodes tab pages/searches them via /api/anime/[id]/episodes instead.
-  const episodeTotal = anime.streamingEpisodes?.length ?? 0;
-  const shellAnime =
-    episodeTotal > CLIENT_EPISODE_CAP
-      ? { ...anime, streamingEpisodes: [] }
-      : anime;
-
   return (
     <div className="detail-page">
       <ScrollToTop />
       <HeaderImageSetter image={anime.bannerImage || anime.coverImage} />
-      <AnimeDetailsShell
-        anime={shellAnime}
-        watchHref={watchHref}
-        episodeTotal={episodeTotal}
-      />
+      <AnimeDetailsShell anime={anime} watchHref={watchHref} />
     </div>
   );
 }
