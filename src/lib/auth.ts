@@ -102,6 +102,8 @@ function redactUser(user: UserRecord): PublicUser {
     libraryEntries: user.libraryEntries,
     historyEntries: user.historyEntries,
     notificationsLastReadAt: user.notificationsLastReadAt ?? null,
+    notificationReadIds: user.notificationReadIds ?? [],
+    notificationDismissedIds: user.notificationDismissedIds ?? [],
   };
 }
 

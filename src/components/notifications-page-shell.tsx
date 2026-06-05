@@ -2,9 +2,16 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { Bell, CheckCheck, Mic, Tv } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
+import { Bell, Check, CheckCheck, Mic, Trash2, Tv } from "lucide-react";
 import type { AnimeNotification } from "@/types/anime";
+
+/** Lets the header bell re-fetch its unread badge after a change here. */
+function broadcastChange() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("notifications:updated"));
+  }
+}
 
 interface NotificationsPageShellProps {
   initialNotifications: AnimeNotification[];
@@ -41,14 +48,45 @@ export function NotificationsPageShell({
     setNotifications((prev) =>
       prev.map((notification) => ({ ...notification, read: true })),
     );
+    broadcastChange();
     try {
-      await fetch("/api/notifications", { method: "POST" });
+      await fetch("/api/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "read-all" }),
+      });
     } catch {
       // The read state still reflects locally; next load reconciles.
     } finally {
       setMarking(false);
     }
   }
+
+  const markRead = useCallback((id: string) => {
+    setNotifications((prev) =>
+      prev.map((notification) =>
+        notification.id === id ? { ...notification, read: true } : notification,
+      ),
+    );
+    broadcastChange();
+    fetch("/api/notifications", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "read", ids: [id] }),
+    }).catch(() => undefined);
+  }, []);
+
+  const dismiss = useCallback((id: string) => {
+    setNotifications((prev) =>
+      prev.filter((notification) => notification.id !== id),
+    );
+    broadcastChange();
+    fetch("/api/notifications", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "dismiss", ids: [id] }),
+    }).catch(() => undefined);
+  }, []);
 
   return (
     <main className="notifications-page">
@@ -92,6 +130,9 @@ export function NotificationsPageShell({
               <Link
                 href={`/anime/${notification.animeId}`}
                 className="notification-link"
+                onClick={() => {
+                  if (!notification.read) markRead(notification.id);
+                }}
               >
                 <span className="notif-cover">
                   {notification.coverImage ? (
@@ -124,6 +165,28 @@ export function NotificationsPageShell({
                   <span className="notif-dot" aria-label="Unread" />
                 ) : null}
               </Link>
+              <div className="notif-actions">
+                {!notification.read ? (
+                  <button
+                    type="button"
+                    className="notif-action"
+                    onClick={() => markRead(notification.id)}
+                    aria-label="Mark as read"
+                    title="Mark as read"
+                  >
+                    <Check size={16} aria-hidden />
+                  </button>
+                ) : null}
+                <button
+                  type="button"
+                  className="notif-action"
+                  onClick={() => dismiss(notification.id)}
+                  aria-label="Delete notification"
+                  title="Delete"
+                >
+                  <Trash2 size={16} aria-hidden />
+                </button>
+              </div>
             </li>
           ))}
         </ul>

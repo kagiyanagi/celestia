@@ -4110,6 +4110,8 @@ main {
 }
 
 .notification-row {
+    display: flex;
+    align-items: center;
     border-radius: 14px;
     border: 1px solid var(--line);
     background: var(--panel);
@@ -4126,6 +4128,8 @@ main {
 }
 
 .notification-link {
+    flex: 1;
+    min-width: 0;
     display: flex;
     align-items: center;
     gap: 14px;
@@ -4186,6 +4190,35 @@ main {
     height: 9px;
     border-radius: 50%;
     background: var(--text);
+}
+
+.notif-actions {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 10px 0 4px;
+}
+
+.notif-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 130ms var(--ease-spring),
+        color 130ms var(--ease-spring), border-color 130ms var(--ease-spring);
+}
+
+.notif-action:hover {
+    background: var(--panel-2);
+    border-color: var(--line-strong);
+    color: var(--text);
 }
 
 @media (max-width: 600px) {
