@@ -88,7 +88,9 @@ export function WatchPlayerPanel({
         const response = await fetch(
           `/api/watch/${animeId}/source?${params.toString()}`,
         );
-        const data = (await response.json()) as { source?: StreamSource | null };
+        const data = (await response.json()) as {
+          source?: StreamSource | null;
+        };
 
         // A newer switch superseded this one — drop the stale result.
         if (requestRef.current !== requestId) {
@@ -192,7 +194,9 @@ export function WatchPlayerPanel({
             <ChevronLeft size={18} aria-hidden />
             Details
           </Link>
-          <span className="watch-provider-badge">{activeServerLabel}</span>
+          <span className="watch-provider-badge">
+            server - {activeServerLabel}
+          </span>
         </div>
 
         <div className="watch-player-frame">
@@ -220,7 +224,11 @@ export function WatchPlayerPanel({
           )}
 
           {switching ? (
-            <div className="watch-player-loading" role="status" aria-live="polite">
+            <div
+              className="watch-player-loading"
+              role="status"
+              aria-live="polite"
+            >
               <span className="watch-player-spinner" aria-hidden />
               <span>Switching source…</span>
             </div>

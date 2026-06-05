@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Captions } from "lucide-react";
+import { Captions, Star } from "lucide-react";
 
 import { useBannerContext } from "@/components/banner-fallback-provider";
 import { DetailsSaveButton } from "@/components/details-save-button";
@@ -177,6 +177,12 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
                     </p>
                     <div className="celestia-pills">
                       <span>{item.format || "Anime"}</span>
+                      {typeof item.averageScore === "number" ? (
+                        <span>
+                          <Star size={14} aria-hidden />
+                          {(item.averageScore / 10).toFixed(1)}
+                        </span>
+                      ) : null}
                       {item.airingCount != null ? (
                         <span>
                           <Captions size={14} aria-hidden />

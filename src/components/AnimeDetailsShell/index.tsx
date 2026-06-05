@@ -17,15 +17,11 @@ import { getRelatedItems } from "./helpers";
 interface AnimeDetailsShellProps {
   anime: AnimeDetails;
   watchHref: string;
-  /** Real episode count; may exceed anime.streamingEpisodes when the list was
-   *  trimmed from the payload for a mega-show (Episodes tab then paginates). */
-  episodeTotal?: number;
 }
 
 export function AnimeDetailsShell({
   anime,
   watchHref,
-  episodeTotal,
 }: AnimeDetailsShellProps) {
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
 
@@ -58,11 +54,7 @@ export function AnimeDetailsShell({
           )}
 
           {activeTab === "episodes" && (
-            <DetailsEpisodes
-              anime={anime}
-              watchHref={watchHref}
-              episodeTotal={episodeTotal}
-            />
+            <DetailsEpisodes anime={anime} watchHref={watchHref} />
           )}
 
           {activeTab === "franchise" && (
