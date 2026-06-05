@@ -130,6 +130,7 @@ function toEpisodes(
         site: "TVDB",
         airDate:
           ep.airdate || ep.airDate || ep.airDateUtc?.slice(0, 10) || null,
+        airDateTime: ep.airDateUtc || null,
         rating:
           Number.isFinite(ratingValue) && ratingValue > 0
             ? Math.round(ratingValue * 10) / 10

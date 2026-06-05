@@ -3,9 +3,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { EpisodeBrowser } from "@/components/episode-browser";
 import { HeaderImageSetter } from "@/components/header-image-setter";
 import { WatchCompletionPrompt } from "@/components/watch-completion-prompt";
+import { WatchEpisodeTabs } from "@/components/watch-episode-tabs";
 import { WatchPlayerPanel } from "@/components/watch-player-panel";
 import { WatchSelectionProvider } from "@/components/watch-selection-context";
 import { getDisplayTitle, getSecondaryTitle } from "@/lib/format";
@@ -417,6 +417,21 @@ export default async function WatchPage({
     .slice(0, 8);
   const recommendations = (anime.recommendations ?? []).slice(0, 8);
 
+  // The Overview tab shows the episode's own metadata. Rating/airDate come from
+  // the merged list; the real synopsis and precise air time come straight from
+  // the metadata episode (buildEpisodeList substitutes a generic description).
+  const currentMetaEpisode = (anime.streamingEpisodes ?? []).find(
+    (item) => Math.floor(item.number) === episode,
+  );
+  const currentEpisodeOverview = {
+    number: episode,
+    title: currentEpisode?.title || `Episode ${episode}`,
+    description: currentMetaEpisode?.description?.trim() || null,
+    rating: currentEpisode?.rating ?? null,
+    airDate: currentEpisode?.airDate ?? null,
+    airDateTime: currentMetaEpisode?.airDateTime ?? null,
+  };
+
   // The history recorder only needs summary fields; drop the episode list
   // (huge for mega-shows) before it crosses to the client and into its POST.
   const recorderAnime = { ...anime };
@@ -465,7 +480,7 @@ export default async function WatchPage({
         />
 
         <section className="watch-section-panel" id="episodes">
-          <EpisodeBrowser
+          <WatchEpisodeTabs
             anime={{
               id: anime.id,
               bannerImage: anime.bannerImage,
@@ -485,6 +500,7 @@ export default async function WatchPage({
               rating: item.rating,
             }))}
             activeEpisode={episode}
+            currentEpisode={currentEpisodeOverview}
           />
         </section>
       </WatchSelectionProvider>
