@@ -1,5 +1,10 @@
 import { fetchJson } from "@/lib/http/client";
-import type { EpisodeFlags, MalStats, ProviderHealth } from "@/types/anime";
+import type {
+  AnimeNewsArticle,
+  EpisodeFlags,
+  MalStats,
+  ProviderHealth,
+} from "@/types/anime";
 
 // Jikan is a free, keyless REST mirror of MyAnimeList data.
 // Public rate limit is 60 requests/minute — long revalidation keeps us
@@ -172,5 +177,84 @@ export async function getJikanEpisodeFlags(
   } catch (error) {
     console.warn(`Jikan episode flags fetch failed for MAL ${malId}`, error);
     return null;
+  }
+}
+
+type JikanNewsResponse = {
+  data?: Array<{
+    mal_id?: number;
+    url?: string;
+    title?: string;
+    date?: string;
+    author_username?: string;
+    author_url?: string;
+    forum_url?: string;
+    images?: { jpg?: { image_url?: string | null } | null } | null;
+    comments?: number | null;
+    excerpt?: string | null;
+  }>;
+};
+
+// MAL news entries carry an outro line ("Source: ...") and trailing ellipsis;
+// keep the excerpt tidy without inventing content beyond what MAL published.
+function cleanExcerpt(value: string | null | undefined): string | null {
+  const trimmed = (value || "").replace(/\s+/g, " ").trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+/**
+ * Recent news articles for an anime from MyAnimeList via Jikan, newest first.
+ * Returns an empty list when MAL has no news or the lookup fails — absence of
+ * data is never presented as anything but "no news".
+ */
+export async function getAnimeNews(
+  malId: number,
+  limit = 12,
+): Promise<AnimeNewsArticle[]> {
+  try {
+    const payload = await fetchJson<JikanNewsResponse>(
+      `${JIKAN_ENDPOINT}/anime/${malId}/news`,
+      {
+        next: { revalidate: 10_800 },
+      },
+      {
+        provider: "Jikan",
+        // Optional enrichment behind a soft timeout on the route — fail fast
+        // rather than burning a retry delay on a 429/down response.
+        timeoutMs: 5_000,
+        retries: 0,
+        retryDelayMs: 1_000,
+        cacheKey: `jikan:news:${malId}`,
+        staleTtlMs: 10_800 * 1000 * 8,
+      },
+    );
+
+    const items = payload?.data;
+
+    if (!items?.length) {
+      return [];
+    }
+
+    return items
+      .filter((item) => item.mal_id && item.title && item.url && item.date)
+      .slice(0, limit)
+      .map((item) => ({
+        id: item.mal_id!,
+        title: item.title!,
+        url: item.url!,
+        date: item.date!,
+        excerpt: cleanExcerpt(item.excerpt),
+        imageUrl: item.images?.jpg?.image_url || null,
+        author: item.author_username || null,
+        authorUrl: item.author_url || null,
+        forumUrl: item.forum_url || null,
+        comments:
+          typeof item.comments === "number" && item.comments >= 0
+            ? item.comments
+            : null,
+      }));
+  } catch (error) {
+    console.warn(`Jikan news fetch failed for MAL ${malId}`, error);
+    return [];
   }
 }

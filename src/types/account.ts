@@ -64,6 +64,12 @@ export type LibraryEntry = {
   startedAt: string | null;
   completedAt: string | null;
   updatedAt: string;
+  /**
+   * ISO timestamp the entry was first added to the library. Notifications only
+   * cover episodes that aired at/after this, so adding an anime never backfills
+   * the whole recent window. Entries saved before this field existed have none.
+   */
+  addedAt?: string | null;
   aniListEntryId: number | null;
 };
 
@@ -98,8 +104,12 @@ export type UserRecord = {
   devices: DeviceSession[];
   libraryEntries: LibraryEntry[];
   historyEntries: HistoryEntry[];
-  /** ISO timestamp the user last marked notifications as read. */
+  /** ISO timestamp the user last marked all notifications as read. */
   notificationsLastReadAt?: string | null;
+  /** Notification ids individually marked read (read state is otherwise derived). */
+  notificationReadIds?: string[];
+  /** Notification ids the user dismissed; hidden even while still in the window. */
+  notificationDismissedIds?: string[];
 };
 
 export type SessionRecord = {

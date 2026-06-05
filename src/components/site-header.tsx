@@ -55,24 +55,31 @@ export function SiteHeader() {
   }, []);
 
   // Refresh the unread badge per route change (provider data is cached, so
-  // repeat lookups are cheap) and clear it when signed out.
+  // repeat lookups are cheap), on demand when the notifications page changes
+  // read/dismiss state, and clear it when signed out.
   useEffect(() => {
     if (!user) {
       return;
     }
 
     let cancelled = false;
-    fetch("/api/notifications")
-      .then((response) => (response.ok ? response.json() : null))
-      .then((data: { unreadCount?: number } | null) => {
-        if (!cancelled && data) {
-          setUnreadCount(data.unreadCount || 0);
-        }
-      })
-      .catch(() => undefined);
+    const refresh = () => {
+      fetch("/api/notifications")
+        .then((response) => (response.ok ? response.json() : null))
+        .then((data: { unreadCount?: number } | null) => {
+          if (!cancelled && data) {
+            setUnreadCount(data.unreadCount || 0);
+          }
+        })
+        .catch(() => undefined);
+    };
+
+    refresh();
+    window.addEventListener("notifications:updated", refresh);
 
     return () => {
       cancelled = true;
+      window.removeEventListener("notifications:updated", refresh);
     };
   }, [user, pathname]);
 
