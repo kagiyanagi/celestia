@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -51,26 +51,19 @@ type EpisodeBrowserAnime = Pick<
 /**
  * Shared episode list (details Episodes tab + watch page): search by
  * number/title/description, pagination, sort order, watched dimming with
- * progress, dub availability, and filler/recap tags.
+ * progress, dub availability, and filler/recap tags. The full list lives in
+ * the client payload, so search/sort/paging are all instant and client-side.
  */
 export function EpisodeBrowser({
   anime,
   episodes,
   watchQuery,
   activeEpisode = null,
-  paginated = false,
-  totalEpisodes,
 }: {
   anime: EpisodeBrowserAnime;
-  /** All episodes (normal shows) or just the first page (paginated mega-shows). */
   episodes: BrowserEpisode[];
   watchQuery?: EpisodeWatchQuery;
   activeEpisode?: number | null;
-  /** When true, search/sort/paging resolve server-side via the episodes API
-   *  instead of being held in the client payload (for 1000+ episode shows). */
-  paginated?: boolean;
-  /** Total episode count, used for the count pill in paginated mode. */
-  totalEpisodes?: number;
 }) {
   const router = useRouter();
   const { user } = useAuth();
@@ -85,11 +78,6 @@ export function EpisodeBrowser({
       }
     : watchQuery ?? {};
   const [epPage, setEpPage] = useState(() => {
-    // Paginated lists only have the first page in memory, so derive the
-    // active episode's page from its number (mega-shows number 1..N).
-    if (paginated && activeEpisode) {
-      return Math.max(1, Math.floor((activeEpisode - 1) / EP_PER_PAGE) + 1);
-    }
     const index = activeEpisode
       ? episodes.findIndex((ep) => ep.number === activeEpisode)
       : -1;
@@ -97,62 +85,6 @@ export function EpisodeBrowser({
   });
   const [epOrder, setEpOrder] = useState<"asc" | "desc">("asc");
   const [query, setQuery] = useState("");
-
-  // Paginated mode: the server filters/sorts/slices; the client holds only the
-  // current page. No-op for normal shows (the effects below early-return).
-  const [serverPage, setServerPage] = useState<{
-    key: string;
-    episodes: BrowserEpisode[];
-    matched: number;
-  } | null>(null);
-  const [debouncedQuery, setDebouncedQuery] = useState("");
-
-  useEffect(() => {
-    if (!paginated) {
-      return;
-    }
-    const handle = setTimeout(
-      () => setDebouncedQuery(query.trim().toLowerCase()),
-      250,
-    );
-    return () => clearTimeout(handle);
-  }, [paginated, query]);
-
-  // Identifies the page+sort+search the server result should match; loading is
-  // derived (no synchronous setState) by comparing it to what's loaded.
-  const requestKey = `${epPage}|${epOrder}|${debouncedQuery}`;
-
-  useEffect(() => {
-    if (!paginated) {
-      return;
-    }
-    let cancelled = false;
-    const params = new URLSearchParams({
-      page: String(epPage),
-      order: epOrder,
-    });
-    if (debouncedQuery) {
-      params.set("q", debouncedQuery);
-    }
-    fetch(`/api/anime/${anime.id}/episodes?${params.toString()}`)
-      .then((response) => (response.ok ? response.json() : null))
-      .then((data) => {
-        if (cancelled || !data) {
-          return;
-        }
-        setServerPage({
-          key: requestKey,
-          episodes: data.episodes ?? [],
-          matched: data.matched ?? 0,
-        });
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [paginated, anime.id, epPage, epOrder, debouncedQuery, requestKey]);
-
-  const isLoadingPage = paginated && serverPage?.key !== requestKey;
 
   // Viewer's per-episode watch progress (percent), from watch history.
   const progressByEpisode = new Map(
@@ -166,23 +98,19 @@ export function EpisodeBrowser({
   const dubbedEpisodeCount = anime.dubInfo?.dubbedEpisodes ?? null;
 
   const normalizedQuery = query.trim().toLowerCase();
-  // Client path (normal shows): filter/sort/slice the full in-memory list.
+  // Filter/sort/slice the full in-memory list.
   const clientFiltered = normalizedQuery
     ? episodes.filter((ep) => matchesEpisodeQuery(ep, normalizedQuery))
     : episodes;
   const clientSorted =
     epOrder === "asc" ? clientFiltered : [...clientFiltered].reverse();
 
-  // In paginated mode the server already filtered/sorted/sliced the page.
-  const paged = paginated
-    ? serverPage?.episodes ?? []
-    : clientSorted.slice((epPage - 1) * EP_PER_PAGE, epPage * EP_PER_PAGE);
-  const matchedCount = paginated
-    ? serverPage?.matched ?? totalEpisodes ?? 0
-    : clientFiltered.length;
-  const episodeCount = paginated
-    ? totalEpisodes ?? episodes.length
-    : episodes.length;
+  const paged = clientSorted.slice(
+    (epPage - 1) * EP_PER_PAGE,
+    epPage * EP_PER_PAGE,
+  );
+  const matchedCount = clientFiltered.length;
+  const episodeCount = episodes.length;
   const rangeLabel =
     paged.length > 0
       ? `${paged[0].number} - ${paged[paged.length - 1].number}`
@@ -284,13 +212,11 @@ export function EpisodeBrowser({
 
       {!paged.length ? (
         <div className="empty-panel">
-          {paginated && isLoadingPage
-            ? "Loading episodes…"
-            : `No episodes match "${query.trim()}".`}
+          No episodes match &quot;{query.trim()}&quot;.
         </div>
       ) : null}
 
-      <div className="episode-grid-new" aria-busy={paginated && isLoadingPage}>
+      <div className="episode-grid-new">
         {paged.map((ep) => {
           const progress = progressByEpisode.get(ep.number);
           const watched = progress !== undefined;

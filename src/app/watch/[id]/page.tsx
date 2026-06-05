@@ -5,10 +5,9 @@ import { notFound } from "next/navigation";
 
 import { EpisodeBrowser } from "@/components/episode-browser";
 import { HeaderImageSetter } from "@/components/header-image-setter";
-import { WatchHistoryRecorder } from "@/components/watch-history-recorder";
+import { WatchCompletionPrompt } from "@/components/watch-completion-prompt";
 import { WatchPlayerPanel } from "@/components/watch-player-panel";
 import { WatchSelectionProvider } from "@/components/watch-selection-context";
-import { CLIENT_EPISODE_CAP } from "@/lib/episode-pagination";
 import { getDisplayTitle, getSecondaryTitle } from "@/lib/format";
 import { getAnimeDetails } from "@/lib/providers/anilist";
 import {
@@ -426,13 +425,13 @@ export default async function WatchPage({
   return (
     <div className="watch-page">
       <HeaderImageSetter image={anime.bannerImage || anime.coverImage} />
-      <WatchHistoryRecorder
+      <WatchCompletionPrompt
         anime={recorderAnime}
         episode={episode}
         episodeTitle={currentEpisode?.title || `Episode ${episode}`}
         episodeImage={currentEpisode?.thumbnail || null}
         durationLabel={anime.duration ? `${anime.duration}:00` : null}
-        durationMinutes={anime.duration ?? null}
+        hasSource={Boolean(source?.embedUrl)}
       />
 
       <WatchSelectionProvider
@@ -474,22 +473,17 @@ export default async function WatchPage({
               dubInfo: anime.dubInfo,
               episodeFlags: anime.episodeFlags,
             }}
-            // Mega-shows ship no episode payload — the browser pages/searches
-            // them via the API. The full list above still drives prev/next.
-            episodes={
-              episodes.length > CLIENT_EPISODE_CAP
-                ? []
-                : episodes.map((item) => ({
-                    number: item.number,
-                    title: item.title,
-                    description: item.description,
-                    thumbnail: item.thumbnail,
-                    airDate: item.airDate,
-                    rating: item.rating,
-                  }))
-            }
-            paginated={episodes.length > CLIENT_EPISODE_CAP}
-            totalEpisodes={episodes.length}
+            // The full episode list ships in the payload (a few KB gzipped even
+            // for 1000+ episode shows) so thumbnails render instantly and the
+            // browser searches/pages it client-side.
+            episodes={episodes.map((item) => ({
+              number: item.number,
+              title: item.title,
+              description: item.description,
+              thumbnail: item.thumbnail,
+              airDate: item.airDate,
+              rating: item.rating,
+            }))}
             activeEpisode={episode}
           />
         </section>
