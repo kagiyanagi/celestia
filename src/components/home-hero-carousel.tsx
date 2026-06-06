@@ -114,6 +114,28 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
     }
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setIsDragging(true);
+    setStartX(e.touches[0].clientX);
+    setDragOffset(0);
+    setIsClickPrevented(false);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    const currentX = e.touches[0].clientX;
+    const diff = currentX - startX;
+    setDragOffset(diff);
+
+    if (Math.abs(diff) > 5) {
+      setIsClickPrevented(true);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    handleMouseUp();
+  };
+
   const handleLinkClick = (e: React.MouseEvent) => {
     if (isClickPrevented) {
       e.preventDefault();
@@ -127,6 +149,9 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
       style={{ cursor: isDragging ? "grabbing" : "grab" }}
     >
       <div className="celestia-hero-inner">
@@ -189,7 +214,11 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
                           {item.airingCount}
                         </span>
                       ) : null}
-                      <DubBadge animeId={item.id} initial={item.dubCount ?? null} iconSize={14} />
+                      <DubBadge
+                        animeId={item.id}
+                        initial={item.dubCount ?? null}
+                        iconSize={14}
+                      />
                       <span>{item.seasonYear || "Now"}</span>
                     </div>
                   </div>
