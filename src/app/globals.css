@@ -6301,4 +6301,66 @@ a:active .shelf-card {
         width: 34px;
         height: 34px;
     }
+
+    .celestia-hero {
+        margin-top: -84px;
+        margin-bottom: 24px;
+    }
+
+    .celestia-hero-inner {
+        aspect-ratio: 4 / 5;
+        min-height: 540px;
+    }
+
+    .celestia-copy {
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        text-align: center;
+        padding: 40px 20px 60px;
+    }
+
+    .celestia-copy-main {
+        max-width: 100%;
+        gap: 8px;
+        justify-items: center;
+    }
+
+    .celestia-copy-main h1 {
+        font-size: 2.4rem;
+        line-height: 1.1;
+    }
+
+    .celestia-description {
+        display: none; /* Hide long descriptions on small mobile */
+    }
+
+    .celestia-pills {
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .celestia-pills span {
+        padding: 4px 10px;
+        font-size: 0.75rem;
+    }
+
+    .celestia-actions {
+        width: 100%;
+        justify-content: center;
+        margin-top: 16px;
+    }
+
+    .celestia-watch {
+        flex: 1;
+        max-width: 200px;
+    }
+
+    .celestia-dots {
+        bottom: 16px;
+    }
+
+    .celestia-dots button {
+        width: 32px;
+    }
 }
