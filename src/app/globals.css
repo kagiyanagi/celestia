@@ -1677,12 +1677,18 @@ main {
     box-shadow: var(--shadow);
 }
 
+.custom-select-list.dropup {
+    top: auto;
+    bottom: calc(100% + 6px);
+}
+
 .custom-select-list button {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
     width: 100%;
+    white-space: nowrap;
     padding: 0.6rem 0.75rem;
     border: 0;
     border-radius: 9px;
@@ -3104,6 +3110,7 @@ main {
 
     .brand-mark {
         font-size: 1.2rem;
+        white-space: nowrap;
     }
 
     .search-overlay {
@@ -4032,6 +4039,172 @@ main {
 .franchise-controls button:hover {
     background: rgba(255, 255, 255, 0.08);
     color: var(--text);
+}
+
+/* Franchise focus / highlight states */
+.franchise-edge {
+    transition: opacity 140ms var(--ease-spring);
+}
+
+.franchise-edge.is-faded {
+    opacity: 0.12;
+}
+
+.franchise-edge.is-active path {
+    stroke: var(--text);
+    stroke-width: 2;
+}
+
+.franchise-edge.is-active text {
+    fill: var(--text);
+}
+
+.franchise-node {
+    transition:
+        border-color 140ms var(--ease-spring),
+        background 140ms var(--ease-spring),
+        opacity 140ms var(--ease-spring);
+}
+
+.franchise-node.is-connected {
+    border-color: var(--line-strong);
+}
+
+.franchise-node.is-active {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--text);
+    box-shadow: 0 0 0 1px var(--text);
+}
+
+.franchise-node.is-faded {
+    opacity: 0.22;
+}
+
+/* Franchise view toggle */
+.franchise-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 12px;
+}
+
+.franchise-view-toggle {
+    display: inline-flex;
+    padding: 4px;
+    gap: 4px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+}
+
+.franchise-view-toggle button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--muted-strong);
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition:
+        background 130ms var(--ease-spring),
+        color 130ms var(--ease-spring);
+}
+
+.franchise-view-toggle button:hover {
+    color: var(--text);
+}
+
+.franchise-view-toggle button.is-active {
+    background: var(--text);
+    color: var(--bg);
+}
+
+/* Franchise watch-order list */
+.franchise-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.franchise-list-item {
+    display: grid;
+    grid-template-columns: 28px 48px 1fr;
+    gap: 14px;
+    align-items: center;
+    padding: 10px 14px 10px 10px;
+    border-radius: 14px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    text-decoration: none;
+    color: var(--text);
+    transition:
+        background 160ms var(--ease-spring),
+        border-color 160ms var(--ease-spring);
+}
+
+.franchise-list-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--line-strong);
+}
+
+.franchise-list-item.is-current {
+    border-color: var(--text);
+    box-shadow: 0 0 0 1px var(--text);
+}
+
+.franchise-list-order {
+    text-align: center;
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: var(--muted-strong);
+}
+
+.franchise-list-poster {
+    position: relative;
+    aspect-ratio: 0.7;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--bg-soft);
+}
+
+.franchise-list-poster img {
+    object-fit: cover;
+}
+
+.franchise-list-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.franchise-list-type {
+    font-size: 0.62rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.franchise-list-title {
+    font-size: 0.9rem;
+    font-weight: 700;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.franchise-list-meta {
+    font-size: 0.74rem;
+    color: var(--muted);
 }
 
 /* Notification bell badge */
@@ -5374,15 +5547,18 @@ main {
     position: fixed;
     inset: 0;
     z-index: 60;
-    display: grid;
-    place-items: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     padding: 2rem;
     background: rgba(0, 0, 0, 0.8);
 }
 
 .save-dialog {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     width: min(720px, 100%);
+    min-width: 0;
     max-height: calc(100dvh - 4rem);
     border-radius: 1.4rem;
     overflow: hidden;
@@ -5412,6 +5588,8 @@ main {
     display: grid;
     gap: 0.9rem;
     padding: 1.5rem;
+    flex: 1;
+    overflow-x: hidden;
     overflow-y: auto;
     min-height: 0;
 }
@@ -5460,6 +5638,7 @@ main {
 .save-dialog-body .save-status-trigger {
     padding: 0.75rem 0.9rem;
     border-radius: 0.85rem;
+    min-width: 0;
 }
 
 .field-with-icon {
@@ -5776,10 +5955,184 @@ main {
     padding-bottom: 3rem;
 }
 
+.profile-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    flex-wrap: wrap;
+}
+
 .profile-header-copy {
     display: flex;
     gap: 1.25rem;
-    align-items: end;
+    align-items: center;
+}
+
+.profile-header-copy h1 {
+    margin: 0;
+}
+
+.profile-header-copy p {
+    margin: 0.25rem 0 0;
+    color: var(--muted);
+}
+
+.profile-stats-inline {
+    display: flex;
+    gap: 3rem;
+}
+
+.profile-stats-inline div {
+    display: grid;
+    gap: 0.35rem;
+    justify-items: center;
+    text-align: center;
+}
+
+.profile-stats-inline strong {
+    font-size: 1.9rem;
+    line-height: 1;
+}
+
+.profile-stats-inline span {
+    color: var(--muted);
+    font-size: 0.95rem;
+}
+
+.profile-body {
+    padding-bottom: 4rem;
+    display: grid;
+    gap: 3rem;
+}
+
+.profile-section {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.profile-empty {
+    color: var(--muted);
+}
+
+.profile-history-rail {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(280px, 1fr);
+    gap: 1.25rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+    scroll-snap-type: x mandatory;
+}
+
+.profile-history-card {
+    display: grid;
+    gap: 0.5rem;
+    scroll-snap-align: start;
+    text-decoration: none;
+    color: inherit;
+}
+
+.profile-history-thumb {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+    border-radius: 0.85rem;
+    background: var(--panel);
+}
+
+.profile-history-duration {
+    position: absolute;
+    right: 0.5rem;
+    bottom: 0.5rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: 0.4rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background: rgba(0, 0, 0, 0.78);
+    color: #fff;
+}
+
+.profile-history-progress {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.profile-history-progress > span {
+    display: block;
+    height: 100%;
+    background: #f5f5f5;
+}
+
+.profile-history-series {
+    color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.profile-history-episode {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+}
+
+.profile-settings {
+    width: 100%;
+}
+
+.profile-setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.profile-setting-row > div {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.profile-setting-row span {
+    color: var(--muted);
+    font-size: 0.9rem;
+}
+
+.profile-danger-zone {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+.profile-danger-zone .text-action {
+    padding: 0.5rem 0;
+    background: transparent;
+    border: 0;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.profile-danger-zone .text-action:hover {
+    color: #fff;
+}
+
+.profile-danger-zone .text-action.danger {
+    color: #ff7272;
+}
+
+.profile-danger-zone .text-action.danger:hover {
+    color: #ff9a9a;
 }
 
 .profile-avatar {
@@ -5788,58 +6141,6 @@ main {
     height: 7.5rem;
     overflow: hidden;
     border-radius: 1.5rem;
-}
-
-.profile-overview-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.6fr) minmax(320px, 1fr);
-    gap: 1.5rem;
-    margin-top: 1.75rem;
-}
-
-.profile-stats-card {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    padding: 1.5rem;
-    border-radius: 1.5rem;
-}
-
-.profile-stats-card div {
-    display: grid;
-    gap: 0.4rem;
-    justify-items: center;
-}
-
-.profile-stats-card strong {
-    font-size: 2rem;
-}
-
-.profile-activity-card {
-    display: grid;
-    gap: 1rem;
-    padding: 1.5rem;
-    border-radius: 1.5rem;
-}
-
-.profile-activity-item {
-    display: grid;
-    grid-template-columns: 64px minmax(0, 1fr);
-    gap: 1rem;
-}
-
-.profile-activity-cover {
-    position: relative;
-    aspect-ratio: 1;
-    overflow: hidden;
-    border-radius: 1rem;
-}
-
-.profile-content-grid {
-    margin-top: 1.75rem;
-}
-
-.profile-anime-grid {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .settings-page {
@@ -6129,13 +6430,11 @@ button:disabled {
 
 @media (max-width: 1100px) {
     .continue-watching-grid,
-    .profile-anime-grid,
     .save-dialog-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     .profile-auth-shell,
-    .profile-overview-grid,
     .settings-layout,
     .history-layout,
     .account-settings-grid {
@@ -6144,16 +6443,37 @@ button:disabled {
 }
 
 @media (max-width: 720px) {
-    /* Poster grids stay two-up on phones — a single full-width poster
-       per row is too sparse. Wide 16:9 cards below drop to one column. */
-    .profile-anime-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+    .profile-stats-inline {
+        gap: 1.5rem;
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .settings-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+
+    .settings-row .custom-select {
+        width: 100%;
+    }
+
+    .settings-toggle-row {
+        align-items: flex-start;
+    }
+
+    .settings-toggle-row .switch {
+        flex: 0 0 auto;
+    }
+
+    .profile-stats-inline strong {
+        font-size: 1.4rem;
     }
 
     .continue-watching-grid,
-    .save-dialog-grid,
-    .profile-stats-card {
-        grid-template-columns: 1fr;
+    .save-dialog-grid {
+        grid-template-columns: minmax(0, 1fr);
     }
 
     .watchlist-rail {
@@ -6171,6 +6491,18 @@ button:disabled {
 
     .save-dialog {
         max-height: calc(100dvh - 2rem);
+    }
+
+    .save-dialog-buttons {
+        flex: 1;
+        gap: 0.75rem;
+    }
+
+    .save-dialog-buttons .primary-action,
+    .save-dialog-buttons .secondary-action {
+        flex: 1;
+        white-space: nowrap;
+        padding: 0.9rem 0.75rem;
     }
 
     .save-dialog-body {
