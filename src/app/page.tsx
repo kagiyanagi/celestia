@@ -11,7 +11,7 @@ export default async function HomePage() {
 
   return (
     <>
-      <HomeHeroCarousel items={collections.topAiring} />
+      <HomeHeroCarousel items={collections.topAiring.slice(0, 5)} />
       <div className="page-shell">
         <HomePersonalSections user={null} />
         <HomeTrendingRail items={collections.trending} />

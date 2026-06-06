@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { DubBadge } from "@/components/dub-badge";
+import { LibraryEntryDialog } from "@/components/library-entry-dialog";
 import { LibraryStatusChip } from "@/components/library-status-chip";
 import type { LibraryEntry, LibraryStatus } from "@/types/account";
 import { getDisplayTitle, scoreLabel } from "@/lib/format";
@@ -38,6 +39,7 @@ const tabs: Array<{
 export function WatchlistPageClient({ entries }: { entries: LibraryEntry[] }) {
   const [activeTab, setActiveTab] =
     useState<(typeof tabs)[number]["key"]>("all");
+  const [editing, setEditing] = useState<LibraryEntry | null>(null);
   const filtered = useMemo(
     () =>
       activeTab === "all"
@@ -96,9 +98,18 @@ export function WatchlistPageClient({ entries }: { entries: LibraryEntry[] }) {
                     <span className="poster-fallback">Celestia</span>
                   )}
                   <LibraryStatusChip status={entry.status} />
-                  <span className="watchlist-grid-card-edit">
+                  <button
+                    type="button"
+                    className="watchlist-grid-card-edit"
+                    aria-label="Edit list entry"
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      setEditing(entry);
+                    }}
+                  >
                     <Pencil size={16} />
-                  </span>
+                  </button>
                 </span>
 
                 <span className="anime-card-body">
@@ -148,6 +159,12 @@ export function WatchlistPageClient({ entries }: { entries: LibraryEntry[] }) {
           </div>
         )}
       </section>
+      {editing ? (
+        <LibraryEntryDialog
+          anime={editing.anime}
+          onClose={() => setEditing(null)}
+        />
+      ) : null}
     </div>
   );
 }
