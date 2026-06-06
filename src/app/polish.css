@@ -4,146 +4,148 @@
    ───────────────────────────────────────────────────────────────────────── */
 
 :root {
-  /* Expanded surface scale */
-  --surface-0:  #000000;
-  --surface-1:  #0a0a0a;
-  --surface-2:  #111111;
-  --surface-3:  #171717;
-  --surface-4:  #1e1e1e;
+    /* Expanded surface scale */
+    --surface-0: #000000;
+    --surface-1: #0a0a0a;
+    --surface-2: #111111;
+    --surface-3: #171717;
+    --surface-4: #1e1e1e;
 
-  /* Border scale */
-  --border-dim:      rgba(255, 255, 255, 0.05);
-  --border-subtle:   rgba(255, 255, 255, 0.08);
-  --border-default:  rgba(255, 255, 255, 0.12);
-  --border-strong:   rgba(255, 255, 255, 0.20);
-  --border-focus:    rgba(255, 255, 255, 0.70);
+    /* Border scale */
+    --border-dim: rgba(255, 255, 255, 0.05);
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-default: rgba(255, 255, 255, 0.12);
+    --border-strong: rgba(255, 255, 255, 0.2);
+    --border-focus: rgba(255, 255, 255, 0.7);
 
-  /* Text scale */
-  --text-primary:   #ffffff;
-  --text-secondary: rgba(255, 255, 255, 0.70);
-  --text-tertiary:  rgba(255, 255, 255, 0.45);
-  --text-dim:       rgba(255, 255, 255, 0.28);
+    /* Text scale */
+    --text-primary: #ffffff;
+    --text-secondary: rgba(255, 255, 255, 0.7);
+    --text-tertiary: rgba(255, 255, 255, 0.45);
+    --text-dim: rgba(255, 255, 255, 0.28);
 
-  /* Functional */
-  --danger:  #ff4444;
-  --success: #22c55e;
-  --warning: #f59e0b;
+    /* Functional */
+    --danger: #ff4444;
+    --success: #22c55e;
+    --warning: #f59e0b;
 
-  /* Shadows — depth without color */
-  --shadow-sm:  0 1px  4px rgba(0, 0, 0, 0.40);
-  --shadow-md:  0 4px 16px rgba(0, 0, 0, 0.50);
-  --shadow-lg:  0 12px 40px rgba(0, 0, 0, 0.60);
-  --shadow-xl:  0 24px 72px rgba(0, 0, 0, 0.70);
+    /* Shadows — depth without color */
+    --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.6);
+    --shadow-xl: 0 24px 72px rgba(0, 0, 0, 0.7);
 
-  /* Radius scale */
-  --r-xs:   4px;
-  --r-sm:   8px;
-  --r-md:   12px;
-  --r-lg:   16px;
-  --r-xl:   20px;
-  --r-2xl:  24px;
-  --r-full: 9999px;
+    /* Radius scale */
+    --r-xs: 4px;
+    --r-sm: 8px;
+    --r-md: 12px;
+    --r-lg: 16px;
+    --r-xl: 20px;
+    --r-2xl: 24px;
+    --r-full: 9999px;
 }
 
 /* ── Global resets ──────────────────────────────────────────────────────── */
 
-button, a {
-  -webkit-tap-highlight-color: transparent;
+button,
+a {
+    -webkit-tap-highlight-color: transparent;
 }
 
 ::selection {
-  color: #000000;
-  background: #ffffff;
+    color: #000000;
+    background: #ffffff;
 }
 
 :focus-visible {
-  outline: 2px solid var(--border-focus);
-  outline-offset: 2px;
-  border-radius: 4px;
+    outline: 2px solid var(--border-focus);
+    outline-offset: 2px;
+    border-radius: 4px;
 }
 
 /* ── Body — pure black, no warm gradients ───────────────────────────────── */
 
 html {
-  background: #000000;
+    background: #000000;
 }
 
 body {
-  background: #000000;
-  color: var(--text-primary);
+    background: #000000;
+    color: var(--text-primary);
 }
 
 /* ── Site header ────────────────────────────────────────────────────────── */
 
 .site-header {
-  padding: 14px 20px;
-  backdrop-filter: none;
+    padding: 14px 20px;
+    backdrop-filter: none;
 }
 
 .site-header.is-scrolled {
-  background: rgba(0, 0, 0, 0.94);
-  border-bottom-color: var(--border-subtle);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04),
-              var(--shadow-md);
+    background: rgba(0, 0, 0, 0.94);
+    border-bottom-color: var(--border-subtle);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.04),
+        var(--shadow-md);
 }
 
 .brand-mark {
-  color: #ffffff;
-  letter-spacing: 0.10em;
-  font-size: 1.5rem;
-  text-shadow: none;
+    color: #ffffff;
+    letter-spacing: 0.1em;
+    font-size: 1.5rem;
+    text-shadow: none;
 }
 
 .header-icon-button,
 .header-avatar {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: var(--border-subtle);
-  border-radius: var(--r-lg);
-  transition:
-    background 120ms ease,
-    border-color 120ms ease;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--border-subtle);
+    border-radius: var(--r-lg);
+    transition:
+        background 120ms ease,
+        border-color 120ms ease;
 }
 
 .header-icon-button:hover,
 .header-link-button:hover {
-  background: rgba(255, 255, 255, 0.10);
-  border-color: var(--border-default);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--border-default);
 }
 
 .header-avatar {
-  border-radius: var(--r-full);
-  overflow: hidden;
+    border-radius: var(--r-full);
+    overflow: hidden;
 }
 
 /* ── Search modal ───────────────────────────────────────────────────────── */
 
 .search-overlay {
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
 }
 
 .search-modal {
-  background: var(--surface-2);
-  border-color: var(--border-default);
-  border-radius: var(--r-xl);
-  box-shadow: var(--shadow-xl);
+    background: var(--surface-2);
+    border-color: var(--border-default);
+    border-radius: var(--r-xl);
+    box-shadow: var(--shadow-xl);
 }
 
 .search-modal-header {
-  border-bottom-color: var(--border-subtle);
+    border-bottom-color: var(--border-subtle);
 }
 
 .search-result-item {
-  border-radius: var(--r-md);
-  transition: background 100ms ease;
+    border-radius: var(--r-md);
+    transition: background 100ms ease;
 }
 
 .search-result-item:hover,
 .search-result-item.is-active {
-  background: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.06);
 }
 
 /* ── Buttons — unified white-on-black primary ───────────────────────────── */
@@ -153,15 +155,15 @@ body {
 .wide-watch-link,
 .hero-watch-btn,
 .sidebar-watch-btn {
-  background: #ffffff;
-  color: #000000;
-  border-color: transparent;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  transition:
-    background 120ms ease,
-    box-shadow 120ms ease,
-    transform  120ms ease;
+    background: #ffffff;
+    color: #000000;
+    border-color: transparent;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    transition:
+        background 120ms ease,
+        box-shadow 120ms ease,
+        transform 120ms ease;
 }
 
 .celestia-watch:hover,
@@ -169,9 +171,9 @@ body {
 .wide-watch-link:hover,
 .hero-watch-btn:hover,
 .sidebar-watch-btn:hover {
-  background: rgba(255, 255, 255, 0.88);
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.14);
+    background: rgba(255, 255, 255, 0.88);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(255, 255, 255, 0.14);
 }
 
 /* Secondary/ghost buttons */
@@ -181,12 +183,12 @@ body {
 .celestia-more,
 .hero-icon-btn,
 .sidebar-plus-btn {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: var(--border-default);
-  color: var(--text-primary);
-  transition:
-    background 120ms ease,
-    border-color 120ms ease;
+    background: rgba(255, 255, 255, 0.06);
+    border-color: var(--border-default);
+    color: var(--text-primary);
+    transition:
+        background 120ms ease,
+        border-color 120ms ease;
 }
 
 .detail-actions a:hover,
@@ -195,19 +197,19 @@ body {
 .celestia-more:hover,
 .hero-icon-btn:hover,
 .sidebar-plus-btn:hover {
-  background: rgba(255, 255, 255, 0.10);
-  border-color: var(--border-strong);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--border-strong);
 }
 
 /* ── Carousel dots ──────────────────────────────────────────────────────── */
 
 .celestia-dots button {
-  background: rgba(255, 255, 255, 0.18);
-  border-color: transparent;
+    background: rgba(255, 255, 255, 0.18);
+    border-color: transparent;
 }
 
 .celestia-dots button.active {
-  background: #ffffff;
+    background: #ffffff;
 }
 
 /* ── Cards — clean hover with white glow ────────────────────────────────── */
@@ -220,10 +222,10 @@ body {
 .character-card,
 .watch-media-card,
 .schedule-entry-card {
-  transition:
-    transform  300ms cubic-bezier(0.34, 1.56, 0.64, 1),
-    border-color 160ms cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 160ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition:
+        transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1),
+        border-color 160ms cubic-bezier(0.16, 1, 0.3, 1),
+        box-shadow 160ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .trending-card:hover,
@@ -234,10 +236,11 @@ body {
 .character-card:hover,
 .watch-media-card:hover,
 .schedule-entry-card:hover {
-  transform: translateY(-4px);
-  border-color: var(--border-strong);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5),
-              0 0 0 1px rgba(255, 255, 255, 0.06);
+    transform: translateY(-4px);
+    border-color: var(--border-strong);
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.5),
+        0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
 .trending-poster,
@@ -245,7 +248,7 @@ body {
 .shelf-card-poster,
 .history-card-thumb,
 .watch-episode-thumb {
-  border-color: var(--border-subtle);
+    border-color: var(--border-subtle);
 }
 
 /* ── Score chip & episode counts ─────────────────────────────────────────── */
@@ -253,135 +256,135 @@ body {
 .score-chip,
 .play-chip,
 .card-episode-counts span {
-  background: rgba(0, 0, 0, 0.72);
-  backdrop-filter: blur(6px) saturate(120%);
-  -webkit-backdrop-filter: blur(6px) saturate(120%);
-  border: 1px solid rgba(255, 255, 255, 0.10);
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(6px) saturate(120%);
+    -webkit-backdrop-filter: blur(6px) saturate(120%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 /* ── Section labels ─────────────────────────────────────────────────────── */
 
 .section-kicker,
 .section-heading span {
-  color: var(--text-tertiary);
-  letter-spacing: 0.12em;
+    color: var(--text-tertiary);
+    letter-spacing: 0.12em;
 }
 
 /* ── Detail hero ────────────────────────────────────────────────────────── */
 
 .badge-airing {
-  background: rgba(34, 197, 94, 0.14);
-  color: #4ade80;
-  border: 1px solid rgba(34, 197, 94, 0.24);
+    background: rgba(34, 197, 94, 0.14);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.24);
 }
 
 .pill-orange {
-  background: rgba(255, 255, 255, 0.07);
-  color: var(--text-secondary);
-  border-color: var(--border-subtle);
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--text-secondary);
+    border-color: var(--border-subtle);
 }
 
 /* Plain label, not a pill — no background strip. */
 .upcoming-kicker {
-  background: transparent;
-  color: var(--text-secondary);
+    background: transparent;
+    color: var(--text-secondary);
 }
 
 /* ── Overview stat boxes ─────────────────────────────────────────────────── */
 
 .stat-box {
-  background: var(--surface-3);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--r-md);
-  transition: border-color 140ms ease;
+    background: var(--surface-3);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--r-md);
+    transition: border-color 140ms ease;
 }
 
 .stat-box:hover {
-  border-color: var(--border-default);
+    border-color: var(--border-default);
 }
 
 /* ── Airing banner ───────────────────────────────────────────────────────── */
 
 .airing-banner {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--r-md);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--r-md);
 }
 
 .airing-banner .highlight {
-  color: #ffffff;
-  font-weight: 700;
+    color: #ffffff;
+    font-weight: 700;
 }
 
 /* ── Watch page ─────────────────────────────────────────────────────────── */
 
 .watch-action-button,
 .watch-tabs a {
-  border-color: var(--border-subtle);
-  transition:
-    background 120ms ease,
-    border-color 120ms ease,
-    color 120ms ease;
+    border-color: var(--border-subtle);
+    transition:
+        background 120ms ease,
+        border-color 120ms ease,
+        color 120ms ease;
 }
 
 .watch-action-button:hover,
 .watch-tabs a:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: var(--border-default);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--border-default);
 }
 
 .watch-action-button.active,
 .watch-tabs a.active {
-  background: rgba(255, 255, 255, 0.10);
-  border-color: var(--border-strong);
-  color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--border-strong);
+    color: #ffffff;
 }
 
 .watch-server-option.active {
-  background: rgba(255, 255, 255, 0.10);
-  border-color: var(--border-strong);
-  color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--border-strong);
+    color: #ffffff;
 }
 
 .watch-server-popover {
-  background: var(--surface-3);
-  border-color: var(--border-default);
-  box-shadow: var(--shadow-lg);
+    background: var(--surface-3);
+    border-color: var(--border-default);
+    box-shadow: var(--shadow-lg);
 }
 
 .watch-provider-badge {
-  background: rgba(34, 197, 94, 0.10);
-  color: #4ade80;
-  border: 1px solid rgba(34, 197, 94, 0.20);
+    background: rgba(34, 197, 94, 0.1);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.2);
 }
 
 /* ── Episode cards ───────────────────────────────────────────────────────── */
 
 .watch-episode-card {
-  border-color: var(--border-subtle);
-  background: var(--surface-2);
-  transition:
-    background 120ms ease,
-    border-color 120ms ease;
+    border-color: var(--border-subtle);
+    background: var(--surface-2);
+    transition:
+        background 120ms ease,
+        border-color 120ms ease;
 }
 
 .watch-episode-card:hover {
-  background: var(--surface-3);
-  border-color: var(--border-default);
+    background: var(--surface-3);
+    border-color: var(--border-default);
 }
 
 .watch-episode-card.active {
-  background: var(--surface-3);
-  border-color: var(--border-strong);
+    background: var(--surface-3);
+    border-color: var(--border-strong);
 }
 
 /* ── Auth panel ──────────────────────────────────────────────────────────── */
 
 .auth-panel {
-  background: var(--surface-2);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--r-xl);
-  box-shadow: var(--shadow-lg);
+    background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--r-xl);
+    box-shadow: var(--shadow-lg);
 }
 
 /* ── Settings ────────────────────────────────────────────────────────────── */
@@ -389,49 +392,52 @@ body {
 .settings-row,
 .settings-toggle-row,
 .device-row {
-  border-color: var(--border-subtle);
+    border-color: var(--border-subtle);
 }
 
 /* ── Save dialog ─────────────────────────────────────────────────────────── */
 
 .save-dialog {
-  background: var(--surface-2);
-  border-color: var(--border-default);
-  box-shadow: var(--shadow-xl);
+    background: var(--surface-2);
+    border-color: var(--border-default);
+    box-shadow: var(--shadow-xl);
 }
 
 .watch-confirm-dialog {
-  width: min(440px, 100%);
+    width: min(440px, 100%);
 }
 
 .watch-confirm-text {
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.5;
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.5;
 }
 
 /* ── Pagination ──────────────────────────────────────────────────────────── */
 
 .pagination-button {
-  border-color: var(--border-subtle);
-  transition: background 120ms ease, border-color 120ms ease, transform 120ms ease;
+    border-color: var(--border-subtle);
+    transition:
+        background 120ms ease,
+        border-color 120ms ease,
+        transform 120ms ease;
 }
 
 .pagination-button:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: var(--border-default);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--border-default);
 }
 
 .pagination-button.current {
-  background: rgba(255, 255, 255, 0.10);
-  border-color: var(--border-default);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--border-default);
 }
 
 /* ── Schedule ────────────────────────────────────────────────────────────── */
 
 .schedule-spotlight-card,
 .schedule-corner-badge {
-  border-color: var(--border-subtle);
+    border-color: var(--border-subtle);
 }
 
 /* ── Scrollbar — thin, subtle, opt-in for overflow areas ─────────────────── */
@@ -442,21 +448,21 @@ body {
 .trending-rail,
 .upcoming-rail,
 .home-shelf-row {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
 }
 
 .search-modal-results::-webkit-scrollbar,
 .trending-rail::-webkit-scrollbar {
-  display: block !important;
-  height: 3px;
-  width: 3px;
+    display: block !important;
+    height: 3px;
+    width: 3px;
 }
 
 .search-modal-results::-webkit-scrollbar-thumb,
 .trending-rail::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.18);
-  border-radius: 999px;
+    background: rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
 }
 
 /* ── Text selection ──────────────────────────────────────────────────────── */
@@ -466,131 +472,131 @@ body {
 /* ── Mobile: 480px — safeguard for small phones ──────────────────────────── */
 
 @media (max-width: 480px) {
-  .site-header {
-    padding: 8px 12px;
-  }
+    .site-header {
+        padding: 8px 12px;
+    }
 
-  .site-header-row {
-    padding: 0;
-    gap: 8px;
-  }
+    .site-header-row {
+        padding: 0;
+        gap: 8px;
+    }
 
-  .brand-mark {
-    font-size: 1.1rem;
-  }
+    .brand-mark {
+        font-size: 1.1rem;
+    }
 
-  .header-icon-button,
-  .header-avatar {
-    width: 38px;
-    height: 38px;
-  }
+    .header-icon-button,
+    .header-avatar {
+        width: 38px;
+        height: 38px;
+    }
 
-  main {
-    padding-top: 80px;
-  }
+    main {
+        padding-top: 80px;
+    }
 
-  .celestia-hero-inner {
-    aspect-ratio: 16 / 9;
-    min-height: 260px;
-  }
+    .celestia-hero-inner {
+        aspect-ratio: 16 / 9;
+        min-height: 260px;
+    }
 
-  .celestia-copy-main h1 {
-    font-size: clamp(1.4rem, 6vw, 2rem);
-  }
+    .celestia-copy-main h1 {
+        font-size: clamp(1.4rem, 6vw, 2rem);
+    }
 
-  .celestia-description {
-    display: none;
-  }
+    .celestia-description {
+        display: none;
+    }
 
-  .celestia-pills {
-    display: none;
-  }
+    .celestia-pills {
+        display: none;
+    }
 
-  .celestia-actions {
-    gap: 8px;
-  }
+    .celestia-actions {
+        gap: 8px;
+    }
 
-  .celestia-watch {
-    min-height: 40px;
-    padding: 0 14px;
-    font-size: 0.85rem;
-  }
+    .celestia-watch {
+        min-height: 40px;
+        padding: 0 14px;
+        font-size: 0.85rem;
+    }
 
-  .watch-episode-card {
-    grid-template-columns: 96px minmax(0, 1fr);
-    min-height: 80px;
-  }
+    .watch-episode-card {
+        grid-template-columns: 96px minmax(0, 1fr);
+        min-height: 80px;
+    }
 
-  .watch-episode-thumb {
-    min-height: 80px;
-  }
+    .watch-episode-thumb {
+        min-height: 80px;
+    }
 
-  .overview-stats-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+    .overview-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
 
-  .anime-grid,
-  .loader-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-  }
+    .anime-grid,
+    .loader-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
 
-  .search-modal-footer .search-modal-keybinds {
-    display: none;
-  }
+    .search-modal-footer .search-modal-keybinds {
+        display: none;
+    }
 }
 
 /* ── Mobile: 640px — dense grids & panel padding ─────────────────────────── */
 
 @media (max-width: 640px) {
-  /* The shared discovery/search/browse grid sits at 4 columns down to
+    /* The shared discovery/search/browse grid sits at 4 columns down to
      780px; 4 posters is too cramped on a phone, so step to 3 here (and
      to 2 below 480px above). */
-  .anime-grid,
-  .loader-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14px;
-  }
+    .anime-grid,
+    .loader-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+    }
 
-  /* Reclaim horizontal space inside panels. */
-  .home-section,
-  .airing-board,
-  .search-hero,
-  .tracker-panel,
-  .stream-card,
-  .episode-panel {
-    padding: 18px 16px;
-  }
+    /* Reclaim horizontal space inside panels. */
+    .home-section,
+    .airing-board,
+    .search-hero,
+    .tracker-panel,
+    .stream-card,
+    .episode-panel {
+        padding: 18px 16px;
+    }
 
-  .tab-content {
-    padding: 24px 16px;
-  }
+    .tab-content {
+        padding: 24px 16px;
+    }
 
-  /* Shrink the fixed thumbnail track so the copy keeps a usable width. */
-  .episode-card-new {
-    grid-template-columns: 132px minmax(0, 1fr);
-  }
+    /* Shrink the fixed thumbnail track so the copy keeps a usable width. */
+    .episode-card-new {
+        grid-template-columns: 132px minmax(0, 1fr);
+    }
 
-  .character-grid {
-    grid-template-columns: 1fr;
-  }
+    .character-grid {
+        grid-template-columns: 1fr;
+    }
 
-  /* The detail tab bar uses 40px gaps + 48px side padding, which crushes
+    /* The detail tab bar uses 40px gaps + 48px side padding, which crushes
      its five labels ("Overview"… "More like this") into one-letter-wide
      vertical columns on a phone. Turn it into a horizontal scroll strip
      (scrollbars are hidden globally) with a gutter matching .tab-content. */
-  .anime-tabs-nav {
-    gap: 20px;
-    padding: 0 16px;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-  }
+    .anime-tabs-nav {
+        gap: 20px;
+        padding: 0 16px;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+    }
 
-  .anime-tabs-nav button {
-    flex: 0 0 auto;
-    white-space: nowrap;
-    font-size: 0.9rem;
-  }
+    .anime-tabs-nav button {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        font-size: 0.9rem;
+    }
 }
 
 /* ── Press feedback — bouncy scale on click ──────────────────────────────── */
@@ -616,175 +622,176 @@ button:not(:disabled),
 .search-result-item,
 .watch-episode-card,
 .continue-card,
-.watchlist-grid-card {
-  transition:
-    transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1),
-    background 120ms ease,
-    border-color 120ms ease,
-    box-shadow 160ms ease,
-    color 120ms ease;
+.anime-card {
+    transition:
+        transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1),
+        background 120ms ease,
+        border-color 120ms ease,
+        box-shadow 160ms ease,
+        color 120ms ease;
 }
 
 /* Quick squash on press; releasing springs back with overshoot. */
 :is(
-  button:not(:disabled),
-  .anime-card,
-  .shelf-card,
-  .upcoming-card-wide,
-  .airing-row,
-  .character-card,
-  .watch-media-card,
-  .schedule-entry-card,
-  .header-icon-button,
-  .header-avatar,
-  .hero-watch-btn,
-  .hero-icon-btn,
-  .hero-db-btn,
-  .celestia-watch,
-  .celestia-more,
-  .primary-action,
-  .secondary-action,
-  .watch-action-button,
-  .watch-tool-button,
-  .watch-tabs a,
-  .episode-nav a,
-  .detail-actions a,
-  .pagination-button,
-  .search-result-item,
-  .watch-episode-card,
-  .continue-card,
-  .watchlist-grid-card
+    button:not(:disabled),
+    .anime-card,
+    .shelf-card,
+    .upcoming-card-wide,
+    .airing-row,
+    .character-card,
+    .watch-media-card,
+    .schedule-entry-card,
+    .header-icon-button,
+    .header-avatar,
+    .hero-watch-btn,
+    .hero-icon-btn,
+    .hero-db-btn,
+    .celestia-watch,
+    .celestia-more,
+    .primary-action,
+    .secondary-action,
+    .watch-action-button,
+    .watch-tool-button,
+    .watch-tabs a,
+    .episode-nav a,
+    .detail-actions a,
+    .pagination-button,
+    .search-result-item,
+    .watch-episode-card,
+    .continue-card
 ):active {
-  transform: scale(0.94);
-  transition-duration: 70ms;
+    transform: scale(0.94);
+    transition-duration: 70ms;
 }
 
 /* ── News tab ─────────────────────────────────────────────────────────────── */
 
 .news-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .news-message {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  min-height: 200px;
-  color: var(--text-tertiary);
-  font-size: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 200px;
+    color: var(--text-tertiary);
+    font-size: 0.9rem;
 }
 
 .news-card {
-  display: flex;
-  gap: 16px;
-  padding: 14px;
-  background: var(--surface-3);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--r-md);
-  text-decoration: none;
-  color: inherit;
-  transition:
-    border-color 140ms ease,
-    background 140ms ease;
+    display: flex;
+    gap: 16px;
+    padding: 14px;
+    background: var(--surface-3);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--r-md);
+    text-decoration: none;
+    color: inherit;
+    transition:
+        border-color 140ms ease,
+        background 140ms ease;
 }
 
 .news-card:hover {
-  border-color: var(--border-default);
-  background: var(--surface-4);
+    border-color: var(--border-default);
+    background: var(--surface-4);
 }
 
 .news-card-thumb {
-  position: relative;
-  flex: 0 0 120px;
-  width: 120px;
-  height: 72px;
-  border-radius: var(--r-sm);
-  overflow: hidden;
-  background: var(--surface-2);
+    position: relative;
+    flex: 0 0 120px;
+    width: 120px;
+    height: 72px;
+    border-radius: var(--r-sm);
+    overflow: hidden;
+    background: var(--surface-2);
 }
 
 .news-card-thumb img {
-  object-fit: cover;
+    object-fit: cover;
 }
 
 .news-card-body {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
 }
 
 .news-card-title {
-  font-size: 0.98rem;
-  font-weight: 600;
-  line-height: 1.35;
-  color: var(--text);
+    font-size: 0.98rem;
+    font-weight: 600;
+    line-height: 1.35;
+    color: var(--text);
 }
 
 .news-card-excerpt {
-  font-size: 0.85rem;
-  line-height: 1.45;
-  color: var(--text-secondary);
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    color: var(--text-secondary);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .news-card-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 14px;
-  margin-top: 2px;
-  font-size: 0.78rem;
-  color: var(--text-tertiary);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+    margin-top: 2px;
+    font-size: 0.78rem;
+    color: var(--text-tertiary);
 }
 
 .news-card-comments {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .news-attribution {
-  margin-top: 6px;
-  font-size: 0.75rem;
-  color: var(--text-tertiary);
+    margin-top: 6px;
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
 }
 
 @media (max-width: 520px) {
-  .news-card-thumb {
-    flex-basis: 88px;
-    width: 88px;
-    height: 56px;
-  }
+    .news-card-thumb {
+        flex-basis: 88px;
+        width: 88px;
+        height: 56px;
+    }
 }
 
 /* ── Reduce motion ────────────────────────────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
-  .trending-card,
-  .anime-card,
-  .upcoming-card-wide,
-  .shelf-card,
-  .airing-row,
-  .character-card {
-    transition: border-color 1ms, box-shadow 1ms !important;
-  }
+    .trending-card,
+    .anime-card,
+    .upcoming-card-wide,
+    .shelf-card,
+    .airing-row,
+    .character-card {
+        transition:
+            border-color 1ms,
+            box-shadow 1ms !important;
+    }
 
-  .trending-card:hover,
-  .anime-card:hover,
-  .upcoming-card-wide:hover,
-  .shelf-card:hover {
-    transform: none !important;
-  }
+    .trending-card:hover,
+    .anime-card:hover,
+    .upcoming-card-wide:hover,
+    .shelf-card:hover {
+        transform: none !important;
+    }
 
-  *:active {
-    transform: none !important;
-  }
+    *:active {
+        transform: none !important;
+    }
 }
