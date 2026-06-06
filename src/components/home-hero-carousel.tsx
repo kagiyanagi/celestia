@@ -181,8 +181,21 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
                     alt=""
                     fill
                     priority={index === 0}
+                    quality={90}
                     sizes="100vw"
                     className="celestia-hero-backdrop"
+                    draggable={false}
+                  />
+                ) : null}
+                {item.coverImage ? (
+                  <Image
+                    src={item.coverImage}
+                    alt=""
+                    fill
+                    priority={index === 0}
+                    quality={90}
+                    sizes="(max-width: 480px) 100vw, 1px"
+                    className="celestia-hero-cover"
                     draggable={false}
                   />
                 ) : null}
