@@ -112,34 +112,15 @@ export function DetailsCast({ anime, mode, onShowMore }: DetailsCastProps) {
                 target="_blank"
                 rel="noreferrer"
               >
-                <div className="cast-image-pair">
-                  <div className="char-img">
-                    {char.image && (
-                      <Image
-                        src={char.image}
-                        alt={char.name}
-                        fill
-                        sizes="60px"
-                      />
-                    )}
-                  </div>
-                  <div className="va-img">
-                    {char.voiceActors?.japanese?.image && (
-                      <Image
-                        src={char.voiceActors.japanese.image}
-                        alt={char.voiceActors.japanese.name}
-                        fill
-                        sizes="60px"
-                      />
-                    )}
-                  </div>
+                <div className="char-img">
+                  {char.image && (
+                    <Image src={char.image} alt={char.name} fill sizes="96px" />
+                  )}
                 </div>
                 <div className="cast-info">
-                  <div className="cast-main">
-                    <div className="char-name">
-                      <strong>{char.name}</strong>
-                      <span>{char.role}</span>
-                    </div>
+                  <div className="char-name">
+                    <strong>{char.name}</strong>
+                    <span>{char.role}</span>
                   </div>
                   <div className="va-name">
                     <strong>
@@ -147,6 +128,16 @@ export function DetailsCast({ anime, mode, onShowMore }: DetailsCastProps) {
                     </strong>
                     <span>Japanese</span>
                   </div>
+                </div>
+                <div className="va-img">
+                  {char.voiceActors?.japanese?.image && (
+                    <Image
+                      src={char.voiceActors.japanese.image}
+                      alt={char.voiceActors.japanese.name}
+                      fill
+                      sizes="96px"
+                    />
+                  )}
                 </div>
               </a>
             ))}

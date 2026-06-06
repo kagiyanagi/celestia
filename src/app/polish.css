@@ -446,6 +446,7 @@ body {
 .watch-tabs,
 .watch-actions,
 .trending-rail,
+.watchlist-rail,
 .upcoming-rail,
 .home-shelf-row {
     scrollbar-width: thin;
@@ -453,14 +454,16 @@ body {
 }
 
 .search-modal-results::-webkit-scrollbar,
-.trending-rail::-webkit-scrollbar {
+.trending-rail::-webkit-scrollbar,
+.watchlist-rail::-webkit-scrollbar {
     display: block !important;
     height: 3px;
     width: 3px;
 }
 
 .search-modal-results::-webkit-scrollbar-thumb,
-.trending-rail::-webkit-scrollbar-thumb {
+.trending-rail::-webkit-scrollbar-thumb,
+.watchlist-rail::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.18);
     border-radius: 999px;
 }
@@ -473,7 +476,7 @@ body {
 
 @media (max-width: 480px) {
     .site-header {
-        padding: 8px 12px;
+        padding: 16px 18px 16px 26px;
     }
 
     .site-header-row {
@@ -482,44 +485,109 @@ body {
     }
 
     .brand-mark {
-        font-size: 1.1rem;
+        font-size: 1.35rem;
     }
 
     .header-icon-button,
     .header-avatar {
-        width: 38px;
-        height: 38px;
+        width: 42px;
+        height: 42px;
     }
 
     main {
-        padding-top: 80px;
+        padding-top: 92px;
     }
 
     .celestia-hero-inner {
-        aspect-ratio: 16 / 9;
-        min-height: 260px;
+        aspect-ratio: 3 / 4;
+        max-height: 82vh;
+        min-height: 570px;
     }
 
-    .celestia-copy-main h1 {
-        font-size: clamp(1.4rem, 6vw, 2rem);
+    .celestia-hero-cover {
+        display: block;
     }
 
-    .celestia-description {
+    .celestia-hero-backdrop {
         display: none;
     }
 
-    .celestia-pills {
-        display: none;
+    .celestia-hero-shade {
+        background:
+            linear-gradient(
+                to bottom,
+                rgba(0, 0, 0, 0.85) 0%,
+                rgba(0, 0, 0, 0.4) 14%,
+                rgba(0, 0, 0, 0) 26%
+            ),
+            linear-gradient(
+                to top,
+                var(--bg) 0%,
+                rgba(0, 0, 0, 0.92) 32%,
+                rgba(0, 0, 0, 0.5) 50%,
+                rgba(0, 0, 0, 0) 70%
+            );
     }
 
-    .celestia-actions {
+    .celestia-copy {
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        text-align: center;
+        padding: 40px 20px 56px;
         gap: 8px;
     }
 
+    .celestia-dots {
+        bottom: 16px;
+    }
+
+    .celestia-copy-main {
+        max-width: 100%;
+        justify-items: center;
+        gap: 10px;
+    }
+
+    .celestia-copy-main h1 {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+        font-size: clamp(1.6rem, 7vw, 2.1rem);
+        line-height: 1.12;
+    }
+
+    .celestia-description {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+        max-width: 100%;
+        font-size: 0.8rem;
+        line-height: 1.5;
+    }
+
+    .celestia-pills {
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .celestia-pills span {
+        padding: 4px 10px;
+        font-size: 0.75rem;
+    }
+
+    .celestia-actions {
+        width: 100%;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 8px;
+    }
+
     .celestia-watch {
-        min-height: 40px;
-        padding: 0 14px;
-        font-size: 0.85rem;
+        min-height: 44px;
+        padding: 0 18px;
+        font-size: 0.9rem;
     }
 
     .watch-episode-card {
@@ -550,11 +618,12 @@ body {
 
 @media (max-width: 640px) {
     /* The shared discovery/search/browse grid sits at 4 columns down to
-     780px; 4 posters is too cramped on a phone, so step to 3 here (and
-     to 2 below 480px above). */
+     780px; on phones 3+ posters squeeze the card body text into broken
+     wraps, so step to 2 here — matching the width the same card renders
+     at in the trending rail. */
     .anime-grid,
     .loader-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 14px;
     }
 
@@ -579,6 +648,43 @@ body {
 
     .character-grid {
         grid-template-columns: 1fr;
+    }
+
+    /* On a phone the details hero backdrop sits behind the poster + copy, so
+       blur and darken it a little to keep the foreground readable. The scale
+       hides the soft edges the blur would otherwise leave. */
+    .detail-backdrop {
+        transform: scale(1.06);
+        filter: blur(8px) saturate(0.92) brightness(0.68);
+    }
+
+    /* The Characters tab header packs an h2 + search box + count on one row;
+       on a phone that squeezes the heading into a broken wrap. Let the search
+       drop to its own full-width line below the title. */
+    .section-header-row {
+        flex-wrap: wrap;
+    }
+
+    .section-header-row h2 {
+        flex-shrink: 0;
+        font-size: 1.6rem;
+    }
+
+    .cast-search {
+        order: 1;
+        flex: 1 1 100%;
+        margin-left: 0;
+    }
+
+    /* Shrink the character + VA image tracks so the stacked name/role copy
+       between them keeps a usable width on a phone. */
+    .cast-card {
+        grid-template-columns: 76px minmax(0, 1fr) 76px;
+    }
+
+    .cast-info {
+        gap: 10px;
+        padding: 12px 14px;
     }
 
     /* The detail tab bar uses 40px gaps + 48px side padding, which crushes
