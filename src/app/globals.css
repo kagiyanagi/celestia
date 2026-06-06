@@ -431,22 +431,6 @@ main {
     gap: 28px;
 }
 
-@media (max-width: 768px) {
-    :root {
-        --page-padding: 20px;
-        --radius: 16px;
-    }
-
-    main {
-        padding-top: 84px; /* Reduced from 104px */
-    }
-
-    .page-shell {
-        width: calc(100% - 40px); /* 20px padding each side */
-        gap: 20px;
-    }
-}
-
 .compact-page {
     gap: 20px;
 }
@@ -3145,16 +3129,6 @@ main {
     .hero-meta-pills {
         gap: 8px;
         flex-wrap: wrap;
-    }
-
-    .page-shell,
-    .detail-hero-content,
-    .detail-content,
-    .watch-shell,
-    .watch-content,
-    .loader-shell {
-        width: calc(100% - 40px);
-        max-width: 1480px;
     }
 
     .schedule-shell {
@@ -6286,4 +6260,45 @@ a:active .trending-card,
 a:active .shelf-card {
     transform: scale(0.98) !important;
     transition: transform 100ms var(--ease-spring) !important;
+}
+
+/* Foundation overrides for mobile */
+@media (max-width: 768px) {
+    :root {
+        --page-padding: 20px;
+        --radius: 16px;
+    }
+
+    main {
+        padding-top: 84px; /* Reduced from 104px */
+    }
+
+    .page-shell {
+        gap: 20px;
+    }
+
+    .site-header {
+        padding: 10px 16px;
+    }
+
+    .site-header-row {
+        padding: 0;
+        gap: 12px;
+    }
+
+    .brand-mark {
+        font-size: 1.4rem;
+    }
+
+    .header-icon-button,
+    .header-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+    }
+
+    .header-avatar img {
+        width: 34px;
+        height: 34px;
+    }
 }
