@@ -81,6 +81,14 @@ export function LibraryEntryDialog({
       .finally(() => setLoading(false));
   }, [anime.id]);
 
+  useEffect(() => {
+    const { overflow } = document.body.style;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = overflow;
+    };
+  }, []);
+
   const activeStatus = useMemo(
     () => statusOptions.find((option) => option.value === form.status) || statusOptions[1],
     [form.status],

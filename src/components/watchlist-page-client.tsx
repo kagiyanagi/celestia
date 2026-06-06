@@ -21,6 +21,7 @@ import { LibraryEntryDialog } from "@/components/library-entry-dialog";
 import { LibraryStatusChip } from "@/components/library-status-chip";
 import type { LibraryEntry, LibraryStatus } from "@/types/account";
 import { getDisplayTitle, scoreLabel } from "@/lib/format";
+import { useTitleLanguage } from "@/components/use-title-language";
 
 const tabs: Array<{
   key: "all" | LibraryStatus;
@@ -37,6 +38,7 @@ const tabs: Array<{
 ];
 
 export function WatchlistPageClient({ entries }: { entries: LibraryEntry[] }) {
+  const titleLanguage = useTitleLanguage();
   const [activeTab, setActiveTab] =
     useState<(typeof tabs)[number]["key"]>("all");
   const [editing, setEditing] = useState<LibraryEntry | null>(null);
@@ -129,7 +131,7 @@ export function WatchlistPageClient({ entries }: { entries: LibraryEntry[] }) {
                         aria-hidden
                       />
                     )}
-                    {getDisplayTitle(entry.anime.title)}
+                    {getDisplayTitle(entry.anime.title, titleLanguage)}
                   </span>
                   <span className="anime-card-stats">
                     <span title="Score">

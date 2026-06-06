@@ -30,6 +30,7 @@ export function HomePersonalSections({
 }) {
   const { user: authUser, refreshUser } = useAuth();
   const user = authUser || initialUser;
+  const titleLanguage = user?.preferences.titleLanguage ?? "english";
   const history = dedupeByAnime(user?.historyEntries || []);
   const library = user?.libraryEntries || [];
   const refreshRef = useRef(refreshUser);
@@ -94,7 +95,7 @@ export function HomePersonalSections({
                     <span className="continue-card-ep-pill">
                       EP {entry.episode}
                     </span>
-                    <small>{getDisplayTitle(entry.anime.title)}</small>
+                    <small>{getDisplayTitle(entry.anime.title, titleLanguage)}</small>
                   </span>
                   <strong>{entry.episodeTitle}</strong>
                 </span>

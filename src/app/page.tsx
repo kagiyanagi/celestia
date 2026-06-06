@@ -4,10 +4,11 @@ import { HomePersonalSections } from "@/components/home-personal-sections";
 import { HomeShelf } from "@/components/home-shelf";
 import { HomeTrendingRail } from "@/components/home-trending-rail";
 import { HomeUpcomingGrid } from "@/components/home-upcoming-grid";
+import { getViewerIncludesAdult } from "@/lib/auth";
 import { getHomeCollections } from "@/lib/providers/anilist";
 
 export default async function HomePage() {
-  const collections = await getHomeCollections();
+  const collections = await getHomeCollections(await getViewerIncludesAdult());
 
   return (
     <>

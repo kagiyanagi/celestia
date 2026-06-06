@@ -1,9 +1,12 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { Captions, Radio, Star } from "lucide-react";
 
 import { DubBadge } from "@/components/dub-badge";
 import { LibraryStatusChip } from "@/components/library-status-chip";
+import { useTitleLanguage } from "@/components/use-title-language";
 import { getDisplayTitle, scoreLabel } from "@/lib/format";
 import type { AnimeSummary } from "@/types/anime";
 
@@ -13,7 +16,7 @@ type AnimeCardProps = {
 };
 
 export function AnimeCard({ anime, priority = false }: AnimeCardProps) {
-  const title = getDisplayTitle(anime.title);
+  const title = getDisplayTitle(anime.title, useTitleLanguage());
 
   return (
     <Link className="anime-card" href={`/anime/${anime.id}`}>

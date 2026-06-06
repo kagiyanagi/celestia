@@ -4,11 +4,7 @@ import { updatePreferences } from "@/lib/account-store";
 import type { UserPreferences } from "@/types/account";
 
 const TITLE_LANGUAGES = new Set(["english", "romaji", "native"]);
-const VIDEO_QUALITIES = new Set([
-  "auto",
-  "higher_picture_quality",
-  "data_saver",
-]);
+const AUDIO_TRACKS = new Set(["sub", "dub"]);
 
 function pickPreferences(value: Partial<UserPreferences>) {
   const next: Partial<UserPreferences> = {};
@@ -21,19 +17,16 @@ function pickPreferences(value: Partial<UserPreferences>) {
   }
 
   if (
-    typeof value.videoQuality === "string" &&
-    VIDEO_QUALITIES.has(value.videoQuality)
+    typeof value.defaultAudio === "string" &&
+    AUDIO_TRACKS.has(value.defaultAudio)
   ) {
-    next.videoQuality = value.videoQuality;
+    next.defaultAudio = value.defaultAudio;
   }
 
   for (const key of [
     "hideAdultContent",
     "autoplayTrailers",
-    "autoPlay",
-    "autoNext",
-    "autoSkipIntroOutro",
-    "miniPlayer",
+    "pauseHistory",
   ] as const) {
     if (typeof value[key] === "boolean") {
       next[key] = value[key];

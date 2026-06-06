@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 
 import { useBannerContext } from "@/components/banner-fallback-provider";
 import { getDisplayTitle } from "@/lib/format";
+import { useTitleLanguage } from "@/components/use-title-language";
 import {
   addDays,
   formatDateKey,
@@ -81,6 +82,7 @@ export function SchedulePageShell({
   todayDateKey,
   weekDateKeys,
 }: SchedulePageShellProps) {
+  const titleLanguage = useTitleLanguage();
   const [activeDateKey, setActiveDateKey] = useState(selectedDateKey);
 
   // Backdrops AniList is missing resolve client-side, off the render path.
@@ -130,7 +132,7 @@ export function SchedulePageShell({
       <section className="schedule-spotlight" aria-label="Featured releases">
         {spotlightItems.length ? (
           spotlightItems.map((item, index) => {
-            const title = getDisplayTitle(item.anime.title);
+            const title = getDisplayTitle(item.anime.title, titleLanguage);
             const Icon = spotlightIcons[index % spotlightIcons.length];
 
             return (
@@ -222,7 +224,7 @@ export function SchedulePageShell({
               </div>
               <div className="schedule-hour-track">
                 {group.items.map((item) => {
-                  const title = getDisplayTitle(item.anime.title);
+                  const title = getDisplayTitle(item.anime.title, titleLanguage);
 
                   return (
                     <Link

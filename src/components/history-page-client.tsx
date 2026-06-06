@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { EpisodeThumbnail } from "@/components/episode-thumbnail";
 import type { HistoryEntry } from "@/types/account";
 import { getDisplayTitle } from "@/lib/format";
+import { useTitleLanguage } from "@/components/use-title-language";
 
 function groupLabel(value: string) {
   const date = new Date(value);
@@ -56,6 +57,7 @@ function matchesQuery(entry: HistoryEntry, query: string): boolean {
 }
 
 export function HistoryPageClient({ entries }: { entries: HistoryEntry[] }) {
+  const titleLanguage = useTitleLanguage();
   const [historyEntries, setHistoryEntries] = useState(entries);
   const [query, setQuery] = useState("");
   const normalizedQuery = query.trim().toLowerCase();
@@ -70,7 +72,7 @@ export function HistoryPageClient({ entries }: { entries: HistoryEntry[] }) {
     if (normalizedQuery) {
       const byAnime = filtered.reduce<Record<string, HistoryEntry[]>>(
         (accumulator, entry) => {
-          const key = getDisplayTitle(entry.anime.title);
+          const key = getDisplayTitle(entry.anime.title, titleLanguage);
           accumulator[key] ||= [];
           accumulator[key].push(entry);
           return accumulator;
@@ -94,7 +96,7 @@ export function HistoryPageClient({ entries }: { entries: HistoryEntry[] }) {
       },
       {},
     );
-  }, [historyEntries, normalizedQuery]);
+  }, [historyEntries, normalizedQuery, titleLanguage]);
   const groupEntries = Object.entries(groups);
 
   function clearHistory() {
@@ -176,7 +178,7 @@ export function HistoryPageClient({ entries }: { entries: HistoryEntry[] }) {
                         </span>
                       </span>
                       <strong>{entry.episodeTitle}</strong>
-                      <small>{getDisplayTitle(entry.anime.title)}</small>
+                      <small>{getDisplayTitle(entry.anime.title, titleLanguage)}</small>
                     </span>
                   </Link>
                 ))}

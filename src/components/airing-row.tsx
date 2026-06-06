@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useBannerFallback } from "@/components/banner-fallback-provider";
 import { formatAiringTime, getDisplayTitle } from "@/lib/format";
+import { useTitleLanguage } from "@/components/use-title-language";
 import type { AiringItem } from "@/types/anime";
 import Image from "next/image";
 import Link from "next/link";
@@ -39,6 +40,7 @@ function LiveCountdown({ airingAt }: { airingAt: number }) {
 }
 
 export function AiringRow({ item }: { item: AiringItem }) {
+  const titleLanguage = useTitleLanguage();
   const banner = useBannerFallback(item.anime.id, item.anime.bannerImage);
 
   return (
@@ -60,7 +62,7 @@ export function AiringRow({ item }: { item: AiringItem }) {
       )}
       <span className="airing-episode">EP {item.episode}</span>
       <span className="airing-info">
-        <strong>{getDisplayTitle(item.anime.title)}</strong>
+        <strong>{getDisplayTitle(item.anime.title, titleLanguage)}</strong>
         <small>{formatAiringTime(item.airingAt)}</small>
       </span>
       <span className="airing-countdown">

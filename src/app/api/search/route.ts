@@ -1,3 +1,4 @@
+import { getViewerIncludesAdult } from "@/lib/auth";
 import { searchAnime } from "@/lib/providers/anilist";
 import { rateLimitResponse } from "@/lib/rate-limit";
 import { NextResponse } from "next/server";
@@ -17,7 +18,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const results = await searchAnime(query);
+    const results = await searchAnime(query, 1, await getViewerIncludesAdult());
     return NextResponse.json(results);
   } catch (error) {
     console.error("Search API Error:", error);

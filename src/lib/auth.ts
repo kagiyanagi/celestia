@@ -22,11 +22,8 @@ function defaultPreferences(): UserPreferences {
     titleLanguage: "english",
     hideAdultContent: true,
     autoplayTrailers: false,
-    videoQuality: "higher_picture_quality",
-    autoPlay: false,
-    autoNext: false,
-    autoSkipIntroOutro: false,
-    miniPlayer: false,
+    pauseHistory: false,
+    defaultAudio: "sub",
   };
 }
 
@@ -358,4 +355,24 @@ export async function requireSessionUser() {
   }
 
   return user;
+}
+
+/**
+ * Whether the current viewer should see adult-only titles in discovery/search.
+ * Defaults to hidden for signed-out viewers and anyone who hasn't opted in.
+ */
+export async function getViewerIncludesAdult(): Promise<boolean> {
+  const user = await getSessionUser();
+  return user ? !user.preferences.hideAdultContent : false;
+}
+
+/**
+ * The current viewer's preferred title language for server-rendered titles.
+ * Defaults to English for signed-out viewers.
+ */
+export async function getViewerTitleLanguage(): Promise<
+  UserPreferences["titleLanguage"]
+> {
+  const user = await getSessionUser();
+  return user?.preferences.titleLanguage ?? "english";
 }

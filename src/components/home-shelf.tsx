@@ -4,6 +4,7 @@ import { ArrowRight, CalendarDays, Captions, Radio, Star } from "lucide-react";
 
 import { DubBadge } from "@/components/dub-badge";
 import { LibraryStatusChip } from "@/components/library-status-chip";
+import { getViewerTitleLanguage } from "@/lib/auth";
 import { formatAnimeDate, getDisplayTitle, scoreLabel } from "@/lib/format";
 import type { AnimeSummary } from "@/types/anime";
 
@@ -13,10 +14,12 @@ type HomeShelfProps = {
   items: AnimeSummary[];
 };
 
-export function HomeShelf({ title, href, items }: HomeShelfProps) {
+export async function HomeShelf({ title, href, items }: HomeShelfProps) {
   if (!items.length) {
     return null;
   }
+
+  const titleLanguage = await getViewerTitleLanguage();
 
   return (
     <section className="home-shelf">
@@ -60,7 +63,7 @@ export function HomeShelf({ title, href, items }: HomeShelfProps) {
                     aria-hidden
                   />
                 )}
-                {getDisplayTitle(anime.title)}
+                {getDisplayTitle(anime.title, titleLanguage)}
               </strong>
               <span className="shelf-card-meta">
                 {anime.airingCount != null ? (

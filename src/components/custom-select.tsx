@@ -17,11 +17,13 @@ export function CustomSelect({
   options,
   onChange,
   ariaLabel,
+  dropup = false,
 }: {
   value: string;
   options: CustomSelectOption[];
   onChange: (value: string) => void;
   ariaLabel?: string;
+  dropup?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const listRef = useRef<HTMLDivElement | null>(null);
@@ -67,7 +69,7 @@ export function CustomSelect({
             onClick={() => setOpen(false)}
           />
           <div
-            className="custom-select-list"
+            className={`custom-select-list${dropup ? " dropup" : ""}`}
             role="listbox"
             aria-label={ariaLabel}
             ref={listRef}

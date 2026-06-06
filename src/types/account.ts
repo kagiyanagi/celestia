@@ -12,11 +12,10 @@ export type UserPreferences = {
   titleLanguage: "english" | "romaji" | "native";
   hideAdultContent: boolean;
   autoplayTrailers: boolean;
-  videoQuality: "auto" | "higher_picture_quality" | "data_saver";
-  autoPlay: boolean;
-  autoNext: boolean;
-  autoSkipIntroOutro: boolean;
-  miniPlayer: boolean;
+  /** When enabled, episode progress and watch history are not recorded. */
+  pauseHistory: boolean;
+  /** Default audio track for playback. */
+  defaultAudio: "sub" | "dub";
 };
 
 export type DeviceSession = {

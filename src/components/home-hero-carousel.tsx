@@ -10,6 +10,7 @@ import { DetailsSaveButton } from "@/components/details-save-button";
 import { DubBadge } from "@/components/dub-badge";
 
 import { getDisplayTitle } from "@/lib/format";
+import { useTitleLanguage } from "@/components/use-title-language";
 import type { AnimeSummary } from "@/types/anime";
 
 type HomeHeroCarouselProps = {
@@ -17,6 +18,7 @@ type HomeHeroCarouselProps = {
 };
 
 export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
+  const titleLanguage = useTitleLanguage();
   const [activeIndex, setActiveIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
@@ -33,8 +35,8 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
       }
     });
   }, [items, bannerCtx]);
-  const bannerFor = (item: AnimeSummary): string | null =>
-    item.bannerImage ?? bannerCtx?.banners.get(item.id) ?? null;
+  const bannerFor = (item: AnimeSummary | undefined): string | null =>
+    item ? item.bannerImage ?? bannerCtx?.banners.get(item.id) ?? null : null;
   const activeImage = bannerFor(items[activeIndex] ?? items[0]);
 
   useEffect(() => {
@@ -163,7 +165,7 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
           }}
         >
           {items.map((item, index) => {
-            const title = getDisplayTitle(item.title);
+            const title = getDisplayTitle(item.title, titleLanguage);
 
             return (
               <article
@@ -259,7 +261,7 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
         <div className="celestia-dots" aria-label="Featured airing anime">
           {items.map((item, index) => (
             <button
-              aria-label={`Show ${getDisplayTitle(item.title)}`}
+              aria-label={`Show ${getDisplayTitle(item.title, titleLanguage)}`}
               className={index === activeIndex ? "active" : ""}
               key={item.id}
               onClick={() => setActiveIndex(index)}

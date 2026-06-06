@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { BrowsePageShell } from "@/components/browse-page-shell";
+import { getViewerIncludesAdult } from "@/lib/auth";
 import { parseBrowseParams, type BrowseSearchParams } from "@/lib/browse-filters";
 import {
   getBrowseCollection,
@@ -18,8 +19,9 @@ type UpcomingPageProps = {
 export default async function UpcomingPage({ searchParams }: UpcomingPageProps) {
   const params = searchParams ? await searchParams : {};
   const { filters, page } = parseBrowseParams(params);
+  const includeAdult = await getViewerIncludesAdult();
   const [collection, filterOptions] = await Promise.all([
-    getBrowseCollection("upcoming", page, filters),
+    getBrowseCollection("upcoming", page, filters, includeAdult),
     getBrowseFilterOptions(),
   ]);
 

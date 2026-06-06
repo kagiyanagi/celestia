@@ -31,6 +31,7 @@ export type Store = {
   getUserByEmail(email: string): Promise<UserRecord | null>;
   insertUser(user: UserRecord): Promise<void>;
   updateUser(user: UserRecord): Promise<void>;
+  deleteUser(id: string): Promise<void>;
   isUsernameTaken(username: string, excludeUserId?: string): Promise<boolean>;
 
   getSession(id: string): Promise<SessionRecord | null>;
@@ -283,6 +284,12 @@ function createPostgresStore(sql: Sql): Store {
       }
     },
 
+    async deleteUser(id) {
+      await ensureSchema(sql);
+      await sql`delete from sessions where user_id = ${id}`;
+      await sql`delete from users where id = ${id}`;
+    },
+
     async isUsernameTaken(username, excludeUserId) {
       await ensureSchema(sql);
       const rows = await sql<{ id: string }[]>`
@@ -480,6 +487,13 @@ function createFileStore(): Store {
         if (index !== -1) {
           db.users[index] = user;
         }
+      });
+    },
+
+    async deleteUser(id) {
+      await mutateFileDb((db) => {
+        db.users = db.users.filter((user) => user.id !== id);
+        db.sessions = db.sessions.filter((session) => session.userId !== id);
       });
     },
 

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getDisplayTitle } from "@/lib/format";
+import { useTitleLanguage } from "@/components/use-title-language";
 import type { AnimeSummary } from "@/types/anime";
 
 interface DetailsSimilarProps {
@@ -8,6 +9,7 @@ interface DetailsSimilarProps {
 }
 
 export function DetailsSimilar({ recommendations }: DetailsSimilarProps) {
+  const titleLanguage = useTitleLanguage();
   return (
     <div className="tab-similar">
       <div className="relations-grid">
@@ -21,7 +23,7 @@ export function DetailsSimilar({ recommendations }: DetailsSimilarProps) {
               {rec.coverImage && (
                 <Image
                   src={rec.coverImage}
-                  alt={getDisplayTitle(rec.title)}
+                  alt={getDisplayTitle(rec.title, titleLanguage)}
                   fill
                   sizes="80px"
                 />
@@ -29,7 +31,7 @@ export function DetailsSimilar({ recommendations }: DetailsSimilarProps) {
             </div>
             <div className="rel-info">
               <strong className="rel-title">
-                {getDisplayTitle(rec.title)}
+                {getDisplayTitle(rec.title, titleLanguage)}
               </strong>
               <span className="rel-meta">
                 {rec.format} • {rec.season} {rec.seasonYear}
