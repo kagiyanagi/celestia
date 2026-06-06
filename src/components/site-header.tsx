@@ -131,9 +131,19 @@ export function SiteHeader() {
                 </span>
               ) : null}
             </Link>
-            <Link className="header-avatar" href="/profile" aria-label="Profile">
+            <Link
+              className="header-avatar"
+              href="/profile"
+              aria-label="Profile"
+            >
               {user?.avatar ? (
-                <Image src={user.avatar} alt="" width={40} height={40} />
+                <Image
+                  className="avatar-image"
+                  src={user.avatar}
+                  alt=""
+                  width={34}
+                  height={34}
+                />
               ) : (
                 <UserRound size={18} />
               )}
