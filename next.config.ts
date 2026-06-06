@@ -22,6 +22,7 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
+    qualities: [75, 90],
     remotePatterns: [
       { protocol: "https", hostname: "s4.anilist.co" },
       { protocol: "https", hostname: "s3.amazonaws.com" },
