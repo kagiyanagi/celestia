@@ -4,6 +4,15 @@ function read(name: string): string {
   return (process.env[name] || "").trim();
 }
 
+/** First non-empty env var from the list (used for provider-injected aliases). */
+function readFirst(...names: string[]): string {
+  for (const name of names) {
+    const value = read(name);
+    if (value) return value;
+  }
+  return "";
+}
+
 /**
  * Central environment access with production guardrails. Modules should
  * read configuration through this instead of process.env so misconfiguration
@@ -13,7 +22,14 @@ export const env = {
   isProduction,
 
   appSecret: read("APP_SECRET"),
-  databaseUrl: read("DATABASE_URL"),
+  // Prefer the pooled connection string for serverless; fall back to the
+  // non-pooled aliases Neon/Vercel may inject under different names.
+  databaseUrl: readFirst(
+    "DATABASE_URL",
+    "POSTGRES_URL",
+    "DATABASE_URL_UNPOOLED",
+    "POSTGRES_URL_NON_POOLING",
+  ),
   cronSecret: read("CRON_SECRET"),
 
   aniListClientId: read("ANILIST_CLIENT_ID"),
