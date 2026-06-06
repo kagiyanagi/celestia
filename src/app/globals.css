@@ -81,22 +81,6 @@ img {
     --page-padding: 48px;
 }
 
-@media (max-width: 768px) {
-    :root {
-        --page-padding: 20px;
-        --radius: 16px;
-    }
-
-    main {
-        padding-top: 84px; /* Reduced from 104px */
-    }
-
-    .page-shell {
-        width: calc(100% - 40px); /* 20px padding each side */
-        gap: 20px;
-    }
-}
-
 main {
     padding: 104px 0 72px;
 }
@@ -437,7 +421,7 @@ main {
 .watch-shell,
 .watch-content,
 .loader-shell {
-    width: calc(100% - 96px);
+    width: calc(100% - (var(--page-padding) * 2));
     max-width: 1480px;
     margin: 0 auto;
 }
@@ -445,6 +429,22 @@ main {
 .page-shell {
     display: grid;
     gap: 28px;
+}
+
+@media (max-width: 768px) {
+    :root {
+        --page-padding: 20px;
+        --radius: 16px;
+    }
+
+    main {
+        padding-top: 84px; /* Reduced from 104px */
+    }
+
+    .page-shell {
+        width: calc(100% - 40px); /* 20px padding each side */
+        gap: 20px;
+    }
 }
 
 .compact-page {
