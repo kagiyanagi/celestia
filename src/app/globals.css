@@ -77,6 +77,26 @@ img {
     display: block;
 }
 
+:root {
+    --page-padding: 48px;
+}
+
+@media (max-width: 768px) {
+    :root {
+        --page-padding: 20px;
+        --radius: 16px;
+    }
+
+    main {
+        padding-top: 84px; /* Reduced from 104px */
+    }
+
+    .page-shell {
+        width: calc(100% - 40px); /* 20px padding each side */
+        gap: 20px;
+    }
+}
+
 main {
     padding: 104px 0 72px;
 }
