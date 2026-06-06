@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Monitor, Play, SlidersHorizontal, Smartphone, UserRound, LogOut, Link2 } from "lucide-react";
+import { Monitor, SlidersHorizontal, Smartphone, UserRound, LogOut, Link2 } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { CustomSelect } from "@/components/custom-select";
@@ -10,7 +10,6 @@ import { CustomSelect } from "@/components/custom-select";
 const tabs = [
   { key: "account", label: "My Account", icon: UserRound },
   { key: "anime", label: "Anime", icon: SlidersHorizontal },
-  { key: "playback", label: "Playback", icon: Play },
   { key: "import", label: "Import List", icon: Link2 },
   { key: "devices", label: "Devices", icon: Smartphone },
 ] as const;
@@ -165,7 +164,7 @@ export function SettingsPageShell() {
                   options={[
                     { value: "english", label: "English (Attack on Titan)" },
                     { value: "romaji", label: "Romaji (Shingeki no Kyojin)" },
-                    { value: "native", label: "Native" },
+                    { value: "native", label: "Native (進撃の巨人)" },
                   ]}
                   onChange={(value) => void updatePreference({ titleLanguage: value })}
                 />
@@ -184,49 +183,6 @@ export function SettingsPageShell() {
                 </div>
                 <button className={`switch ${user.preferences.autoplayTrailers ? "on" : ""}`} type="button" onClick={() => void updatePreference({ autoplayTrailers: !user.preferences.autoplayTrailers })} />
               </div>
-            </div>
-          ) : null}
-
-          {activeTab === "playback" ? (
-            <div className="settings-stack">
-              <div className="settings-row">
-                <div>
-                  <h2>Video Quality Preference</h2>
-                  <p>Choose your preferred video quality. &quot;Auto&quot; adjusts based on network speed.</p>
-                </div>
-                <CustomSelect
-                  value={user.preferences.videoQuality}
-                  ariaLabel="Video quality preference"
-                  options={[
-                    { value: "higher_picture_quality", label: "Higher picture quality" },
-                    { value: "auto", label: "Auto" },
-                    { value: "data_saver", label: "Data saver" },
-                  ]}
-                  onChange={(value) => void updatePreference({ videoQuality: value })}
-                />
-              </div>
-              {[
-                ["autoPlay", "Auto Play", "Automatically start playing media when it loads."],
-                ["autoNext", "Auto Next", "Play the next episode automatically when the current one finishes."],
-                ["autoSkipIntroOutro", "Auto Skip Intro/Outro", "Automatically skip intros and outros when possible."],
-                ["miniPlayer", "MiniPlayer", "Minimize the player when you scroll away or leave the watch page."],
-              ].map(([key, label, description]) => (
-                <div className="settings-toggle-row" key={key}>
-                  <div>
-                    <h2>{label}</h2>
-                    <p>{description}</p>
-                  </div>
-                  <button
-                    className={`switch ${user.preferences[key as keyof typeof user.preferences] ? "on" : ""}`}
-                    type="button"
-                    onClick={() =>
-                      void updatePreference({
-                        [key]: !user.preferences[key as keyof typeof user.preferences],
-                      })
-                    }
-                  />
-                </div>
-              ))}
             </div>
           ) : null}
 

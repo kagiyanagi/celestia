@@ -901,3 +901,56 @@ button:not(:disabled),
         transform: none !important;
     }
 }
+
+/* ── Site footer ───────────────────────────────────────────────────────── */
+.site-footer {
+    margin-top: 5rem;
+    border-top: 1px solid var(--border-subtle);
+    background: var(--surface-1);
+}
+
+.site-footer-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 3.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.site-footer-quote {
+    margin: 0;
+    max-width: 46ch;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    font-style: italic;
+    color: var(--text-secondary);
+    border-left: 2px solid var(--border-strong);
+    padding-left: 1.25rem;
+}
+
+.site-footer-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem 1rem;
+}
+
+.site-footer-brand {
+    font-size: 1.1rem;
+}
+
+.site-footer-note {
+    color: var(--text-tertiary);
+    font-size: 0.85rem;
+}
+
+@media (max-width: 640px) {
+    .site-footer-inner {
+        padding: 2.5rem 1.25rem 3rem;
+    }
+
+    .site-footer-quote {
+        font-size: 0.95rem;
+    }
+}

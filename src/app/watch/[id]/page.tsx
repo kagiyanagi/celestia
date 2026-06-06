@@ -8,6 +8,7 @@ import { WatchCompletionPrompt } from "@/components/watch-completion-prompt";
 import { WatchEpisodeTabs } from "@/components/watch-episode-tabs";
 import { WatchPlayerPanel } from "@/components/watch-player-panel";
 import { WatchSelectionProvider } from "@/components/watch-selection-context";
+import { getSessionUser, getViewerTitleLanguage } from "@/lib/auth";
 import { getDisplayTitle, getSecondaryTitle } from "@/lib/format";
 import { getAnimeDetails } from "@/lib/providers/anilist";
 import {
@@ -248,14 +249,15 @@ function getEpisodePageMap(episodes: WatchEpisode[]): Map<number, number> {
   );
 }
 
-function MediaCard({ anime, meta }: { anime: AnimeSummary; meta: string }) {
+async function MediaCard({ anime, meta }: { anime: AnimeSummary; meta: string }) {
+  const titleLanguage = await getViewerTitleLanguage();
   return (
     <Link className="watch-media-card" href={`/anime/${anime.id}`}>
       <div className="watch-media-poster">
         {anime.coverImage ? (
           <Image
             src={anime.coverImage}
-            alt={getDisplayTitle(anime.title)}
+            alt={getDisplayTitle(anime.title, titleLanguage)}
             fill
             sizes="96px"
           />
@@ -263,7 +265,7 @@ function MediaCard({ anime, meta }: { anime: AnimeSummary; meta: string }) {
       </div>
       <div>
         <span>{meta}</span>
-        <strong>{getDisplayTitle(anime.title)}</strong>
+        <strong>{getDisplayTitle(anime.title, titleLanguage)}</strong>
         <small>
           {[anime.format, anime.season, anime.seasonYear]
             .filter(Boolean)
@@ -320,8 +322,12 @@ export default async function WatchPage({
     notFound();
   }
 
-  const title = getDisplayTitle(anime.title);
-  const secondaryTitle = getSecondaryTitle(anime.title);
+  const viewer = await getSessionUser();
+  const title = getDisplayTitle(anime.title, viewer?.preferences.titleLanguage);
+  const secondaryTitle = getSecondaryTitle(
+    anime.title,
+    viewer?.preferences.titleLanguage,
+  );
   const streamLookupTitle = [
     anime.title?.romaji,
     anime.title?.english,
@@ -331,7 +337,8 @@ export default async function WatchPage({
   ].filter((value): value is string => Boolean(value));
   const requestedEpisode = getEpisodeValue(ep);
   const episodeOrder = getOrderValue(order);
-  const audioPreference = getAudioValue(audio);
+  const audioPreference =
+    getAudioValue(audio) ?? viewer?.preferences.defaultAudio ?? null;
   const providerAnimeId = getProviderAnimeId(sid);
   const releasedEpisodeLimit = getReleasedEpisodeLimit(anime);
   const episode = clampEpisodeToLimit(requestedEpisode, releasedEpisodeLimit);

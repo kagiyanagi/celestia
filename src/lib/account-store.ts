@@ -282,6 +282,10 @@ export async function clearHistory(userId: string) {
   });
 }
 
+export async function deleteAccount(userId: string) {
+  await getStore().deleteUser(userId);
+}
+
 /**
  * Marks notifications read. With no ids, marks everything read via a single
  * timestamp; with ids, records just those (so "tick one read" persists without

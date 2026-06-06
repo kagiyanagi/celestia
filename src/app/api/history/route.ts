@@ -47,6 +47,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
 
+    if (user.preferences.pauseHistory) {
+      return NextResponse.json({ entry: null, syncWarning: null, paused: true });
+    }
+
     const body = (await request.json()) as {
       anime: AnimeSummary;
       episode: number;

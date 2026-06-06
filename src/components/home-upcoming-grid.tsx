@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowRight, Radio } from "lucide-react";
 
 import { formatSeasonLabel } from "@/lib/anime-season";
+import { getViewerTitleLanguage } from "@/lib/auth";
 import {
   cleanDescription,
   formatRelativeSeconds,
@@ -14,7 +15,8 @@ type HomeUpcomingGridProps = {
   items: AnimeSummary[];
 };
 
-export function HomeUpcomingGrid({ items }: HomeUpcomingGridProps) {
+export async function HomeUpcomingGrid({ items }: HomeUpcomingGridProps) {
+  const titleLanguage = await getViewerTitleLanguage();
   return (
     <section className="home-section">
       <div className="home-section-head">
@@ -27,7 +29,7 @@ export function HomeUpcomingGrid({ items }: HomeUpcomingGridProps) {
 
       <div className="upcoming-rail">
         {items.map((anime) => {
-          const title = getDisplayTitle(anime.title);
+          const title = getDisplayTitle(anime.title, titleLanguage);
           const studio = anime.studios?.[0]?.name;
           const themeColor = anime.color || "rgba(255, 255, 255, 0.1)";
 

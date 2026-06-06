@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireSessionUser } from "@/lib/auth";
-import { getPrivateUser, updateProfile } from "@/lib/account-store";
+import { clearSession, requireSessionUser } from "@/lib/auth";
+import { deleteAccount, getPrivateUser, updateProfile } from "@/lib/account-store";
 
 export async function GET() {
   try {
@@ -50,6 +50,20 @@ export async function PATCH(request: Request) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Profile update failed." },
+      { status: 400 },
+    );
+  }
+}
+
+export async function DELETE() {
+  try {
+    const sessionUser = await requireSessionUser();
+    await clearSession();
+    await deleteAccount(sessionUser.id);
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Account deletion failed." },
       { status: 400 },
     );
   }

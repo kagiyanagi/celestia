@@ -37,20 +37,29 @@ const relativeFormatter = new Intl.RelativeTimeFormat("en", {
   style: "short",
 });
 
-export function getDisplayTitle(title?: AnimeTitle | null): string {
+export type TitleLanguage = "english" | "romaji" | "native";
+
+export function getDisplayTitle(
+  title?: AnimeTitle | null,
+  language: TitleLanguage = "english",
+): string {
   if (!title) return "Untitled anime";
-  return (
-    title.english ||
-    title.userPreferred ||
-    title.romaji ||
-    title.native ||
-    "Untitled anime"
-  );
+
+  const byLanguage: Record<TitleLanguage, (string | null | undefined)[]> = {
+    english: [title.english, title.userPreferred, title.romaji, title.native],
+    romaji: [title.romaji, title.english, title.native],
+    native: [title.native, title.romaji, title.english],
+  };
+
+  return byLanguage[language].find(Boolean) || "Untitled anime";
 }
 
-export function getSecondaryTitle(title?: AnimeTitle | null): string | null {
+export function getSecondaryTitle(
+  title?: AnimeTitle | null,
+  language: TitleLanguage = "english",
+): string | null {
   if (!title) return null;
-  const primary = getDisplayTitle(title);
+  const primary = getDisplayTitle(title, language);
   const secondary = title.romaji || title.native;
 
   return secondary && secondary !== primary ? secondary : null;

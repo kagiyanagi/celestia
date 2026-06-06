@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { getDisplayTitle } from "@/lib/format";
+import { useTitleLanguage } from "@/components/use-title-language";
 import type { RelationItem } from "@/types/anime";
 
 interface DetailsRelationsProps {
@@ -8,6 +9,7 @@ interface DetailsRelationsProps {
 }
 
 export function DetailsRelations({ relatedItems }: DetailsRelationsProps) {
+  const titleLanguage = useTitleLanguage();
   return (
     <div className="tab-relations">
       <div className="relations-grid">
@@ -21,7 +23,7 @@ export function DetailsRelations({ relatedItems }: DetailsRelationsProps) {
               {rel.anime.coverImage && (
                 <Image
                   src={rel.anime.coverImage}
-                  alt={getDisplayTitle(rel.anime.title)}
+                  alt={getDisplayTitle(rel.anime.title, titleLanguage)}
                   fill
                   sizes="80px"
                 />
@@ -32,7 +34,7 @@ export function DetailsRelations({ relatedItems }: DetailsRelationsProps) {
                 {rel.relationType.replaceAll("_", " ")}
               </span>
               <strong className="rel-title">
-                {getDisplayTitle(rel.anime.title)}
+                {getDisplayTitle(rel.anime.title, titleLanguage)}
               </strong>
               <span className="rel-meta">
                 {rel.anime.format} • {rel.anime.season}{" "}

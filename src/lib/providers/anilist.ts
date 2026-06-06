@@ -92,7 +92,13 @@ export const MEDIA_CARD_FIELDS = `
   }
 `;
 
-const HOME_QUERY = `
+// AniList treats `isAdult: null` as "match titles whose isAdult is null" — which
+// is none — rather than "no filter". So to include adult content we must OMIT
+// the argument entirely; the SFW filter is only present when hiding adult.
+const sfwFilter = (includeAdult: boolean) =>
+  includeAdult ? "" : "isAdult: false,";
+
+const homeQuery = (includeAdult: boolean) => `
   query HomeCollections(
     $season: MediaSeason,
     $seasonYear: Int,
@@ -101,42 +107,42 @@ const HOME_QUERY = `
   ) {
     topAiring: Page(page: 1, perPage: 10) {
       media(
+        ${sfwFilter(includeAdult)}
         type: ANIME,
         status: RELEASING,
-        sort: [POPULARITY_DESC, TRENDING_DESC],
-        isAdult: false
+        sort: [POPULARITY_DESC, TRENDING_DESC]
       ) {
         ${MEDIA_CARD_FIELDS}
       }
     }
     trending: Page(page: 1, perPage: 12) {
-      media(type: ANIME, sort: TRENDING_DESC, isAdult: false) {
+      media(${sfwFilter(includeAdult)} type: ANIME, sort: TRENDING_DESC) {
         ${MEDIA_CARD_FIELDS}
       }
     }
     season: Page(page: 1, perPage: 12) {
-      media(type: ANIME, season: $season, seasonYear: $seasonYear, sort: POPULARITY_DESC, isAdult: false) {
+      media(${sfwFilter(includeAdult)} type: ANIME, season: $season, seasonYear: $seasonYear, sort: POPULARITY_DESC) {
         ${MEDIA_CARD_FIELDS}
       }
     }
     upcoming: Page(page: 1, perPage: 6) {
       media(
+        ${sfwFilter(includeAdult)}
         type: ANIME,
         season: $nextSeason,
         seasonYear: $nextSeasonYear,
-        sort: POPULARITY_DESC,
-        isAdult: false
+        sort: POPULARITY_DESC
       ) {
         ${MEDIA_CARD_FIELDS}
       }
     }
     finished: Page(page: 1, perPage: 5) {
-      media(type: ANIME, status: FINISHED, sort: END_DATE_DESC, isAdult: false) {
+      media(${sfwFilter(includeAdult)} type: ANIME, status: FINISHED, sort: END_DATE_DESC) {
         ${MEDIA_CARD_FIELDS}
       }
     }
     movies: Page(page: 1, perPage: 5) {
-      media(type: ANIME, format: MOVIE, sort: [SCORE_DESC, POPULARITY_DESC], isAdult: false) {
+      media(${sfwFilter(includeAdult)} type: ANIME, format: MOVIE, sort: [SCORE_DESC, POPULARITY_DESC]) {
         ${MEDIA_CARD_FIELDS}
       }
     }
@@ -150,8 +156,7 @@ const HOME_QUERY = `
         }
       }
     }
-  }
-`;
+  }`;
 
 const AIRING_SCHEDULE_QUERY = `
   query AiringSchedule(
@@ -181,7 +186,7 @@ const AIRING_SCHEDULE_QUERY = `
   }
 `;
 
-const BROWSE_QUERY = `
+const browseQuery = (includeAdult: boolean) => `
   query BrowseCollection(
     $page: Int,
     $perPage: Int,
@@ -205,6 +210,7 @@ const BROWSE_QUERY = `
         perPage
       }
       media(
+        ${sfwFilter(includeAdult)}
         type: ANIME,
         search: $search,
         genre: $genre,
@@ -215,8 +221,7 @@ const BROWSE_QUERY = `
         format: $format,
         countryOfOrigin: $countryOfOrigin,
         source: $source,
-        sort: $sort,
-        isAdult: false
+        sort: $sort
       ) {
         ${MEDIA_CARD_FIELDS}
       }
@@ -234,10 +239,10 @@ const FILTER_OPTIONS_QUERY = `
   }
 `;
 
-const SEARCH_QUERY = `
+const searchQuery = (includeAdult: boolean) => `
   query SearchAnime($search: String!, $page: Int, $perPage: Int) {
     Page(page: $page, perPage: $perPage) {
-      media(search: $search, type: ANIME, sort: SEARCH_MATCH, isAdult: false) {
+      media(${sfwFilter(includeAdult)} search: $search, type: ANIME, sort: SEARCH_MATCH) {
         ${MEDIA_CARD_FIELDS}
       }
     }
@@ -528,13 +533,15 @@ function getNextAnimeSeason(date = new Date()): {
   };
 }
 
-export async function getHomeCollections(): Promise<HomeCollections> {
+export async function getHomeCollections(
+  includeAdult = false,
+): Promise<HomeCollections> {
   const current = getCurrentAnimeSeason();
   const next = getNextAnimeSeason();
 
   try {
     const data = await fetchAniList<HomeQueryResult>(
-      HOME_QUERY,
+      homeQuery(includeAdult),
       {
         season: current.season,
         seasonYear: current.year,
@@ -851,6 +858,7 @@ export async function getBrowseCollection(
   section: BrowseSectionKey,
   page = 1,
   filters?: BrowseFilters,
+  includeAdult = false,
 ): Promise<BrowseCollection> {
   const next = getNextAnimeSeason();
   const perPage = 30;
@@ -858,7 +866,7 @@ export async function getBrowseCollection(
 
   try {
     const data = await fetchAniList<BrowseQueryResult>(
-      BROWSE_QUERY,
+      browseQuery(includeAdult),
       {
         page: safePage,
         perPage,
@@ -950,12 +958,13 @@ export async function getDubCountsByAniListIds(
 export async function searchAnime(
   search: string,
   page = 1,
+  includeAdult = false,
 ): Promise<AnimeSummary[]> {
   if (!search.trim()) return [];
 
   try {
     const data = await fetchAniList<SearchQueryResult>(
-      SEARCH_QUERY,
+      searchQuery(includeAdult),
       { search, page, perPage: 18 },
       120,
     );

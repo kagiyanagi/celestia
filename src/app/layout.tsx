@@ -4,6 +4,7 @@ import { Manrope, Paytone_One } from "next/font/google";
 import { AuthProvider } from "@/components/auth-provider";
 import { BannerFallbackProvider } from "@/components/banner-fallback-provider";
 import { DubBadgeProvider } from "@/components/dub-badge-provider";
+import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { getSessionUser } from "@/lib/auth";
 import "./globals.css";
@@ -61,6 +62,7 @@ export default async function RootLayout({
             <BannerFallbackProvider>
               <SiteHeader />
               <main>{children}</main>
+              <SiteFooter />
             </BannerFallbackProvider>
           </DubBadgeProvider>
         </AuthProvider>

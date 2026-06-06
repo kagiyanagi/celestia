@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { BrowsePageShell } from "@/components/browse-page-shell";
+import { getViewerIncludesAdult } from "@/lib/auth";
 import {
   parseBrowseParams,
   type BrowseSearchParams,
@@ -21,8 +22,9 @@ type SearchPageProps = {
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const params = await searchParams;
   const { filters, page } = parseBrowseParams(params);
+  const includeAdult = await getViewerIncludesAdult();
   const [collection, filterOptions] = await Promise.all([
-    getBrowseCollection("search", page, filters),
+    getBrowseCollection("search", page, filters, includeAdult),
     getBrowseFilterOptions(),
   ]);
 

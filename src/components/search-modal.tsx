@@ -16,6 +16,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { LibraryStatusChip } from "@/components/library-status-chip";
 import { getDisplayTitle } from "@/lib/format";
+import { useTitleLanguage } from "@/components/use-title-language";
 import type { AnimeSummary } from "@/types/anime";
 
 type SearchModalProps = {
@@ -61,6 +62,7 @@ function seasonLabel(anime: AnimeSummary): string | null {
 }
 
 export function SearchModal({ isOpen, onClose }: SearchModalProps) {
+  const titleLanguage = useTitleLanguage();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<AnimeSummary[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -242,7 +244,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
               </div>
               <div className="search-result-info">
                 <strong className="search-result-title">
-                  {getDisplayTitle(anime.title)}
+                  {getDisplayTitle(anime.title, titleLanguage)}
                 </strong>
                 <div className="search-result-meta">
                   <span>{formatLabel(anime.format)}</span>

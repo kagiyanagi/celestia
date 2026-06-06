@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { getDisplayTitle, getSecondaryTitle } from "@/lib/format";
+import { useTitleLanguage } from "@/components/use-title-language";
 import { ErrorBoundary } from "@/components/error-boundary";
 import type { AnimeDetails } from "@/types/anime";
 
@@ -25,9 +26,10 @@ export function AnimeDetailsShell({
   watchHref,
 }: AnimeDetailsShellProps) {
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
+  const titleLanguage = useTitleLanguage();
 
-  const title = getDisplayTitle(anime.title);
-  const secondaryTitle = getSecondaryTitle(anime.title);
+  const title = getDisplayTitle(anime.title, titleLanguage);
+  const secondaryTitle = getSecondaryTitle(anime.title, titleLanguage);
   const relatedItems = getRelatedItems(anime.relations ?? []);
 
   return (

@@ -1,6 +1,7 @@
 import { Clock, Mic } from "lucide-react";
 import { AnimeDetails } from "@/types/anime";
 import { AiringCountdown } from "@/components/airing-countdown";
+import { useAuth } from "@/components/auth-provider";
 import { compactNumber, formatAiringTime } from "@/lib/format";
 import { formatDate } from "./helpers";
 import { DetailsCast } from "./DetailsCast";
@@ -14,6 +15,8 @@ export function DetailsOverview({
   anime,
   onShowMoreCharacters,
 }: DetailsOverviewProps) {
+  const { user } = useAuth();
+  const autoplayTrailer = user?.preferences.autoplayTrailers ?? false;
   return (
     <div className="tab-overview">
       {anime.status === "RELEASING" && anime.nextAiringEpisode && (
@@ -150,7 +153,9 @@ export function DetailsOverview({
           <div className="trailer-embed">
             {anime.trailer.site === "youtube" ? (
               <iframe
-                src={`https://www.youtube.com/embed/${anime.trailer.id}`}
+                src={`https://www.youtube.com/embed/${anime.trailer.id}${
+                  autoplayTrailer ? "?autoplay=1&mute=1" : ""
+                }`}
                 title="Trailer"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
