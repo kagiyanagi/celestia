@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { PUBLIC_LONG_CACHE } from "@/lib/http/cache";
 import { getAnimeMappings } from "@/lib/providers/anizip";
 import { getAnimeNews } from "@/lib/providers/jikan";
 
@@ -24,11 +25,11 @@ export async function GET(
     const malId = (await getAnimeMappings(animeId))?.malId;
 
     if (!malId) {
-      return NextResponse.json({ articles: [] });
+      return NextResponse.json({ articles: [] }, { headers: PUBLIC_LONG_CACHE });
     }
 
     const articles = await getAnimeNews(malId);
-    return NextResponse.json({ articles });
+    return NextResponse.json({ articles }, { headers: PUBLIC_LONG_CACHE });
   } catch (error) {
     console.error("Anime news failed", error);
     // Fail soft: the client renders an empty-news state.

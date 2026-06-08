@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   ChevronLeft,
@@ -5,12 +7,15 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { BrowseFilterBar } from "@/components/browse-filter-bar";
 import { BrowseResultsGrid } from "@/components/browse-results-grid";
+import { useAuth } from "@/components/auth-provider";
 import { buildBrowseHref } from "@/lib/browse-filters";
 import type {
   AnimeSummary,
+  BrowseCollection,
   BrowseFilterOptions,
   BrowseFilters,
   BrowsePageInfo,
@@ -42,15 +47,71 @@ export function BrowsePageShell({
   filterOptions,
   showSectionTitle = true,
 }: BrowsePageShellProps) {
-  const currentPage = Math.max(1, pageInfo.currentPage);
-  const lastPage = pageInfo.lastPage ?? currentPage;
+  const { user } = useAuth();
+  const includeAdult = Boolean(
+    user && !user.preferences.hideAdultContent && !filters.list,
+  );
+  const browseKey = buildBrowseHref(basePath, filters, pageInfo.currentPage);
+  const [personalized, setPersonalized] = useState<{
+    key: string;
+    collection: BrowseCollection;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!includeAdult) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const params = new URLSearchParams({
+      section,
+      page: String(pageInfo.currentPage),
+    });
+
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) {
+        params.set(key, value);
+      }
+    });
+
+    fetch(`/api/browse?${params.toString()}`, {
+      cache: "no-store",
+      signal: controller.signal,
+    })
+      .then((response) => (response.ok ? response.json() : null))
+      .then((payload: { collection?: BrowseCollection } | null) => {
+        if (payload?.collection) {
+          setPersonalized({ key: browseKey, collection: payload.collection });
+        }
+      })
+      .catch((error) => {
+        if (!(error instanceof DOMException && error.name === "AbortError")) {
+          console.warn("Personalized browse collection failed", error);
+        }
+      });
+
+    return () => {
+      controller.abort();
+    };
+  }, [browseKey, filters, includeAdult, pageInfo.currentPage, section]);
+
+  const collection =
+    includeAdult && personalized?.key === browseKey
+      ? personalized.collection
+      : { items, pageInfo };
+  const activeItems = collection.items;
+  const activePageInfo = collection.pageInfo;
+  const currentPage = Math.max(1, activePageInfo.currentPage);
+  const lastPage = activePageInfo.lastPage ?? currentPage;
   const hasPreviousPage = currentPage > 1;
   const hasNextPage =
-    pageInfo.hasNextPage ||
-    (pageInfo.lastPage !== null && currentPage < pageInfo.lastPage);
-  const hasLastPage = pageInfo.lastPage !== null && currentPage < lastPage;
-  const startItem = items.length ? (currentPage - 1) * pageInfo.perPage + 1 : 0;
-  const endItem = startItem + items.length - 1;
+    activePageInfo.hasNextPage ||
+    (activePageInfo.lastPage !== null && currentPage < activePageInfo.lastPage);
+  const hasLastPage = activePageInfo.lastPage !== null && currentPage < lastPage;
+  const startItem = activeItems.length
+    ? (currentPage - 1) * activePageInfo.perPage + 1
+    : 0;
+  const endItem = startItem + activeItems.length - 1;
   const filterKey = buildBrowseHref(basePath, filters);
   // "In your list" renders from the viewer's library — catalog counts and
   // pagination don't apply to it.
@@ -80,9 +141,9 @@ export function BrowsePageShell({
         <div className="section-heading">
           {!isLibraryView ? (
             <span>
-              {pageInfo.total
-                ? `${startItem}-${endItem} of ${pageInfo.total} titles`
-                : `${items.length} titles`}
+              {activePageInfo.total
+                ? `${startItem}-${endItem} of ${activePageInfo.total} titles`
+                : `${activeItems.length} titles`}
             </span>
           ) : (
             <span>Your list</span>
@@ -90,8 +151,8 @@ export function BrowsePageShell({
           {showSectionTitle && <h2>{title}</h2>}
         </div>
 
-        {items.length || isLibraryView ? (
-          <BrowseResultsGrid items={items} filters={filters} />
+        {activeItems.length || isLibraryView ? (
+          <BrowseResultsGrid items={activeItems} filters={filters} />
         ) : (
           <div className="empty-panel">No titles found for this page.</div>
         )}

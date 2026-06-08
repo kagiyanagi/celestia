@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { PUBLIC_LONG_CACHE } from "@/lib/http/cache";
 import {
   getFranchiseGraph,
   layoutFranchiseGraph,
@@ -22,7 +23,10 @@ export async function GET(
 
   try {
     const graph = await getFranchiseGraph(animeId);
-    return NextResponse.json({ graph: layoutFranchiseGraph(graph) });
+    return NextResponse.json(
+      { graph: layoutFranchiseGraph(graph) },
+      { headers: PUBLIC_LONG_CACHE },
+    );
   } catch (error) {
     console.error("Franchise graph failed", error);
     // Fail soft: the client falls back to the flat relations list.

@@ -4,7 +4,10 @@ import {
   markNotificationsRead,
 } from "@/lib/account-store";
 import { getSessionUser, requireSessionUser } from "@/lib/auth";
-import { getUserNotifications } from "@/lib/notifications";
+import {
+  clearUserNotificationCache,
+  getCachedUserNotifications,
+} from "@/lib/notifications";
 
 /** New-release notifications for the signed-in user's tracked anime. */
 export async function GET() {
@@ -15,7 +18,7 @@ export async function GET() {
   }
 
   try {
-    const data = await getUserNotifications(user);
+    const data = await getCachedUserNotifications(user);
     return NextResponse.json(data);
   } catch (error) {
     console.error("Notifications fetch failed", error);
@@ -48,6 +51,7 @@ export async function POST(request: Request) {
     } else {
       await markNotificationsRead(user.id);
     }
+    clearUserNotificationCache(user.id);
 
     return NextResponse.json({ ok: true });
   } catch {

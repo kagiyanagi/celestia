@@ -1,36 +1,10 @@
-import { AiringBoard } from "@/components/airing-board";
-import { HomeHeroCarousel } from "@/components/home-hero-carousel";
-import { HomePersonalSections } from "@/components/home-personal-sections";
-import { HomeShelf } from "@/components/home-shelf";
-import { HomeTrendingRail } from "@/components/home-trending-rail";
-import { HomeUpcomingGrid } from "@/components/home-upcoming-grid";
-import { getViewerIncludesAdult } from "@/lib/auth";
+import { HomePageClient } from "@/components/home-page-client";
 import { getHomeCollections } from "@/lib/providers/anilist";
 
-export default async function HomePage() {
-  const collections = await getHomeCollections(await getViewerIncludesAdult());
+export const revalidate = 900;
 
-  return (
-    <>
-      <HomeHeroCarousel items={collections.topAiring.slice(0, 5)} />
-      <div className="page-shell">
-        <HomePersonalSections user={null} />
-        <HomeTrendingRail items={collections.trending} />
-        <HomeUpcomingGrid items={collections.upcoming} />
-        <AiringBoard items={collections.airingSoon} />
-        <div className="home-shelf-row">
-          <HomeShelf
-            title="Just Finished"
-            href="/finished"
-            items={collections.finished}
-          />
-          <HomeShelf
-            title="Top Movies"
-            href="/movies"
-            items={collections.movies}
-          />
-        </div>
-      </div>
-    </>
-  );
+export default async function HomePage() {
+  const collections = await getHomeCollections(false);
+
+  return <HomePageClient initialCollections={collections} />;
 }
