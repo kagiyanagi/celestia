@@ -219,6 +219,21 @@ export async function upsertLibraryEntry(input: {
   });
 }
 
+/**
+ * Bulk-imports library entries (e.g. from a MAL/AniList XML upload) in a single
+ * write. Reuses mergeLibraryEntries so existing entries are preserved and the
+ * newer updatedAt wins, matching AniList sync semantics.
+ */
+export async function importLibraryEntries(
+  userId: string,
+  entries: LibraryEntry[],
+) {
+  return updateUserRecord(userId, (user) => {
+    user.libraryEntries = mergeLibraryEntries(user.libraryEntries, entries);
+    return user.libraryEntries.length;
+  });
+}
+
 export async function deleteLibraryEntry(userId: string, animeId: number) {
   return updateUserRecord(userId, (user) => {
     const removed =

@@ -963,6 +963,52 @@ export async function getDubCountsByAniListIds(
   }
 }
 
+const MAL_LOOKUP_QUERY = `
+  query ($idMal_in: [Int!]) {
+    Page(perPage: 50) {
+      media(idMal_in: $idMal_in, type: ANIME) {
+        ${MEDIA_CARD_FIELDS}
+      }
+    }
+  }
+`;
+
+/**
+ * Resolves MAL ids (from an imported XML export) to AniList summaries. AniList
+ * tracks MAL ids natively, so this is an exact mapping — no fuzzy title match.
+ * Queried in chunks of 50 (AniList's per-page cap); unresolved ids are simply
+ * absent from the result, preserving accuracy-over-fabrication.
+ */
+export async function getAnimeSummariesByMalIds(
+  malIds: number[],
+): Promise<Map<number, AnimeSummary>> {
+  const unique = Array.from(
+    new Set(malIds.filter((id) => Number.isFinite(id) && id > 0)),
+  );
+  const resolved = new Map<number, AnimeSummary>();
+
+  for (let i = 0; i < unique.length; i += 50) {
+    const chunk = unique.slice(i, i + 50);
+    try {
+      const data = await fetchAniList<{ Page: { media: AniListMedia[] | null } }>(
+        MAL_LOOKUP_QUERY,
+        { idMal_in: chunk },
+        900,
+      );
+      for (const media of data.Page?.media ?? []) {
+        const summary = transformAnimeSummary(media);
+        if (summary.idMal) {
+          resolved.set(summary.idMal, summary);
+        }
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  return resolved;
+}
+
 export async function searchAnime(
   search: string,
   page = 1,
