@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { requireSessionUser } from "@/lib/auth";
 import {
   deleteLibraryEntry,
@@ -9,6 +9,7 @@ import {
   deleteAniListLibraryEntry,
   saveAniListLibraryEntry,
 } from "@/lib/providers/anilist";
+import { syncAniListLibrary } from "@/lib/anilist-sync";
 import type { LibraryStatus } from "@/types/account";
 import type { AnimeSummary } from "@/types/anime";
 
@@ -43,7 +44,10 @@ function isValidAnimeSummary(value: unknown): value is AnimeSummary {
 export async function GET() {
   try {
     const sessionUser = await requireSessionUser();
-    const user = await getPrivateUser(sessionUser.id);
+    // Pull AniList edits back in (freshness-guarded) before reading, so the
+    // list reflects changes made directly on AniList.
+    const synced = await syncAniListLibrary(sessionUser.id);
+    const user = synced ?? (await getPrivateUser(sessionUser.id));
     return NextResponse.json({ entries: user?.libraryEntries || [] });
   } catch {
     return NextResponse.json({ entries: [] }, { status: 401 });
@@ -90,40 +94,40 @@ export async function POST(request: Request) {
       completedAt: body.completedAt,
     });
 
-    let aniListEntryId = localEntry.aniListEntryId;
-    let syncWarning: string | null = null;
-
+    // AniList is a best-effort mirror — sync it after the response is sent so
+    // the client unblocks on the (fast) local write instead of a remote
+    // GraphQL round-trip. after() keeps the work alive on serverless too.
     if (user.aniListAccessToken) {
-      try {
-        aniListEntryId = await saveAniListLibraryEntry(user.aniListAccessToken, {
-          ...localEntry,
-        });
-
-        if (aniListEntryId) {
-          await upsertLibraryEntry({
-            userId: user.id,
-            anime: body.anime,
-            status,
-            score,
-            progress,
-            repeat,
-            notes: String(body.notes || "").slice(0, 5000),
-            startedAt: body.startedAt,
-            completedAt: body.completedAt,
-            aniListEntryId,
+      const accessToken = user.aniListAccessToken;
+      after(async () => {
+        try {
+          const aniListEntryId = await saveAniListLibraryEntry(accessToken, {
+            ...localEntry,
           });
+
+          if (aniListEntryId) {
+            await upsertLibraryEntry({
+              userId: user.id,
+              anime: body.anime,
+              status,
+              score,
+              progress,
+              repeat,
+              notes: String(body.notes || "").slice(0, 5000),
+              startedAt: body.startedAt,
+              completedAt: body.completedAt,
+              aniListEntryId,
+            });
+          }
+        } catch {
+          // Local write already succeeded; a failed mirror is non-fatal.
         }
-      } catch (error) {
-        syncWarning =
-          error instanceof Error
-            ? `Saved locally. AniList sync failed: ${error.message}`
-            : "Saved locally. AniList sync failed.";
-      }
+      });
     }
 
     return NextResponse.json({
-      entry: { ...localEntry, aniListEntryId },
-      syncWarning,
+      entry: localEntry,
+      syncWarning: null,
     });
   } catch (error) {
     return NextResponse.json(

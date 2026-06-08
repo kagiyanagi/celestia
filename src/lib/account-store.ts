@@ -29,6 +29,7 @@ function sanitizeUser(user: UserRecord): PublicUser {
     banner: user.banner,
     joinedAt: user.joinedAt,
     aniListProfile: user.aniListProfile,
+    aniListSyncedAt: user.aniListSyncedAt ?? null,
     preferences: user.preferences,
     devices: user.devices,
     libraryEntries: user.libraryEntries,
@@ -174,6 +175,67 @@ function mergeLibraryEntries(
   return Array.from(map.values()).sort(
     (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
   );
+}
+
+/**
+ * Reconciles a fresh AniList pull into the local library with newest-wins
+ * semantics. Unlike mergeLibraryEntries (incoming always wins — used for the
+ * initial connect and XML import), this compares updatedAt so a local edit that
+ * hasn't pushed yet is not clobbered by an older AniList entry. Local-only
+ * entries (never on AniList) are preserved; removals on AniList are not mirrored
+ * (a local-only entry would look identical to a remotely-deleted one).
+ */
+function mergeAniListPull(current: LibraryEntry[], incoming: LibraryEntry[]) {
+  const map = new Map<number, LibraryEntry>();
+  current.forEach((entry) => map.set(entry.animeId, entry));
+
+  incoming.forEach((remote) => {
+    const local = map.get(remote.animeId);
+
+    if (!local) {
+      map.set(remote.animeId, remote);
+      return;
+    }
+
+    const localTime = new Date(local.updatedAt).getTime() || 0;
+    const remoteTime = new Date(remote.updatedAt).getTime() || 0;
+
+    if (remoteTime >= localTime) {
+      map.set(remote.animeId, {
+        ...remote,
+        id: local.id,
+        addedAt: local.addedAt || remote.addedAt || null,
+        aniListEntryId: remote.aniListEntryId ?? local.aniListEntryId,
+      });
+    }
+  });
+
+  return Array.from(map.values()).sort(
+    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+  );
+}
+
+/**
+ * Applies a pulled AniList snapshot (library + refreshed profile) to the user,
+ * reconciling entries newest-wins and stamping the sync time. Caller owns the
+ * remote fetch; this is the local write half so it can stay in account-store.
+ */
+export async function applyAniListSync(input: {
+  userId: string;
+  profile: AniListProfile;
+  libraryEntries: LibraryEntry[];
+}) {
+  return updateUserRecord(input.userId, (user) => {
+    user.aniListProfile = input.profile;
+    user.avatar = input.profile.avatar || user.avatar;
+    user.banner = input.profile.banner || user.banner;
+    user.libraryEntries = mergeAniListPull(
+      user.libraryEntries,
+      input.libraryEntries,
+    );
+    user.aniListSyncedAt = new Date().toISOString();
+    return sanitizeUser(user);
+  });
 }
 
 export async function upsertLibraryEntry(input: {

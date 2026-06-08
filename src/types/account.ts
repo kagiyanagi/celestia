@@ -99,6 +99,8 @@ export type UserRecord = {
   joinedAt: string;
   aniListAccessToken: string | null;
   aniListProfile: AniListProfile | null;
+  /** ISO timestamp of the last AniList → Celestia library pull; gates re-sync frequency. */
+  aniListSyncedAt?: string | null;
   preferences: UserPreferences;
   devices: DeviceSession[];
   libraryEntries: LibraryEntry[];

@@ -1266,6 +1266,7 @@ const VIEWER_LIBRARY_QUERY = `
           progress
           repeat
           notes
+          updatedAt
           startedAt {
             year
             month
@@ -1378,6 +1379,7 @@ type ViewerLibraryResult = {
         progress: number | null;
         repeat: number | null;
         notes: string | null;
+        updatedAt: number | null;
         startedAt: {
           year: number | null;
           month: number | null;
@@ -1654,7 +1656,11 @@ export async function getAniListViewerLibrary(accessToken: string, userId: numbe
         notes: entry.notes || "",
         startedAt: toDateString(entry.startedAt),
         completedAt: toDateString(entry.completedAt),
-        updatedAt: new Date().toISOString(),
+        // AniList's real edit time drives newest-wins conflict resolution on
+        // re-sync; fall back to now only for entries with no timestamp.
+        updatedAt: entry.updatedAt
+          ? new Date(entry.updatedAt * 1000).toISOString()
+          : new Date().toISOString(),
         aniListEntryId: entry.id,
       } satisfies LibraryEntry)) || []
   );

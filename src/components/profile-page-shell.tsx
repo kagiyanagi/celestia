@@ -22,6 +22,7 @@ export function ProfilePageShell({
   const searchParams = useSearchParams();
   const { user, setUser } = useAuth();
   const [busy, setBusy] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importMessage, setImportMessage] = useState("");
   const error = searchParams.get("error");
@@ -61,6 +62,22 @@ export function ProfilePageShell({
     const payload = (await response.json()) as { user?: typeof user };
     if (response.ok && payload.user) {
       setUser(payload.user);
+    }
+  }
+
+  async function syncAniList() {
+    setSyncing(true);
+    try {
+      const response = await fetch("/api/anilist/sync", {
+        method: "POST",
+        cache: "no-store",
+      });
+      const payload = (await response.json()) as { user?: typeof user };
+      if (response.ok && payload.user) {
+        setUser(payload.user);
+      }
+    } finally {
+      setSyncing(false);
     }
   }
 
@@ -270,17 +287,29 @@ export function ProfilePageShell({
               <strong>AniList</strong>
               <span>Sync your avatar, banner, list statuses, and activity.</span>
             </div>
-            <button
-              className="secondary-action"
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                setBusy(true);
-                window.location.href = "/api/anilist/connect";
-              }}
-            >
-              {busy ? "Connecting..." : profile ? "Reconnect AniList" : "Connect AniList"}
-            </button>
+            <div className="profile-setting-actions">
+              {profile ? (
+                <button
+                  className="secondary-action"
+                  type="button"
+                  disabled={syncing}
+                  onClick={() => void syncAniList()}
+                >
+                  {syncing ? "Syncing…" : "Sync now"}
+                </button>
+              ) : null}
+              <button
+                className="secondary-action"
+                type="button"
+                disabled={busy}
+                onClick={() => {
+                  setBusy(true);
+                  window.location.href = "/api/anilist/connect";
+                }}
+              >
+                {busy ? "Connecting..." : profile ? "Reconnect AniList" : "Connect AniList"}
+              </button>
+            </div>
           </div>
 
           <div className="profile-setting-row">

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import {
   clearHistory,
   getPrivateUser,
@@ -120,38 +120,38 @@ export async function POST(request: Request) {
       completedAt: nextStatus === "completed" ? today : null,
       aniListEntryId: currentLibraryEntry?.aniListEntryId || null,
     });
-    let syncWarning: string | null = null;
-
+    // Mirror to AniList after the response is sent so marking an episode
+    // watched returns on the local write, not a remote GraphQL round-trip.
     if (user.aniListAccessToken) {
-      try {
-        const aniListEntryId = await saveAniListLibraryEntry(
-          user.aniListAccessToken,
-          localLibraryEntry,
-        );
+      const accessToken = user.aniListAccessToken;
+      after(async () => {
+        try {
+          const aniListEntryId = await saveAniListLibraryEntry(
+            accessToken,
+            localLibraryEntry,
+          );
 
-        if (aniListEntryId) {
-          await upsertLibraryEntry({
-            userId: user.id,
-            anime: body.anime,
-            status: nextStatus,
-            score: currentLibraryEntry?.score || 0,
-            progress,
-            repeat: currentLibraryEntry?.repeat || 0,
-            notes: currentLibraryEntry?.notes || "",
-            startedAt: currentLibraryEntry?.startedAt || today,
-            completedAt: nextStatus === "completed" ? today : null,
-            aniListEntryId,
-          });
+          if (aniListEntryId) {
+            await upsertLibraryEntry({
+              userId: user.id,
+              anime: body.anime,
+              status: nextStatus,
+              score: currentLibraryEntry?.score || 0,
+              progress,
+              repeat: currentLibraryEntry?.repeat || 0,
+              notes: currentLibraryEntry?.notes || "",
+              startedAt: currentLibraryEntry?.startedAt || today,
+              completedAt: nextStatus === "completed" ? today : null,
+              aniListEntryId,
+            });
+          }
+        } catch {
+          // Local write already succeeded; a failed mirror is non-fatal.
         }
-      } catch (error) {
-        syncWarning =
-          error instanceof Error
-            ? `History saved locally. AniList sync failed: ${error.message}`
-            : "History saved locally. AniList sync failed.";
-      }
+      });
     }
 
-    return NextResponse.json({ entry: historyEntry, syncWarning });
+    return NextResponse.json({ entry: historyEntry, syncWarning: null });
   } catch (error) {
     return NextResponse.json(
       {
