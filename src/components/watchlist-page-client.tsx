@@ -2,7 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
+  ArrowDown01,
+  ArrowDown10,
   Bookmark,
   Check,
   List,
@@ -16,6 +19,7 @@ import {
   Star,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useAuth } from "@/components/auth-provider";
 import { DubBadge } from "@/components/dub-badge";
 import { LibraryEntryDialog } from "@/components/library-entry-dialog";
 import { LibraryStatusChip } from "@/components/library-status-chip";
@@ -37,18 +41,54 @@ const tabs: Array<{
   { key: "rewatching", label: "Rewatching", icon: RotateCcw },
 ];
 
+type SortOrder = "asc" | "desc";
+
+function sortEntries(entries: LibraryEntry[], order: SortOrder): LibraryEntry[] {
+  const direction = order === "asc" ? 1 : -1;
+
+  return [...entries].sort((first, second) => {
+    const firstTime = new Date(first.updatedAt).getTime() || 0;
+    const secondTime = new Date(second.updatedAt).getTime() || 0;
+    return (firstTime - secondTime) * direction;
+  });
+}
+
 export function WatchlistPageClient({ entries }: { entries: LibraryEntry[] }) {
+  const router = useRouter();
+  const { loading, refreshUser, user } = useAuth();
   const titleLanguage = useTitleLanguage();
   const [activeTab, setActiveTab] =
     useState<(typeof tabs)[number]["key"]>("all");
   const [editing, setEditing] = useState<LibraryEntry | null>(null);
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const listEntries = user?.libraryEntries || entries;
   const filtered = useMemo(
-    () =>
-      activeTab === "all"
-        ? entries
-        : entries.filter((entry) => entry.status === activeTab),
-    [activeTab, entries],
+    () => {
+      const tabEntries =
+        activeTab === "all"
+          ? listEntries
+          : listEntries.filter((entry) => entry.status === activeTab);
+
+      return sortEntries(tabEntries, sortOrder);
+    },
+    [activeTab, listEntries, sortOrder],
   );
+  const activeTabLabel =
+    activeTab === "all"
+      ? "Your list"
+      : tabs.find((tab) => tab.key === activeTab)?.label || "Your list";
+
+  async function handleRefresh() {
+    setIsRefreshing(true);
+
+    try {
+      await refreshUser();
+      router.refresh();
+    } finally {
+      setIsRefreshing(false);
+    }
+  }
 
   return (
     <div className="page-shell watchlist-page">
@@ -57,8 +97,8 @@ export function WatchlistPageClient({ entries }: { entries: LibraryEntry[] }) {
           const Icon = tab.icon;
           const count =
             tab.key === "all"
-              ? entries.length
-              : entries.filter((entry) => entry.status === tab.key).length;
+              ? listEntries.length
+              : listEntries.filter((entry) => entry.status === tab.key).length;
           return (
             <button
               key={tab.key}
@@ -74,11 +114,42 @@ export function WatchlistPageClient({ entries }: { entries: LibraryEntry[] }) {
         })}
       </div>
       <section className="watchlist-section">
-        <h2>
-          {activeTab === "all"
-            ? "Your list"
-            : tabs.find((tab) => tab.key === activeTab)?.label}
-        </h2>
+        <div className="watchlist-section-head">
+          <h2>{activeTabLabel}</h2>
+          <div className="list-action-buttons" aria-label="List controls">
+            <button
+              type="button"
+              className={`list-action-button${isRefreshing ? " is-refreshing" : ""}`}
+              aria-label="Refresh list"
+              title="Refresh list"
+              onClick={() => void handleRefresh()}
+              disabled={isRefreshing || loading}
+            >
+              <RotateCcw size={18} aria-hidden />
+            </button>
+            <button
+              type="button"
+              className="list-action-button"
+              aria-label={
+                sortOrder === "asc" ? "Sort descending" : "Sort ascending"
+              }
+              title={
+                sortOrder === "asc" ? "Sort descending" : "Sort ascending"
+              }
+              onClick={() =>
+                setSortOrder((current) =>
+                  current === "asc" ? "desc" : "asc",
+                )
+              }
+            >
+              {sortOrder === "asc" ? (
+                <ArrowDown01 size={18} aria-hidden />
+              ) : (
+                <ArrowDown10 size={18} aria-hidden />
+              )}
+            </button>
+          </div>
+        </div>
         {filtered.length ? (
           <div className="anime-grid search-results">
             {filtered.map((entry) => (

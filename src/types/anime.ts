@@ -308,6 +308,8 @@ export type BrowseFilters = {
   tag: string;
   country: string;
   source: string;
+  /** Sort direction for browse/search result ordering. */
+  sortOrder: string;
   /** Viewer-relative filter: "in" = on their list, "out" = not on it. */
   list: string;
 };

@@ -750,20 +750,23 @@ function resolveBrowseSort(
   sort: string,
   section: BrowseSectionKey,
   status: string,
+  sortOrder: string,
 ): string[] | null {
+  const suffix = sortOrder === "asc" ? "" : "_DESC";
+
   switch (sort) {
     case "popularity":
-      return ["POPULARITY_DESC"];
+      return [`POPULARITY${suffix}`];
     case "score":
-      return ["SCORE_DESC", "POPULARITY_DESC"];
+      return [`SCORE${suffix}`, "POPULARITY_DESC"];
     case "release_date":
       return section === "finished" || status === "FINISHED"
-        ? ["END_DATE_DESC"]
-        : ["START_DATE_DESC"];
+        ? [`END_DATE${suffix}`]
+        : [`START_DATE${suffix}`];
     case "favourites":
-      return ["FAVOURITES_DESC"];
+      return [`FAVOURITES${suffix}`];
     case "trending":
-      return ["TRENDING_DESC", "POPULARITY_DESC"];
+      return [`TRENDING${suffix}`, "POPULARITY_DESC"];
     default:
       return null;
   }
@@ -788,7 +791,12 @@ function getBrowseFilterVariables(
   if (filters.country) variables.countryOfOrigin = filters.country;
   if (filters.source) variables.source = filters.source;
 
-  const sort = resolveBrowseSort(filters.sort, section, filters.status);
+  const sort = resolveBrowseSort(
+    filters.sort,
+    section,
+    filters.status,
+    filters.sortOrder,
+  );
   if (sort) variables.sort = sort;
 
   return variables;
@@ -1636,4 +1644,3 @@ export async function deleteAniListLibraryEntry(
     id: entryId,
   });
 }
-
