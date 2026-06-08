@@ -1,6 +1,13 @@
 "use client";
 
-import { Filter, Search } from "lucide-react";
+import {
+  ArrowDown01,
+  ArrowDown10,
+  Filter,
+  RotateCcw,
+  Search,
+  Trash2,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import {
   type ChangeEvent,
@@ -9,10 +16,12 @@ import {
   useTransition,
 } from "react";
 
+import { useAuth } from "@/components/auth-provider";
 import { CustomSelect } from "@/components/custom-select";
 
 import {
   COUNTRY_OPTIONS,
+  EMPTY_BROWSE_FILTERS,
   FORMAT_OPTIONS,
   getDefaultBrowseSort,
   getYearOptions,
@@ -49,7 +58,7 @@ function buildFilterUrl(basePath: string, filters: BrowseFilters): string {
   const query = new URLSearchParams();
 
   Object.entries(filters).forEach(([key, value]) => {
-    if (value) {
+    if (value && !(key === "sortOrder" && value === "desc")) {
       query.set(key, value);
     }
   });
@@ -91,12 +100,31 @@ export function BrowseFilterBar({
   options,
 }: BrowseFilterBarProps) {
   const router = useRouter();
+  const { loading, refreshUser } = useAuth();
   const [isExpanded, setIsExpanded] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isPending, startTransition] = useTransition();
   const defaultSort = getDefaultBrowseSort(section);
   const [values, setValues] = useState<BrowseFilters>({
     ...filters,
     sort: filters.sort || defaultSort,
+    sortOrder: filters.sortOrder || "desc",
+  });
+  const clearValues: BrowseFilters = {
+    ...EMPTY_BROWSE_FILTERS,
+    sort: defaultSort,
+    sortOrder: "desc",
+  };
+  const hasActiveFilters = Object.entries(values).some(([key, value]) => {
+    if (key === "sort") {
+      return value !== defaultSort;
+    }
+
+    if (key === "sortOrder") {
+      return value !== "desc";
+    }
+
+    return Boolean(value);
   });
 
   function applyFilters(nextValues: BrowseFilters) {
@@ -120,6 +148,36 @@ export function BrowseFilterBar({
 
     setValues(nextValues);
     applyFilters(nextValues);
+  }
+
+  function handleSortOrderToggle() {
+    const nextValues: BrowseFilters = {
+      ...values,
+      sortOrder: values.sortOrder === "asc" ? "desc" : "asc",
+    };
+
+    setValues(nextValues);
+    applyFilters(nextValues);
+  }
+
+  function handleClearFilters() {
+    setValues(clearValues);
+    startTransition(() => {
+      router.push(basePath);
+    });
+  }
+
+  async function handleRefresh() {
+    setIsRefreshing(true);
+
+    try {
+      await refreshUser();
+      startTransition(() => {
+        router.refresh();
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
   }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -150,15 +208,54 @@ export function BrowseFilterBar({
         </span>
       </label>
 
-      <button
-        className="browse-filter-toggle"
-        type="button"
-        aria-label={isExpanded ? "Collapse filters" : "Expand filters"}
-        aria-expanded={isExpanded}
-        onClick={() => setIsExpanded((currentValue) => !currentValue)}
-      >
-        <Filter size={22} aria-hidden />
-      </button>
+      <div className="browse-filter-actions" aria-label="Search controls">
+        <button
+          type="button"
+          className={`list-action-button${isRefreshing ? " is-refreshing" : ""}`}
+          aria-label="Refresh results"
+          title="Refresh results"
+          onClick={() => void handleRefresh()}
+          disabled={loading || isRefreshing}
+        >
+          <RotateCcw size={18} aria-hidden />
+        </button>
+        <button
+          type="button"
+          className="list-action-button"
+          aria-label={
+            values.sortOrder === "asc" ? "Sort descending" : "Sort ascending"
+          }
+          title={
+            values.sortOrder === "asc" ? "Sort descending" : "Sort ascending"
+          }
+          onClick={handleSortOrderToggle}
+        >
+          {values.sortOrder === "asc" ? (
+            <ArrowDown01 size={18} aria-hidden />
+          ) : (
+            <ArrowDown10 size={18} aria-hidden />
+          )}
+        </button>
+        <button
+          type="button"
+          className="list-action-button clear-filter-button"
+          aria-label="Clear filters"
+          title="Clear filters"
+          onClick={handleClearFilters}
+          disabled={!hasActiveFilters}
+        >
+          <Trash2 size={18} aria-hidden />
+        </button>
+        <button
+          className="browse-filter-toggle"
+          type="button"
+          aria-label={isExpanded ? "Collapse filters" : "Expand filters"}
+          aria-expanded={isExpanded}
+          onClick={() => setIsExpanded((currentValue) => !currentValue)}
+        >
+          <Filter size={22} aria-hidden />
+        </button>
+      </div>
 
       {isExpanded && (
         <div className="browse-filter-grid">

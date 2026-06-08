@@ -1590,6 +1590,72 @@ main {
     font-size: 0.85rem;
 }
 
+.browse-list-toolbar,
+.watchlist-section-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.browse-list-toolbar {
+    min-height: 44px;
+}
+
+.list-action-buttons {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 10px;
+}
+
+.list-action-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--muted-strong);
+    cursor: pointer;
+    transition:
+        background 160ms var(--ease-spring),
+        border-color 160ms var(--ease-spring),
+        color 160ms var(--ease-spring),
+        transform 160ms var(--ease-spring);
+}
+
+.list-action-button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--line-strong);
+    color: var(--text);
+    transform: translateY(-1px);
+}
+
+.list-action-button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.clear-filter-button:hover:not(:disabled) {
+    border-color: rgba(255, 130, 130, 0.45);
+    color: #ffaaaa;
+}
+
+.list-action-button.is-refreshing svg {
+    animation: list-refresh-spin 0.75s linear infinite;
+}
+
+@keyframes list-refresh-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .browse-search-field,
 .browse-filter-field {
     display: grid;
@@ -1688,7 +1754,6 @@ main {
     justify-content: space-between;
     gap: 8px;
     width: 100%;
-    white-space: nowrap;
     padding: 0.6rem 0.75rem;
     border: 0;
     border-radius: 9px;
@@ -1697,6 +1762,11 @@ main {
     font: inherit;
     text-align: left;
     cursor: pointer;
+}
+
+.custom-select-list button > :first-child,
+.custom-select-list button {
+    overflow-wrap: anywhere;
 }
 
 .custom-select-list button:hover {
@@ -1773,6 +1843,13 @@ main {
 .browse-filter-toggle:hover {
     background: #ffffff;
     transform: translateY(-1px);
+}
+
+.browse-filter-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
 }
 
 .browse-filter-grid {
@@ -5632,6 +5709,13 @@ main {
     width: min(320px, 100%);
 }
 
+.settings-row .custom-select-list {
+    right: auto;
+    width: max-content;
+    min-width: 100%;
+    max-width: min(420px, calc(100vw - 3rem));
+}
+
 /* Compact sizing inside the save dialog (must follow the shared input rule). */
 .save-dialog-body input,
 .save-dialog-body textarea,
@@ -6264,10 +6348,18 @@ main {
     border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.settings-toggle-row > :first-child {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
 .switch {
     position: relative;
+    flex: 0 0 auto;
     width: 3.5rem;
+    min-width: 3.5rem;
     height: 2rem;
+    min-height: 2rem;
     border: 0;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.18);
@@ -6378,6 +6470,14 @@ main {
     margin-top: 2rem;
 }
 
+.watchlist-section-head {
+    margin-bottom: 1rem;
+}
+
+.watchlist-section-head h2 {
+    margin: 0;
+}
+
 .watchlist-grid-card-edit {
     position: absolute;
     top: 1rem;
@@ -6459,12 +6559,15 @@ button:disabled {
         width: 100%;
     }
 
-    .settings-toggle-row {
-        align-items: flex-start;
+    .settings-row .custom-select-list {
+        left: 0;
+        right: auto;
+        width: min(100%, 420px);
+        max-width: calc(100vw - 3rem);
     }
 
-    .settings-toggle-row .switch {
-        flex: 0 0 auto;
+    .settings-toggle-row {
+        align-items: flex-start;
     }
 
     .profile-stats-inline strong {

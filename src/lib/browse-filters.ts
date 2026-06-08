@@ -4,6 +4,7 @@ import type {
   BrowseFilters,
   BrowseSectionKey,
 } from "@/types/anime";
+import type { LibraryStatus } from "@/types/account";
 
 export type BrowseSearchParams = PaginationSearchParams & {
   q?: string | string[];
@@ -11,6 +12,7 @@ export type BrowseSearchParams = PaginationSearchParams & {
   format?: string | string[];
   year?: string | string[];
   sort?: string | string[];
+  sortOrder?: string | string[];
   season?: string | string[];
   status?: string | string[];
   tag?: string | string[];
@@ -35,11 +37,24 @@ export const EMPTY_BROWSE_FILTERS: BrowseFilters = {
   tag: "",
   country: "",
   source: "",
+  sortOrder: "desc",
   list: "",
 };
 
+export const LIST_STATUS_OPTIONS: Array<
+  BrowseFilterOption & { value: LibraryStatus }
+> = [
+  { value: "planning", label: "Planning" },
+  { value: "watching", label: "Watching" },
+  { value: "on_hold", label: "On hold" },
+  { value: "dropped", label: "Dropped" },
+  { value: "completed", label: "Finished" },
+  { value: "rewatching", label: "Rewatching" },
+];
+
 export const LIST_OPTIONS: BrowseFilterOption[] = [
   { value: "in", label: "In your list" },
+  ...LIST_STATUS_OPTIONS,
   { value: "out", label: "Not in your list" },
 ];
 
@@ -194,11 +209,27 @@ export const FALLBACK_TAG_OPTIONS: BrowseFilterOption[] = [
 
 const FORMAT_VALUES = new Set(FORMAT_OPTIONS.map((option) => option.value));
 const SORT_VALUES = new Set(SORT_OPTIONS.map((option) => option.value));
+const SORT_ORDER_VALUES = new Set(["asc", "desc"]);
 const SEASON_VALUES = new Set(SEASON_OPTIONS.map((option) => option.value));
 const STATUS_VALUES = new Set(STATUS_OPTIONS.map((option) => option.value));
 const COUNTRY_VALUES = new Set(COUNTRY_OPTIONS.map((option) => option.value));
 const SOURCE_VALUES = new Set(SOURCE_OPTIONS.map((option) => option.value));
 const LIST_VALUES = new Set(LIST_OPTIONS.map((option) => option.value));
+const LIST_STATUS_VALUES = new Set<string>(
+  LIST_STATUS_OPTIONS.map((option) => option.value),
+);
+
+export function isLibraryStatusFilter(value: string): value is LibraryStatus {
+  return LIST_STATUS_VALUES.has(value);
+}
+
+export function isLibraryListFilter(value: string): boolean {
+  return value === "in" || isLibraryStatusFilter(value);
+}
+
+export function getListFilterLabel(value: string): string {
+  return LIST_OPTIONS.find((option) => option.value === value)?.label || "";
+}
 
 function readParam(value: string | string[] | undefined): string {
   const rawValue = Array.isArray(value) ? value[0] : value;
@@ -219,6 +250,12 @@ function readYearParam(value: string | string[] | undefined): string {
   const rawValue = readParam(value);
 
   return /^\d{4}$/.test(rawValue) ? rawValue : "";
+}
+
+function readSortOrderParam(value: string | string[] | undefined): string {
+  const rawValue = readParam(value);
+
+  return SORT_ORDER_VALUES.has(rawValue) ? rawValue : "desc";
 }
 
 export function getYearOptions(): BrowseFilterOption[] {
@@ -264,6 +301,7 @@ export function parseBrowseParams(
       tag: readParam(params.tag),
       country: readAllowedParam(params.country, COUNTRY_VALUES),
       source: readAllowedParam(params.source, SOURCE_VALUES),
+      sortOrder: readSortOrderParam(params.sortOrder),
       list: readAllowedParam(params.list, LIST_VALUES),
     },
   };
@@ -277,7 +315,7 @@ export function buildBrowseHref(
   const query = new URLSearchParams();
 
   Object.entries(filters).forEach(([key, value]) => {
-    if (value) {
+    if (value && !(key === "sortOrder" && value === "desc")) {
       query.set(key, value);
     }
   });

@@ -12,7 +12,11 @@ import { useEffect, useState } from "react";
 import { BrowseFilterBar } from "@/components/browse-filter-bar";
 import { BrowseResultsGrid } from "@/components/browse-results-grid";
 import { useAuth } from "@/components/auth-provider";
-import { buildBrowseHref } from "@/lib/browse-filters";
+import {
+  buildBrowseHref,
+  getListFilterLabel,
+  isLibraryListFilter,
+} from "@/lib/browse-filters";
 import type {
   AnimeSummary,
   BrowseCollection,
@@ -113,9 +117,10 @@ export function BrowsePageShell({
     : 0;
   const endItem = startItem + activeItems.length - 1;
   const filterKey = buildBrowseHref(basePath, filters);
-  // "In your list" renders from the viewer's library — catalog counts and
-  // pagination don't apply to it.
-  const isLibraryView = filters.list === "in";
+  // Library filters render from the viewer's list — catalog counts and
+  // pagination don't apply to them.
+  const isLibraryView = isLibraryListFilter(filters.list);
+  const listLabel = getListFilterLabel(filters.list) || "Your list";
 
   function pageHref(page: number): string {
     return buildBrowseHref(basePath, filters, page);
@@ -146,7 +151,7 @@ export function BrowsePageShell({
                 : `${activeItems.length} titles`}
             </span>
           ) : (
-            <span>Your list</span>
+            <span>{listLabel}</span>
           )}
           {showSectionTitle && <h2>{title}</h2>}
         </div>
