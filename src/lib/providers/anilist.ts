@@ -1230,7 +1230,7 @@ const VIEWER_PROFILE_QUERY = `
 
 const VIEWER_ACTIVITY_QUERY = `
   query ViewerActivity {
-    Page(page: 1, perPage: 10) {
+    Page(page: 1, perPage: 50) {
       activities(sort: ID_DESC, type: ANIME_LIST) {
         ... on ListActivity {
           id
@@ -1605,13 +1605,16 @@ export async function getAniListViewerProfile(accessToken: string) {
   const activity: SyncedActivity[] = activityData.Page.activities
     .filter((item) => item.media)
     .map((item) => {
-      const progressMatch = item.progress?.match(/(\d+)/);
+      // ListActivity progress is "5" or a range "5 - 8"; the episode reached is
+      // the last number, not the first.
+      const numbers = item.progress?.match(/\d+/g);
+      const progress = numbers ? Number(numbers[numbers.length - 1]) : 0;
       return {
         id: `anilist-${item.id}`,
         animeId: item.media?.id || 0,
         coverImage: item.media?.coverImage?.large || null,
         animeTitle: getDisplayTitle(item.media?.title || undefined),
-        progress: progressMatch ? Number(progressMatch[1]) : 0,
+        progress,
         createdAt: new Date(item.createdAt * 1000).toISOString(),
         source: "anilist",
       };

@@ -216,9 +216,64 @@ function mergeAniListPull(current: LibraryEntry[], incoming: LibraryEntry[]) {
 }
 
 /**
+ * Folds AniList list-activity ("watched episode N") into local watch history so
+ * episodes marked watched on AniList surface in Celestia. A local entry for the
+ * same anime+episode always wins (it carries the real still/title and an actual
+ * Celestia watch), so this only fills gaps. AniList exposes no per-episode still
+ * or title, so those stay empty and the card falls back to the cover art.
+ */
+function mergeAniListHistory(
+  current: HistoryEntry[],
+  profile: AniListProfile,
+  libraryEntries: LibraryEntry[],
+) {
+  const seen = new Set(
+    current.map((entry) => `${entry.animeId}:${entry.episode}`),
+  );
+  const animeById = new Map(
+    libraryEntries.map((entry) => [entry.animeId, entry.anime]),
+  );
+  const additions: HistoryEntry[] = [];
+
+  profile.activity
+    .filter((item) => item.source === "anilist" && item.progress > 0)
+    .forEach((item) => {
+      const key = `${item.animeId}:${item.progress}`;
+      const anime = animeById.get(item.animeId);
+
+      // No catalog entry → no AnimeSummary to render the card with; skip.
+      if (!anime || seen.has(key)) {
+        return;
+      }
+
+      seen.add(key);
+      additions.push({
+        id: item.id,
+        animeId: item.animeId,
+        anime,
+        episode: item.progress,
+        episodeTitle: `Episode ${item.progress}`,
+        episodeImage: null,
+        durationLabel: null,
+        watchedAt: item.createdAt,
+        // Marking an episode watched on AniList means it was finished.
+        progressPercent: 100,
+      });
+    });
+
+  return [...current, ...additions]
+    .sort(
+      (a, b) =>
+        new Date(b.watchedAt).getTime() - new Date(a.watchedAt).getTime(),
+    )
+    .slice(0, 120);
+}
+
+/**
  * Applies a pulled AniList snapshot (library + refreshed profile) to the user,
- * reconciling entries newest-wins and stamping the sync time. Caller owns the
- * remote fetch; this is the local write half so it can stay in account-store.
+ * reconciling entries newest-wins, folding activity into history, and stamping
+ * the sync time. Caller owns the remote fetch; this is the local write half so
+ * it can stay in account-store.
  */
 export async function applyAniListSync(input: {
   userId: string;
@@ -233,6 +288,13 @@ export async function applyAniListSync(input: {
       user.libraryEntries,
       input.libraryEntries,
     );
+    if (!user.preferences.pauseHistory) {
+      user.historyEntries = mergeAniListHistory(
+        user.historyEntries,
+        input.profile,
+        user.libraryEntries,
+      );
+    }
     user.aniListSyncedAt = new Date().toISOString();
     return sanitizeUser(user);
   });
