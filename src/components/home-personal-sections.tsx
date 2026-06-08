@@ -112,7 +112,7 @@ export function HomePersonalSections({
             <Link href="/watchlist">View all</Link>
           </div>
           <div className="watchlist-rail">
-            {watchlist.slice(0, 6).map((entry) => (
+            {watchlist.slice(0, 12).map((entry) => (
               <AnimeCard key={entry.id} anime={entry.anime} />
             ))}
           </div>

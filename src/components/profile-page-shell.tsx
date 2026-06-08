@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useState, type ChangeEvent } from "react";
 import { LogOut, Trash2 } from "lucide-react";
 import { AuthPanel } from "@/components/auth-panel";
 import { useAuth } from "@/components/auth-provider";
@@ -22,6 +22,8 @@ export function ProfilePageShell({
   const searchParams = useSearchParams();
   const { user, setUser } = useAuth();
   const [busy, setBusy] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importMessage, setImportMessage] = useState("");
   const error = searchParams.get("error");
   const connected = searchParams.get("connected");
   const libraryEntries = user?.libraryEntries.length
@@ -59,6 +61,43 @@ export function ProfilePageShell({
     const payload = (await response.json()) as { user?: typeof user };
     if (response.ok && payload.user) {
       setUser(payload.user);
+    }
+  }
+
+  async function importList(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+
+    setImporting(true);
+    setImportMessage("Importing your list…");
+
+    try {
+      const body = new FormData();
+      body.append("file", file);
+      const response = await fetch("/api/library/import", {
+        method: "POST",
+        body,
+      });
+      const payload = (await response.json()) as {
+        imported?: number;
+        skipped?: number;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        setImportMessage(payload.error || "Could not import that file.");
+        return;
+      }
+
+      const skipped = payload.skipped
+        ? ` (${payload.skipped} not matched on AniList)`
+        : "";
+      setImportMessage(`Imported ${payload.imported ?? 0} anime${skipped}.`);
+    } catch {
+      setImportMessage("Could not import that file.");
+    } finally {
+      setImporting(false);
     }
   }
 
@@ -242,6 +281,26 @@ export function ProfilePageShell({
             >
               {busy ? "Connecting..." : profile ? "Reconnect AniList" : "Connect AniList"}
             </button>
+          </div>
+
+          <div className="profile-setting-row">
+            <div>
+              <strong>Import List</strong>
+              <span>
+                {importMessage ||
+                  "Upload a MyAnimeList or AniList XML export to add those titles to your library."}
+              </span>
+            </div>
+            <label className="secondary-action" aria-disabled={importing}>
+              {importing ? "Importing…" : "Upload XML"}
+              <input
+                type="file"
+                accept=".xml,text/xml,application/xml"
+                hidden
+                disabled={importing}
+                onChange={(event) => void importList(event)}
+              />
+            </label>
           </div>
 
           <div className="profile-danger-zone">
