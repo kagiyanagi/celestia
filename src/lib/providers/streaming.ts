@@ -324,6 +324,29 @@ function getTitleCandidates(title: string | string[]): string[] {
     .slice(0, 16);
 }
 
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  mapper: (item: T, index: number) => Promise<R>,
+): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let cursor = 0;
+
+  const worker = async () => {
+    while (cursor < items.length) {
+      const index = cursor;
+      cursor += 1;
+      results[index] = await mapper(items[index], index);
+    }
+  };
+
+  await Promise.all(
+    Array.from({ length: Math.min(concurrency, items.length) }, worker),
+  );
+
+  return results;
+}
+
 async function findProviderAvailability(input: {
   provider: StreamingProvider;
   candidates: string[];
@@ -357,39 +380,53 @@ async function findProviderAvailability(input: {
     }
   }
 
-  const results: StreamAvailability[] = [];
-  let best: StreamAvailability | null = null;
-
-  for (let i = 0; i < input.candidates.length; i += 1) {
-    const availability = await input.provider.findAvailability(
-      input.candidates[i],
-    );
+  const checkCandidate = async (
+    candidate: string,
+    index: number,
+  ): Promise<StreamAvailability | null> => {
+    const availability = await input.provider.findAvailability(candidate);
 
     if (availability.available) {
       const score = calculateAlignmentScore(
         input.expectedEpisodes,
         availability.episodeCount,
-        i,
+        index,
         input.provider.priority,
       );
 
       // null score = episode counts irreconcilable; not the same entry.
       if (score === null) {
-        continue;
+        return null;
       }
 
       availability.score = score;
-      results.push(availability);
-
-      if (score >= 140) {
-        best = availability;
-        break;
-      }
+      return availability;
     }
+
+    return null;
+  };
+
+  // Try the strongest title first so the common exact-match case stays one
+  // provider request. If that is not decisive, probe the remaining candidates
+  // with bounded concurrency instead of serially waiting up to 15 more times.
+  const first = input.candidates[0]
+    ? await checkCandidate(input.candidates[0], 0)
+    : null;
+  const results: StreamAvailability[] = first ? [first] : [];
+
+  if ((first?.score || 0) < 140 && input.candidates.length > 1) {
+    const rest = await mapWithConcurrency(
+      input.candidates.slice(1),
+      4,
+      (candidate, index) => checkCandidate(candidate, index + 1),
+    );
+    results.push(
+      ...rest.filter((item): item is StreamAvailability => Boolean(item)),
+    );
   }
 
-  best =
-    best || results.sort((a, b) => (b.score || 0) - (a.score || 0))[0] || null;
+  const best =
+    results.sort((a, b) => (b.score || 0) - (a.score || 0))[0] || null;
 
   // A wrong stream is worse than no stream. When we know the expected episode
   // count, only serve a count-verified match (the same bar we persist at) — a
@@ -522,25 +559,28 @@ export async function getStreamSource(input: {
 }): Promise<StreamSource | null> {
   const candidates = getTitleCandidates(input.animeTitle);
   const providersToTry = getProviderSearchOrder(input.providerId);
-  const attemptedProviders: string[] = [];
-  let primarySource: StreamSource | null = null;
+  const attemptedProviders = providersToTry.map((provider) => provider.id);
   const fallbackSources: StreamFallbackSource[] = [];
 
-  for (const provider of providersToTry) {
-    attemptedProviders.push(provider.id);
-    const source = await getSourceFromProvider({
-      provider,
-      candidates,
-      providerAnimeId:
-        provider.id === input.providerId || !input.providerId
-          ? input.providerAnimeId
-          : null,
-      episode: input.episode,
-      audio: input.audio,
-      expectedEpisodes: input.expectedEpisodes,
-      anilistId: input.anilistId,
-    });
+  const sources = await Promise.all(
+    providersToTry.map((provider) =>
+      getSourceFromProvider({
+        provider,
+        candidates,
+        providerAnimeId:
+          provider.id === input.providerId || !input.providerId
+            ? input.providerAnimeId
+            : null,
+        episode: input.episode,
+        audio: input.audio,
+        expectedEpisodes: input.expectedEpisodes,
+        anilistId: input.anilistId,
+      }).catch(() => null),
+    ),
+  );
 
+  let primarySource: StreamSource | null = null;
+  for (const source of sources) {
     if (!source?.embedUrl) {
       continue;
     }

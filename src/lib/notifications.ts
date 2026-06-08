@@ -10,6 +10,19 @@ const WINDOW_DAYS = 30;
 // Bound provider fan-out for very large libraries.
 const MAX_TRACKED = 150;
 const MAX_NOTIFICATIONS = 60;
+const NOTIFICATION_CACHE_TTL_MS = 60_000;
+
+type NotificationPayload = {
+  notifications: AnimeNotification[];
+  unreadCount: number;
+};
+
+type NotificationCacheEntry = {
+  payload: NotificationPayload;
+  expiresAt: number;
+};
+
+const notificationCache = new Map<string, NotificationCacheEntry>();
 
 // Statuses worth notifying about — exclude dropped/completed shows.
 const NOTIFY_STATUSES = new Set<LibraryStatus>([
@@ -28,6 +41,29 @@ function trackedSince(entry: { addedAt?: string | null; updatedAt: string }) {
   return Number.isFinite(epoch) ? epoch : 0;
 }
 
+function getNotificationCacheKey(user: PublicUser): string {
+  const libraryVersion = (user.libraryEntries || [])
+    .map((entry) => `${entry.animeId}:${entry.status}:${entry.updatedAt}`)
+    .join(",");
+
+  return [
+    user.id,
+    user.preferences.titleLanguage,
+    user.notificationsLastReadAt ?? "",
+    (user.notificationReadIds ?? []).join(","),
+    (user.notificationDismissedIds ?? []).join(","),
+    libraryVersion,
+  ].join("|");
+}
+
+export function clearUserNotificationCache(userId: string) {
+  notificationCache.forEach((_entry, key) => {
+    if (key.startsWith(`${userId}|`)) {
+      notificationCache.delete(key);
+    }
+  });
+}
+
 /**
  * Builds new-release notifications for a user's tracked anime: subbed episode
  * drops (AniList airing schedule) and dub episode drops (AnimeSchedule), within
@@ -39,7 +75,7 @@ function trackedSince(entry: { addedAt?: string | null; updatedAt: string }) {
  */
 export async function getUserNotifications(
   user: PublicUser,
-): Promise<{ notifications: AnimeNotification[]; unreadCount: number }> {
+): Promise<NotificationPayload> {
   const tracked = (user.libraryEntries || []).filter((entry) =>
     NOTIFY_STATUSES.has(entry.status),
   );
@@ -118,4 +154,23 @@ export async function getUserNotifications(
     notifications: notifications.slice(0, MAX_NOTIFICATIONS),
     unreadCount,
   };
+}
+
+export async function getCachedUserNotifications(
+  user: PublicUser,
+): Promise<NotificationPayload> {
+  const key = getNotificationCacheKey(user);
+  const cached = notificationCache.get(key);
+
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.payload;
+  }
+
+  const payload = await getUserNotifications(user);
+  notificationCache.set(key, {
+    payload,
+    expiresAt: Date.now() + NOTIFICATION_CACHE_TTL_MS,
+  });
+
+  return payload;
 }

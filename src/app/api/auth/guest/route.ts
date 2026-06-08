@@ -10,8 +10,8 @@ export async function POST() {
   if (limited) return limited;
 
   try {
-    await initGuestSession();
-    return NextResponse.json({ success: true });
+    const user = await initGuestSession();
+    return NextResponse.json({ success: true, user });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Guest init failed";
     return NextResponse.json({ error: message }, { status: 500 });

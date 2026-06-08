@@ -316,13 +316,15 @@ export default async function WatchPage({
     notFound();
   }
 
-  const anime = await getAnimeDetails(animeId);
+  const [anime, viewer] = await Promise.all([
+    getAnimeDetails(animeId),
+    getSessionUser(),
+  ]);
 
   if (!anime) {
     notFound();
   }
 
-  const viewer = await getSessionUser();
   const title = getDisplayTitle(anime.title, viewer?.preferences.titleLanguage);
   const secondaryTitle = getSecondaryTitle(
     anime.title,

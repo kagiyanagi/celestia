@@ -43,17 +43,31 @@ export function AuthProvider({
   // Handle guest session initialization on first visit
   useEffect(() => {
     if (!user) {
+      let cancelled = false;
       const initGuest = async () => {
+        setLoading(true);
         try {
           const response = await fetch("/api/auth/guest", { method: "POST" });
           if (response.ok) {
-            await refreshUser();
+            const payload = (await response.json()) as {
+              user: PublicUser | null;
+            };
+            if (!cancelled) {
+              startTransition(() => setUser(payload.user));
+            }
           }
         } catch (error) {
           console.error("Failed to initialize guest session:", error);
+        } finally {
+          if (!cancelled) {
+            setLoading(false);
+          }
         }
       };
       initGuest();
+      return () => {
+        cancelled = true;
+      };
     }
   }, [user]);
 

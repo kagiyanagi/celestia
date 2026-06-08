@@ -1,9 +1,11 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Radio } from "lucide-react";
 
 import { formatSeasonLabel } from "@/lib/anime-season";
-import { getViewerTitleLanguage } from "@/lib/auth";
+import { useTitleLanguage } from "@/components/use-title-language";
 import {
   cleanDescription,
   formatRelativeSeconds,
@@ -15,8 +17,8 @@ type HomeUpcomingGridProps = {
   items: AnimeSummary[];
 };
 
-export async function HomeUpcomingGrid({ items }: HomeUpcomingGridProps) {
-  const titleLanguage = await getViewerTitleLanguage();
+export function HomeUpcomingGrid({ items }: HomeUpcomingGridProps) {
+  const titleLanguage = useTitleLanguage();
   return (
     <section className="home-section">
       <div className="home-section-head">

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { PUBLIC_LONG_CACHE } from "@/lib/http/cache";
 import { getCharacterCreditsPage } from "@/lib/providers/anilist";
 
 /**
@@ -25,5 +26,5 @@ export async function GET(
   const page = Number(searchParams.get("page")) || 2;
 
   const result = await getCharacterCreditsPage(animeId, page);
-  return NextResponse.json(result);
+  return NextResponse.json(result, { headers: PUBLIC_LONG_CACHE });
 }

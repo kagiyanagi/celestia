@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { getDisplayTitle, getSecondaryTitle } from "@/lib/format";
 import { useTitleLanguage } from "@/components/use-title-language";
@@ -9,12 +10,32 @@ import type { AnimeDetails } from "@/types/anime";
 import { DetailsHero } from "./DetailsHero";
 import { DetailsTabs, TabKey } from "./DetailsTabs";
 import { DetailsOverview } from "./DetailsOverview";
-import { DetailsEpisodes } from "./DetailsEpisodes";
-import { DetailsCast } from "./DetailsCast";
-import { DetailsFranchise } from "./DetailsFranchise";
-import { DetailsNews } from "./DetailsNews";
-import { DetailsSimilar } from "./DetailsSimilar";
 import { getRelatedItems } from "./helpers";
+
+const TabLoading = () => (
+  <div className="empty-panel">Loading this section...</div>
+);
+
+const DetailsEpisodes = dynamic(
+  () => import("./DetailsEpisodes").then((module) => module.DetailsEpisodes),
+  { loading: TabLoading },
+);
+const DetailsCast = dynamic(
+  () => import("./DetailsCast").then((module) => module.DetailsCast),
+  { loading: TabLoading },
+);
+const DetailsFranchise = dynamic(
+  () => import("./DetailsFranchise").then((module) => module.DetailsFranchise),
+  { loading: TabLoading },
+);
+const DetailsNews = dynamic(
+  () => import("./DetailsNews").then((module) => module.DetailsNews),
+  { loading: TabLoading },
+);
+const DetailsSimilar = dynamic(
+  () => import("./DetailsSimilar").then((module) => module.DetailsSimilar),
+  { loading: TabLoading },
+);
 
 interface AnimeDetailsShellProps {
   anime: AnimeDetails;

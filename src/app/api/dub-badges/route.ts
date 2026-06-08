@@ -1,4 +1,5 @@
 import { getDubCountsByAniListIds } from "@/lib/providers/anilist";
+import { PUBLIC_SHORT_CACHE } from "@/lib/http/cache";
 import { rateLimitResponse } from "@/lib/rate-limit";
 
 /**
@@ -29,5 +30,5 @@ export async function GET(request: Request) {
   }
 
   const counts = await getDubCountsByAniListIds(ids);
-  return Response.json({ counts });
+  return Response.json({ counts }, { headers: PUBLIC_SHORT_CACHE });
 }

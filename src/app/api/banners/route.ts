@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { PUBLIC_LONG_CACHE } from "@/lib/http/cache";
 import { getBannerFallbacksByIds } from "@/lib/providers/banner";
 import { rateLimitResponse } from "@/lib/rate-limit";
 
@@ -31,5 +32,5 @@ export async function GET(request: Request) {
   }
 
   const banners = await getBannerFallbacksByIds(ids);
-  return NextResponse.json({ banners });
+  return NextResponse.json({ banners }, { headers: PUBLIC_LONG_CACHE });
 }

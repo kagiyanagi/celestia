@@ -15,6 +15,8 @@ const SearchModal = dynamic(() =>
   import("./search-modal").then((module) => module.SearchModal),
 );
 
+const NOTIFICATION_COUNT_TTL_MS = 60_000;
+
 export function SiteHeader() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -22,6 +24,7 @@ export function SiteHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
+  const userId = user?.id ?? null;
   const isHomePage = pathname === "/";
 
   function handleBack() {
@@ -58,30 +61,54 @@ export function SiteHeader() {
   // repeat lookups are cheap), on demand when the notifications page changes
   // read/dismiss state, and clear it when signed out.
   useEffect(() => {
-    if (!user) {
+    if (!userId) {
       return;
     }
 
     let cancelled = false;
-    const refresh = () => {
-      fetch("/api/notifications")
+    const cacheKey = `celestia:notifications:count:${userId}`;
+    const refresh = (force = false) => {
+      if (!force) {
+        try {
+          const cached = JSON.parse(
+            window.sessionStorage.getItem(cacheKey) || "null",
+          ) as { unreadCount: number; fetchedAt: number } | null;
+          if (
+            cached &&
+            Date.now() - cached.fetchedAt < NOTIFICATION_COUNT_TTL_MS
+          ) {
+            setUnreadCount(cached.unreadCount || 0);
+            return;
+          }
+        } catch {
+          window.sessionStorage.removeItem(cacheKey);
+        }
+      }
+
+      fetch("/api/notifications/count")
         .then((response) => (response.ok ? response.json() : null))
         .then((data: { unreadCount?: number } | null) => {
           if (!cancelled && data) {
-            setUnreadCount(data.unreadCount || 0);
+            const nextCount = data.unreadCount || 0;
+            setUnreadCount(nextCount);
+            window.sessionStorage.setItem(
+              cacheKey,
+              JSON.stringify({ unreadCount: nextCount, fetchedAt: Date.now() }),
+            );
           }
         })
         .catch(() => undefined);
     };
 
     refresh();
-    window.addEventListener("notifications:updated", refresh);
+    const forceRefresh = () => refresh(true);
+    window.addEventListener("notifications:updated", forceRefresh);
 
     return () => {
       cancelled = true;
-      window.removeEventListener("notifications:updated", refresh);
+      window.removeEventListener("notifications:updated", forceRefresh);
     };
-  }, [user, pathname]);
+  }, [userId, pathname]);
 
   const badgeCount = user ? unreadCount : 0;
 

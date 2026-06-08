@@ -6,7 +6,6 @@ import { BannerFallbackProvider } from "@/components/banner-fallback-provider";
 import { DubBadgeProvider } from "@/components/dub-badge-provider";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
-import { getSessionUser } from "@/lib/auth";
 import "./globals.css";
 import "./polish.css";
 
@@ -38,26 +37,15 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const initialUser = await getSessionUser();
-  const authKey = initialUser
-    ? [
-        initialUser.id,
-        initialUser.username,
-        Boolean(initialUser.aniListProfile),
-        initialUser.libraryEntries.length,
-        initialUser.historyEntries.length,
-      ].join(":")
-    : "anonymous";
-
   return (
     <html lang="en">
       <body className={`${paytoneOne.variable} ${manrope.variable}`}>
-        <AuthProvider initialUser={initialUser} key={authKey}>
+        <AuthProvider initialUser={null}>
           <DubBadgeProvider>
             <BannerFallbackProvider>
               <SiteHeader />

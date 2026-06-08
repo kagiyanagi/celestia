@@ -1,5 +1,6 @@
 import { cookies, headers } from "next/headers";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+import { cache } from "react";
 import { getStore } from "@/lib/db";
 import type {
   DeviceSession,
@@ -284,10 +285,11 @@ export async function initGuestSession() {
   const cookieStore = await cookies();
   const sessionId = cookieStore.get(SESSION_COOKIE)?.value;
 
-  if (sessionId) return null;
+  if (sessionId) return getSessionUser();
 
   const guest = await createGuestUser();
-  return createSession(guest.id);
+  await createSession(guest.id);
+  return redactUser(guest);
 }
 
 export async function clearSession() {
@@ -314,7 +316,7 @@ export async function clearSession() {
   cookieStore.delete(SESSION_COOKIE);
 }
 
-export async function getSessionUser() {
+async function readSessionUser() {
   const cookieStore = await cookies();
   const sessionId = cookieStore.get(SESSION_COOKIE)?.value;
 
@@ -346,6 +348,8 @@ export async function getSessionUser() {
 
   return redactUser(user);
 }
+
+export const getSessionUser = cache(readSessionUser);
 
 export async function requireSessionUser() {
   const user = await getSessionUser();
