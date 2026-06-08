@@ -37,7 +37,7 @@ export function LibraryEntryDialog({
   anime: AnimeSummary;
   onClose: () => void;
 }) {
-  const { refreshUser, user } = useAuth();
+  const { user, setUser } = useAuth();
   const [statusOpen, setStatusOpen] = useState(false);
   const [entry, setEntry] = useState<LibraryEntry | null>(
     user?.libraryEntries.find((item) => item.animeId === anime.id) || null,
@@ -125,9 +125,24 @@ export function LibraryEntryDialog({
         throw new Error(payload.error || "Could not save this entry.");
       }
 
-      await refreshUser();
       startTransition(() => {
         setEntry(payload.entry || null);
+        if (payload.entry) {
+          const saved = payload.entry;
+          setUser(
+            user
+              ? {
+                  ...user,
+                  libraryEntries: [
+                    ...user.libraryEntries.filter(
+                      (item) => item.animeId !== saved.animeId,
+                    ),
+                    saved,
+                  ],
+                }
+              : user,
+          );
+        }
         if (payload.syncWarning) {
           setError(payload.syncWarning);
           return;
@@ -158,9 +173,18 @@ export function LibraryEntryDialog({
         throw new Error(payload.error || "Could not remove this entry.");
       }
 
-      await refreshUser();
       startTransition(() => {
         setEntry(null);
+        setUser(
+          user
+            ? {
+                ...user,
+                libraryEntries: user.libraryEntries.filter(
+                  (item) => item.animeId !== anime.id,
+                ),
+              }
+            : user,
+        );
         if (payload.syncWarning) {
           setError(payload.syncWarning);
           return;

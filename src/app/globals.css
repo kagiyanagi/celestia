@@ -6190,6 +6190,12 @@ main {
     font-size: 0.9rem;
 }
 
+.profile-setting-row > .profile-setting-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
 .profile-danger-zone {
     display: flex;
     align-items: center;

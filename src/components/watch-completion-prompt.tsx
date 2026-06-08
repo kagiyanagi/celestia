@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/components/auth-provider";
 import type { AnimeSummary } from "@/types/anime";
 
 const TICK_MS = 5_000;
@@ -41,9 +40,8 @@ export function WatchCompletionPrompt({
   hasSource: boolean;
 }) {
   const router = useRouter();
-  const { refreshUser } = useAuth();
   const [open, setOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [promptMinutes, setPromptMinutes] = useState(0);
 
   // Event handlers run outside React's render, so the values they read live in
@@ -212,30 +210,29 @@ export function WatchCompletionPrompt({
     router.push(pending.href);
   }
 
-  async function markWatched() {
-    setSaving(true);
-    try {
-      await fetch("/api/history", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          anime,
-          episode,
-          episodeTitle,
-          episodeImage,
-          durationLabel,
-          progressPercent: 100,
-          progressOnly: false,
-        }),
-      });
-      await refreshUser();
-    } catch {
-      // A failed save shouldn't trap the viewer on the page.
-    } finally {
-      resolvedRef.current = true;
-      setSaving(false);
-      continueExit();
-    }
+  function markWatched() {
+    // Fire-and-forget: the viewer asked to leave, so don't block the exit on
+    // the network. The save (and AniList mirror) finishes in the background.
+    void fetch("/api/history", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        anime,
+        episode,
+        episodeTitle,
+        episodeImage,
+        durationLabel,
+        progressPercent: 100,
+        progressOnly: false,
+      }),
+    }).catch(() => {
+      // A failed save shouldn't matter once the viewer has moved on.
+    });
+    resolvedRef.current = true;
+    // Hold a brief "Saved" confirmation so the action lands instead of the
+    // dialog blinking out — the save itself already flew off in the background.
+    setSaved(true);
+    window.setTimeout(continueExit, 650);
   }
 
   function skipWatched() {
@@ -283,7 +280,7 @@ export function WatchCompletionPrompt({
               type="button"
               className="secondary-action"
               onClick={skipWatched}
-              disabled={saving}
+              disabled={saved}
             >
               Not yet
             </button>
@@ -291,9 +288,9 @@ export function WatchCompletionPrompt({
               type="button"
               className="primary-action"
               onClick={markWatched}
-              disabled={saving}
+              disabled={saved}
             >
-              {saving ? "Saving…" : "Mark watched"}
+              {saved ? "Saved ✓" : "Mark watched"}
             </button>
           </div>
         </div>

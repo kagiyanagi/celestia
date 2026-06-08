@@ -83,6 +83,12 @@ export function WatchlistPageClient({ entries }: { entries: LibraryEntry[] }) {
     setIsRefreshing(true);
 
     try {
+      // Force an AniList pull so manual refresh always reconciles, bypassing
+      // the freshness guard; refreshUser then loads the merged result.
+      await fetch("/api/anilist/sync", {
+        method: "POST",
+        cache: "no-store",
+      }).catch(() => null);
       await refreshUser();
       router.refresh();
     } finally {
