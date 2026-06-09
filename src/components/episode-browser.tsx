@@ -12,6 +12,10 @@ import {
   ArrowDown01,
   ArrowDown10,
   Search,
+  Filter,
+  Mic,
+  SkipForward,
+  Check,
 } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
 import { EpisodeThumbnail } from "@/components/episode-thumbnail";
@@ -22,7 +26,7 @@ import {
   EPISODES_PER_PAGE,
   matchesEpisodeQuery,
 } from "@/lib/episode-pagination";
-import type { AnimeDetails } from "@/types/anime";
+import type { AnimeDetails, AnimeSummary } from "@/types/anime";
 
 const EP_PER_PAGE = EPISODES_PER_PAGE;
 
@@ -59,14 +63,18 @@ export function EpisodeBrowser({
   episodes,
   watchQuery,
   activeEpisode = null,
+  trackingAnime,
 }: {
   anime: EpisodeBrowserAnime;
   episodes: BrowserEpisode[];
   watchQuery?: EpisodeWatchQuery;
   activeEpisode?: number | null;
+  // Full summary needed to record history from a card. When omitted (e.g. the
+  // details page) the per-card "mark watched" control is hidden.
+  trackingAnime?: AnimeSummary;
 }) {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   // On the watch page, the live in-place server/audio selection wins so episode
   // links match what's actually playing; elsewhere fall back to the prop.
   const selection = useWatchSelection();
@@ -85,6 +93,10 @@ export function EpisodeBrowser({
   });
   const [epOrder, setEpOrder] = useState<"asc" | "desc">("asc");
   const [query, setQuery] = useState("");
+  const [hideFiller, setHideFiller] = useState(false);
+  const [dubOnly, setDubOnly] = useState(false);
+  const [gotoValue, setGotoValue] = useState("");
+  const [markingEpisode, setMarkingEpisode] = useState<number | null>(null);
 
   // Viewer's per-episode watch progress (percent), from watch history.
   const progressByEpisode = new Map(
@@ -97,11 +109,31 @@ export function EpisodeBrowser({
   // Real dub coverage from AnimeSchedule; null = unknown, show nothing.
   const dubbedEpisodeCount = anime.dubInfo?.dubbedEpisodes ?? null;
 
+  // Filler/recap counts only consider episodes actually in the list, so the
+  // summary never claims more than the verified episode rows.
+  const fillerCount = episodes.filter((ep) =>
+    fillerEpisodes.has(ep.number),
+  ).length;
+  const canonCount = episodes.length - fillerCount;
+  const fillerPercent =
+    episodes.length > 0 ? Math.round((fillerCount / episodes.length) * 100) : 0;
+
+  // First episode the viewer hasn't started yet, in release order — drives the
+  // "jump to next unwatched" shortcut. Null when everything's been watched.
+  const nextUnwatched =
+    episodes.find((ep) => !progressByEpisode.has(ep.number))?.number ?? null;
+
   const normalizedQuery = query.trim().toLowerCase();
   // Filter/sort/slice the full in-memory list.
-  const clientFiltered = normalizedQuery
+  let clientFiltered = normalizedQuery
     ? episodes.filter((ep) => matchesEpisodeQuery(ep, normalizedQuery))
     : episodes;
+  if (hideFiller && fillerCount > 0) {
+    clientFiltered = clientFiltered.filter((ep) => !fillerEpisodes.has(ep.number));
+  }
+  if (dubOnly && dubbedEpisodeCount) {
+    clientFiltered = clientFiltered.filter((ep) => ep.number <= dubbedEpisodeCount);
+  }
   const clientSorted =
     epOrder === "asc" ? clientFiltered : [...clientFiltered].reverse();
 
@@ -116,6 +148,61 @@ export function EpisodeBrowser({
       ? `${paged[0].number} - ${paged[paged.length - 1].number}`
       : "0 - 0";
   const totalPages = Math.max(1, Math.ceil(matchedCount / EP_PER_PAGE));
+
+  // Reset narrowing filters so the target is guaranteed visible, then page to
+  // the next-unwatched episode in the current sort order.
+  function jumpToNextUnwatched() {
+    if (nextUnwatched == null) return;
+    setQuery("");
+    setHideFiller(false);
+    setDubOnly(false);
+    const ordered = epOrder === "asc" ? episodes : [...episodes].reverse();
+    const index = ordered.findIndex((ep) => ep.number === nextUnwatched);
+    if (index >= 0) {
+      setEpPage(Math.floor(index / EP_PER_PAGE) + 1);
+    }
+  }
+
+  // Jump straight to the page holding a typed episode number, clearing any
+  // active filters so the target is guaranteed visible.
+  function gotoEpisode() {
+    const target = Math.floor(Number(gotoValue));
+    if (!Number.isFinite(target) || target <= 0) return;
+    const ordered = epOrder === "asc" ? episodes : [...episodes].reverse();
+    const index = ordered.findIndex((ep) => ep.number === target);
+    if (index >= 0) {
+      setQuery("");
+      setHideFiller(false);
+      setDubOnly(false);
+      setEpPage(Math.floor(index / EP_PER_PAGE) + 1);
+    }
+    setGotoValue("");
+  }
+
+  async function markEpisodeWatched(ep: BrowserEpisode) {
+    if (!trackingAnime || markingEpisode !== null) return;
+    setMarkingEpisode(ep.number);
+    try {
+      await fetch("/api/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          anime: trackingAnime,
+          episode: ep.number,
+          episodeTitle: ep.title || `Episode ${ep.number}`,
+          episodeImage: ep.thumbnail,
+          durationLabel: null,
+          progressPercent: 100,
+          progressOnly: false,
+        }),
+      });
+      await refreshUser();
+    } catch {
+      // Non-fatal: leave the card unmarked if the write failed.
+    } finally {
+      setMarkingEpisode(null);
+    }
+  }
 
   function episodeHref(episodeNumber: number): string {
     return buildWatchHref({
@@ -135,6 +222,24 @@ export function EpisodeBrowser({
       <div className="episodes-header-modern">
         <div className="ep-header-left">
           <div className="ep-count-pill">{episodeCount} Episodes</div>
+          {fillerCount > 0 ? (
+            <div
+              className="ep-filler-summary"
+              title={`${canonCount} canon, ${fillerCount} filler`}
+            >
+              {canonCount} canon · {fillerCount} filler ({fillerPercent}%)
+            </div>
+          ) : null}
+          {nextUnwatched != null ? (
+            <button
+              className="ep-jump-btn"
+              onClick={jumpToNextUnwatched}
+              title={`Jump to episode ${nextUnwatched}`}
+            >
+              <SkipForward size={15} aria-hidden />
+              Next unwatched
+            </button>
+          ) : null}
           <div className="ep-pagination-modern">
             <button
               className="ep-nav-btn"
@@ -173,6 +278,22 @@ export function EpisodeBrowser({
         </div>
 
         <div className="ep-header-right">
+          <form
+            className="ep-goto"
+            onSubmit={(event) => {
+              event.preventDefault();
+              gotoEpisode();
+            }}
+          >
+            <input
+              type="number"
+              min={1}
+              value={gotoValue}
+              onChange={(event) => setGotoValue(event.target.value)}
+              placeholder="Go to #"
+              aria-label="Go to episode number"
+            />
+          </form>
           <label className="ep-search">
             <Search size={16} aria-hidden />
             <input
@@ -186,6 +307,32 @@ export function EpisodeBrowser({
               aria-label="Search episodes"
             />
           </label>
+          {fillerCount > 0 ? (
+            <button
+              className={`ep-action-btn ${hideFiller ? "active" : ""}`}
+              onClick={() => {
+                setHideFiller((value) => !value);
+                setEpPage(1);
+              }}
+              title={hideFiller ? "Show filler episodes" : "Hide filler episodes"}
+              aria-pressed={hideFiller}
+            >
+              <Filter size={18} />
+            </button>
+          ) : null}
+          {dubbedEpisodeCount ? (
+            <button
+              className={`ep-action-btn ${dubOnly ? "active" : ""}`}
+              onClick={() => {
+                setDubOnly((value) => !value);
+                setEpPage(1);
+              }}
+              title={dubOnly ? "Show all episodes" : "Show dubbed episodes only"}
+              aria-pressed={dubOnly}
+            >
+              <Mic size={18} />
+            </button>
+          ) : null}
           <button
             className="ep-action-btn"
             onClick={() => router.refresh()}
@@ -236,6 +383,22 @@ export function EpisodeBrowser({
                   alt={ep.title || `Ep ${ep.number}`}
                   fallbackSrc={anime.bannerImage || anime.coverImage || null}
                 />
+                {trackingAnime && !watched ? (
+                  <button
+                    type="button"
+                    className="ep-mark-btn"
+                    title={`Mark episode ${ep.number} watched`}
+                    aria-label={`Mark episode ${ep.number} watched`}
+                    disabled={markingEpisode === ep.number}
+                    onClick={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      void markEpisodeWatched(ep);
+                    }}
+                  >
+                    <Check size={14} aria-hidden />
+                  </button>
+                ) : null}
               </div>
               <div className="ep-info">
                 <span className="ep-meta-row">

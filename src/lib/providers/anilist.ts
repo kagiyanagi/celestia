@@ -6,6 +6,7 @@ import { getCurrentAnimeSeason } from "@/lib/anime-season";
 import {
   FALLBACK_GENRE_OPTIONS,
   FALLBACK_TAG_OPTIONS,
+  splitListFilter,
 } from "@/lib/browse-filters";
 import { fetchJson } from "@/lib/http/client";
 import {
@@ -191,14 +192,21 @@ const browseQuery = (includeAdult: boolean) => `
     $page: Int,
     $perPage: Int,
     $search: String,
-    $genre: String,
-    $tag: String,
+    $genre_in: [String],
+    $genre_not_in: [String],
+    $tag_in: [String],
+    $tag_not_in: [String],
     $season: MediaSeason,
     $seasonYear: Int,
+    $startDate_greater: FuzzyDateInt,
+    $startDate_lesser: FuzzyDateInt,
     $status: MediaStatus,
     $format: MediaFormat,
     $countryOfOrigin: CountryCode,
     $source: MediaSource,
+    $averageScore_greater: Int,
+    $episodes_greater: Int,
+    $episodes_lesser: Int,
     $sort: [MediaSort]
   ) {
     Page(page: $page, perPage: $perPage) {
@@ -213,14 +221,21 @@ const browseQuery = (includeAdult: boolean) => `
         ${sfwFilter(includeAdult)}
         type: ANIME,
         search: $search,
-        genre: $genre,
-        tag: $tag,
+        genre_in: $genre_in,
+        genre_not_in: $genre_not_in,
+        tag_in: $tag_in,
+        tag_not_in: $tag_not_in,
         season: $season,
         seasonYear: $seasonYear,
+        startDate_greater: $startDate_greater,
+        startDate_lesser: $startDate_lesser,
         status: $status,
         format: $format,
         countryOfOrigin: $countryOfOrigin,
         source: $source,
+        averageScore_greater: $averageScore_greater,
+        episodes_greater: $episodes_greater,
+        episodes_lesser: $episodes_lesser,
         sort: $sort
       ) {
         ${MEDIA_CARD_FIELDS}
@@ -298,6 +313,12 @@ const DETAIL_QUERY = `
         type
         language
         color
+      }
+      stats {
+        scoreDistribution {
+          score
+          amount
+        }
       }
       characters(sort: [ROLE, RELEVANCE], perPage: 25) {
         pageInfo {
@@ -746,6 +767,58 @@ export async function getRecentEpisodeDrops(
   return drops;
 }
 
+/**
+ * Returns episodes scheduled to air within the next `withinSeconds`, used to
+ * build "airing soon" reminders. `airedAt` is the (future) scheduled airing
+ * time. Failures degrade to empty.
+ */
+export async function getUpcomingEpisodes(
+  animeIds: number[],
+  withinSeconds: number,
+): Promise<RecentEpisodeDrop[]> {
+  if (animeIds.length === 0) {
+    return [];
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const drops: RecentEpisodeDrop[] = [];
+  const maxPages = 5;
+
+  for (let page = 1; page <= maxPages; page += 1) {
+    let result: RecentDropsQueryResult;
+    try {
+      result = await fetchAniList<RecentDropsQueryResult>(
+        RECENT_DROPS_QUERY,
+        {
+          ids: animeIds,
+          airingAtGreater: now,
+          airingAtLesser: now + withinSeconds,
+          page,
+        },
+        300,
+      );
+    } catch {
+      break;
+    }
+
+    for (const schedule of result.Page?.airingSchedules ?? []) {
+      if (!schedule.media) continue;
+      drops.push({
+        animeId: schedule.mediaId,
+        anime: transformAnimeSummary(schedule.media),
+        episode: schedule.episode,
+        airedAt: schedule.airingAt,
+      });
+    }
+
+    if (!result.Page?.pageInfo?.hasNextPage) {
+      break;
+    }
+  }
+
+  return drops;
+}
+
 function resolveBrowseSort(
   sort: string,
   section: BrowseSectionKey,
@@ -767,6 +840,13 @@ function resolveBrowseSort(
       return [`FAVOURITES${suffix}`];
     case "trending":
       return [`TRENDING${suffix}`, "POPULARITY_DESC"];
+    case "title":
+      // No `suffix` games: A-Z is ascending, the order toggle flips it.
+      return [sortOrder === "asc" ? "TITLE_ROMAJI" : "TITLE_ROMAJI_DESC"];
+    case "episodes":
+      return [`EPISODES${suffix}`, "POPULARITY_DESC"];
+    case "updated":
+      return [`UPDATED_AT${suffix}`];
     default:
       return null;
   }
@@ -782,14 +862,46 @@ function getBrowseFilterVariables(
   const search = filters.q.trim();
 
   if (search) variables.search = search;
-  if (filters.genre) variables.genre = filters.genre;
-  if (filters.tag) variables.tag = filters.tag;
+
+  const genreIn = splitListFilter(filters.genre);
+  const genreNotIn = splitListFilter(filters.genreExclude);
+  const tagIn = splitListFilter(filters.tag);
+  const tagNotIn = splitListFilter(filters.tagExclude);
+  if (genreIn.length) variables.genre_in = genreIn;
+  if (genreNotIn.length) variables.genre_not_in = genreNotIn;
+  if (tagIn.length) variables.tag_in = tagIn;
+  if (tagNotIn.length) variables.tag_not_in = tagNotIn;
+
   if (filters.format) variables.format = filters.format;
-  if (filters.year) variables.seasonYear = Number(filters.year);
+
+  // A single exact year keeps the precise season pairing AniList needs;
+  // a true range maps to fuzzy start-date bounds instead (where seasonYear
+  // can't express both ends).
+  const yearMin = filters.yearMin ? Number(filters.yearMin) : null;
+  const yearMax = filters.yearMax ? Number(filters.yearMax) : null;
+  if (yearMin && yearMax && yearMin === yearMax) {
+    variables.seasonYear = yearMin;
+  } else {
+    if (yearMin) variables.startDate_greater = yearMin * 10_000;
+    if (yearMax) variables.startDate_lesser = yearMax * 10_000 + 1231;
+  }
+
   if (filters.season) variables.season = filters.season;
   if (filters.status) variables.status = filters.status;
   if (filters.country) variables.countryOfOrigin = filters.country;
   if (filters.source) variables.source = filters.source;
+
+  // averageScore_greater is exclusive; subtract one to keep the bound inclusive.
+  if (filters.scoreMin) {
+    variables.averageScore_greater = Math.max(0, Number(filters.scoreMin) - 1);
+  }
+  // episodes_greater/_lesser are exclusive bounds; widen by one for inclusivity.
+  if (filters.episodesMin) {
+    variables.episodes_greater = Number(filters.episodesMin) - 1;
+  }
+  if (filters.episodesMax) {
+    variables.episodes_lesser = Number(filters.episodesMax) + 1;
+  }
 
   const sort = resolveBrowseSort(
     filters.sort,
@@ -1007,6 +1119,91 @@ export async function getAnimeSummariesByMalIds(
   }
 
   return resolved;
+}
+
+const RECOMMENDATIONS_QUERY = `
+  query ($ids: [Int!]) {
+    Page(perPage: 50) {
+      media(id_in: $ids, type: ANIME) {
+        id
+        recommendations(sort: RATING_DESC, perPage: 8) {
+          nodes {
+            rating
+            mediaRecommendation {
+              isAdult
+              ${MEDIA_CARD_FIELDS}
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+type RecommendationNode = {
+  rating: number | null;
+  mediaRecommendation: (AniListMedia & { isAdult?: boolean | null }) | null;
+};
+
+/**
+ * Aggregates AniList's per-title recommendations across a set of seed anime
+ * (the user's library) into one ranked list. A recommendation's community
+ * `rating` is summed across every seed that surfaces it, so titles multiple
+ * favorites point to rank highest. Seeds and anything in `excludeIds` (already
+ * in the library) are dropped so the rail only suggests genuinely new shows.
+ */
+export async function getRecommendationsFromSeeds(
+  seedIds: number[],
+  options: {
+    excludeIds?: number[];
+    includeAdult?: boolean;
+    limit?: number;
+  } = {},
+): Promise<AnimeSummary[]> {
+  const seeds = new Set(
+    seedIds.filter((id) => Number.isFinite(id) && id > 0),
+  );
+  if (!seeds.size) return [];
+
+  const exclude = new Set(options.excludeIds ?? []);
+  const limit = options.limit ?? 24;
+
+  try {
+    const data = await fetchAniList<{
+      Page: {
+        media:
+          | Array<{ id: number; recommendations: { nodes: RecommendationNode[] } }>
+          | null;
+      };
+    }>(RECOMMENDATIONS_QUERY, { ids: Array.from(seeds).slice(0, 40) }, 1800);
+
+    const scored = new Map<number, { score: number; media: AniListMedia }>();
+
+    for (const seed of data.Page?.media ?? []) {
+      for (const node of seed.recommendations?.nodes ?? []) {
+        const rec = node.mediaRecommendation;
+        if (!rec) continue;
+        if (!options.includeAdult && rec.isAdult) continue;
+        if (seeds.has(rec.id) || exclude.has(rec.id)) continue;
+
+        const weight = Math.max(1, node.rating ?? 1);
+        const existing = scored.get(rec.id);
+        if (existing) {
+          existing.score += weight;
+        } else {
+          scored.set(rec.id, { score: weight, media: rec });
+        }
+      }
+    }
+
+    return Array.from(scored.values())
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit)
+      .map((entry) => transformAnimeSummary(entry.media));
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
 }
 
 export async function searchAnime(

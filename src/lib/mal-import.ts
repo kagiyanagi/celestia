@@ -1,4 +1,4 @@
-import type { LibraryStatus } from "@/types/account";
+import type { LibraryEntry, LibraryStatus } from "@/types/account";
 
 /**
  * A single parsed row from a MAL/AniList XML export. AniList exports in the
@@ -72,6 +72,67 @@ function parseDate(raw: string | null): string | null {
 function toInt(raw: string | null): number {
   const number = Number((raw || "").trim());
   return Number.isFinite(number) ? Math.max(0, Math.floor(number)) : 0;
+}
+
+const STATUS_TO_MAL: Record<LibraryStatus, string> = {
+  watching: "Watching",
+  rewatching: "Watching",
+  completed: "Completed",
+  on_hold: "On-Hold",
+  dropped: "Dropped",
+  planning: "Plan to Watch",
+};
+
+function cdata(value: string): string {
+  return `<![CDATA[${value.replace(/\]\]>/g, "]]")}]]>`;
+}
+
+/**
+ * Serializes a library into the MyAnimeList XML export format — the inverse of
+ * `parseMalExport`, so an exported file re-imports cleanly. Only entries with a
+ * MAL id are included (the format is keyed by `series_animedb_id`).
+ */
+export function buildMalExport(
+  entries: LibraryEntry[],
+  userName: string,
+): string {
+  const exportable = entries.filter((entry) => entry.anime.idMal);
+
+  const items = exportable
+    .map((entry) => {
+      const title =
+        entry.anime.title?.romaji ||
+        entry.anime.title?.english ||
+        entry.anime.title?.userPreferred ||
+        "";
+      return [
+        "  <anime>",
+        `    <series_animedb_id>${entry.anime.idMal}</series_animedb_id>`,
+        `    <series_title>${cdata(title)}</series_title>`,
+        `    <my_watched_episodes>${Math.max(0, entry.progress || 0)}</my_watched_episodes>`,
+        `    <my_start_date>${entry.startedAt || "0000-00-00"}</my_start_date>`,
+        `    <my_finish_date>${entry.completedAt || "0000-00-00"}</my_finish_date>`,
+        `    <my_score>${Math.round((entry.score || 0) / 10)}</my_score>`,
+        `    <my_status>${STATUS_TO_MAL[entry.status]}</my_status>`,
+        `    <my_times_watched>${Math.max(0, entry.repeat || 0)}</my_times_watched>`,
+        `    <my_rewatching>${entry.status === "rewatching" ? 1 : 0}</my_rewatching>`,
+        "    <update_on_import>1</update_on_import>",
+        "  </anime>",
+      ].join("\n");
+    })
+    .join("\n");
+
+  return [
+    '<?xml version="1.0" encoding="UTF-8" ?>',
+    "<myanimelist>",
+    "  <myinfo>",
+    `    <user_name>${cdata(userName)}</user_name>`,
+    `    <user_total_anime>${exportable.length}</user_total_anime>`,
+    "  </myinfo>",
+    items,
+    "</myanimelist>",
+    "",
+  ].join("\n");
 }
 
 /**

@@ -3,9 +3,11 @@ import { decryptSecret, encryptSecret, isEncryptedSecret } from "@/lib/crypto";
 import { getStore } from "@/lib/db";
 import type {
   AniListProfile,
+  FavoriteItem,
   HistoryEntry,
   LibraryEntry,
   LibraryStatus,
+  PublicProfileData,
   PublicUser,
   UserPreferences,
   UserRecord,
@@ -31,6 +33,8 @@ function sanitizeUser(user: UserRecord): PublicUser {
     aniListProfile: user.aniListProfile,
     aniListSyncedAt: user.aniListSyncedAt ?? null,
     preferences: user.preferences,
+    mutedAnimeIds: user.mutedAnimeIds ?? [],
+    favorites: user.favorites ?? [],
     devices: user.devices,
     libraryEntries: user.libraryEntries,
     historyEntries: user.historyEntries,
@@ -68,6 +72,35 @@ async function updateUserRecord<T>(
   await store.updateUser(user);
 
   return result;
+}
+
+export async function getPublicProfile(
+  username: string,
+): Promise<PublicProfileData | null> {
+  const normalized = username.trim().toLowerCase();
+  if (!normalized) {
+    return null;
+  }
+
+  const user = await getStore().getUserByUsername(normalized);
+  if (!user || !user.preferences.publicProfile) {
+    return null;
+  }
+
+  return {
+    displayName: user.displayName,
+    username: user.username,
+    pronouns: user.pronouns,
+    about: user.about,
+    avatar: user.avatar,
+    banner: user.banner,
+    joinedAt: user.joinedAt,
+    aniListUrl: user.aniListProfile?.siteUrl ?? null,
+    daysWatched: user.aniListProfile?.daysWatched ?? null,
+    libraryEntries: user.libraryEntries,
+    activity: user.aniListProfile?.activity ?? [],
+    favorites: user.favorites ?? [],
+  };
 }
 
 export async function getUserById(userId: string) {
@@ -149,6 +182,52 @@ export async function updatePreferences(
       ...user.preferences,
       ...preferences,
     };
+    return sanitizeUser(user);
+  });
+}
+
+const MAX_FAVORITES_PER_KIND = 100;
+
+/**
+ * Adds the favourite if absent, removes it when already present (keyed by
+ * kind+id). Returns the updated favourites list so callers can confirm state.
+ */
+export async function toggleFavorite(userId: string, item: FavoriteItem) {
+  return updateUserRecord(userId, (user) => {
+    const current = user.favorites ?? [];
+    const exists = current.some(
+      (fav) => fav.kind === item.kind && fav.id === item.id,
+    );
+
+    if (exists) {
+      user.favorites = current.filter(
+        (fav) => !(fav.kind === item.kind && fav.id === item.id),
+      );
+    } else {
+      const sameKind = current.filter((fav) => fav.kind === item.kind);
+      if (sameKind.length >= MAX_FAVORITES_PER_KIND) {
+        throw new Error(`You can favourite up to ${MAX_FAVORITES_PER_KIND}.`);
+      }
+      user.favorites = [item, ...current];
+    }
+
+    return sanitizeUser(user);
+  });
+}
+
+export async function setAnimeMuted(
+  userId: string,
+  animeId: number,
+  muted: boolean,
+) {
+  return updateUserRecord(userId, (user) => {
+    const current = new Set(user.mutedAnimeIds ?? []);
+    if (muted) {
+      current.add(animeId);
+    } else {
+      current.delete(animeId);
+    }
+    user.mutedAnimeIds = Array.from(current);
     return sanitizeUser(user);
   });
 }
@@ -411,6 +490,17 @@ export async function recordHistory(input: {
     ].slice(0, 120);
 
     return nextEntry;
+  });
+}
+
+export async function deleteHistoryEntry(userId: string, entryId: string) {
+  return updateUserRecord(userId, (user) => {
+    const removed =
+      user.historyEntries.find((entry) => entry.id === entryId) || null;
+    user.historyEntries = user.historyEntries.filter(
+      (entry) => entry.id !== entryId,
+    );
+    return removed;
   });
 }
 

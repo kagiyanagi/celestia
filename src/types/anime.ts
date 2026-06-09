@@ -115,7 +115,7 @@ export type FranchiseGraph = {
   height: number;
 };
 
-export type AnimeNotificationType = "episode" | "dub";
+export type AnimeNotificationType = "episode" | "dub" | "upcoming";
 
 /** A new-release notice for an anime on the user's list. */
 export type AnimeNotification = {
@@ -124,8 +124,15 @@ export type AnimeNotification = {
   animeId: number;
   title: string;
   coverImage: string | null;
+  /** Lowest episode in the notice (the only episode when not grouped). */
   episode: number;
-  /** When the episode aired, epoch seconds. */
+  /** Highest episode when several drops for one show are grouped into a range. */
+  episodeTo?: number;
+  /**
+   * When the episode aired, epoch seconds. For `upcoming` reminders this is a
+   * future timestamp (when the episode is scheduled to air). For a grouped
+   * range this is the most recent episode's time.
+   */
   airedAt: number;
   read: boolean;
 };
@@ -268,7 +275,13 @@ export type AnimeDetails = AnimeSummary & {
   relations?: RelationItem[];
   recommendations?: AnimeSummary[];
   externalLinks?: ExternalLink[];
+  scoreDistribution?: ScoreBucket[];
   metadataSources?: MetadataSourceSummary[];
+};
+
+export type ScoreBucket = {
+  score: number;
+  amount: number;
 };
 
 export type HomeCollections = {
@@ -299,19 +312,37 @@ export type BrowsePageInfo = {
 
 export type BrowseFilters = {
   q: string;
+  /** Comma-separated genres to require (genre_in). */
   genre: string;
+  /** Comma-separated genres to exclude (genre_not_in). */
+  genreExclude: string;
   format: string;
-  year: string;
+  /** Inclusive year range lower bound (YYYY); empty = open. */
+  yearMin: string;
+  /** Inclusive year range upper bound (YYYY); empty = open. */
+  yearMax: string;
   sort: string;
   season: string;
   status: string;
+  /** Comma-separated tags to require (tag_in). */
   tag: string;
+  /** Comma-separated tags to exclude (tag_not_in). */
+  tagExclude: string;
   country: string;
   source: string;
+  /** Minimum average score (0-100). */
+  scoreMin: string;
+  /** Inclusive minimum episode count. */
+  episodesMin: string;
+  /** Inclusive maximum episode count. */
+  episodesMax: string;
   /** Sort direction for browse/search result ordering. */
   sortOrder: string;
   /** Viewer-relative filter: "in" = on their list, "out" = not on it. */
   list: string;
+  /** "1" restricts the visible page to titles with a known English dub
+   *  (applied client-side over hydrated dub badges, so it is page-local). */
+  dubbed: string;
 };
 
 export type BrowseFilterOption = {

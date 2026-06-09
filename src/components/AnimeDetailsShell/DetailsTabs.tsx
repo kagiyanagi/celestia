@@ -6,20 +6,26 @@ export type TabKey =
   | "franchise"
   | "similar";
 
+export const TAB_KEYS: TabKey[] = [
+  "overview",
+  "characters",
+  "episodes",
+  "news",
+  "franchise",
+  "similar",
+];
+
+export function isTabKey(value: string | null | undefined): value is TabKey {
+  return !!value && TAB_KEYS.includes(value as TabKey);
+}
+
 interface DetailsTabsProps {
   activeTab: TabKey;
   setActiveTab: (tab: TabKey) => void;
 }
 
 export function DetailsTabs({ activeTab, setActiveTab }: DetailsTabsProps) {
-  const tabs: TabKey[] = [
-    "overview",
-    "characters",
-    "episodes",
-    "news",
-    "franchise",
-    "similar",
-  ];
+  const tabs = TAB_KEYS;
 
   return (
     <nav className="anime-tabs-nav">

@@ -35,6 +35,7 @@ type WatchControlsProps = {
   switching: boolean;
   onSelectServer: (id: string) => void;
   onSelectAudio: (id: StreamAudioType) => void;
+  onShareResult?: (message: string) => void;
 };
 
 // Let the browser handle modifier / non-left clicks (open in new tab, etc.) so
@@ -58,6 +59,7 @@ export function WatchControls({
   switching,
   onSelectServer,
   onSelectAudio,
+  onShareResult,
 }: WatchControlsProps) {
   const [serverOpen, setServerOpen] = useState(false);
   const [shareLabel, setShareLabel] = useState("Share");
@@ -118,8 +120,21 @@ export function WatchControls({
 
     navigator.clipboard
       .writeText(url)
-      .then(() => startTransition(() => setShareLabel("Copied")))
+      .then(() => {
+        startTransition(() => setShareLabel("Copied"));
+        onShareResult?.("Link copied to clipboard");
+      })
       .catch(() => startTransition(() => setShareLabel("Copy failed")));
+  }
+
+  function reportBroken() {
+    const next = serverOptions.find((option) => !option.active);
+    if (next) {
+      onSelectServer(next.id);
+      onShareResult?.("Thanks — trying another server");
+    } else {
+      onShareResult?.("No other server is available right now");
+    }
   }
 
   return (
@@ -225,8 +240,9 @@ export function WatchControls({
       <button
         className="watch-action-button"
         type="button"
-        disabled
-        title="Playback reports can be wired once account or moderation storage exists."
+        onClick={reportBroken}
+        disabled={switching || serverOptions.length < 2}
+        title="Episode not working? Switch to another server."
       >
         <Flag size={17} aria-hidden />
         Report

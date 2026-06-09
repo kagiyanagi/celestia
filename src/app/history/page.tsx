@@ -16,5 +16,10 @@ export default async function HistoryPage() {
     redirect("/profile");
   }
 
-  return <HistoryPageClient entries={user.historyEntries} />;
+  return (
+    <HistoryPageClient
+      entries={user.historyEntries}
+      pauseHistory={user.preferences.pauseHistory}
+    />
+  );
 }

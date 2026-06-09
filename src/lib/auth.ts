@@ -25,6 +25,10 @@ function defaultPreferences(): UserPreferences {
     autoplayTrailers: false,
     pauseHistory: false,
     defaultAudio: "sub",
+    notifyEpisodes: true,
+    notifyDubs: true,
+    notifyUpcoming: true,
+    publicProfile: false,
   };
 }
 
@@ -96,6 +100,8 @@ function redactUser(user: UserRecord): PublicUser {
     joinedAt: user.joinedAt,
     aniListProfile: user.aniListProfile,
     preferences: user.preferences,
+    mutedAnimeIds: user.mutedAnimeIds ?? [],
+    favorites: user.favorites ?? [],
     devices: user.devices,
     libraryEntries: user.libraryEntries,
     historyEntries: user.historyEntries,
@@ -314,6 +320,63 @@ export async function clearSession() {
   }
 
   cookieStore.delete(SESSION_COOKIE);
+}
+
+async function loadCurrentUserForSession() {
+  const cookieStore = await cookies();
+  const currentSessionId = cookieStore.get(SESSION_COOKIE)?.value;
+
+  if (!currentSessionId) {
+    throw new Error("Unauthorized");
+  }
+
+  const store = getStore();
+  const session = await store.getSession(currentSessionId);
+
+  if (!session) {
+    throw new Error("Unauthorized");
+  }
+
+  const user = await store.getUserById(session.userId);
+
+  if (!user) {
+    throw new Error("Unauthorized");
+  }
+
+  return { store, user, currentSessionId };
+}
+
+/** Ends every session except the caller's, and prunes the device list to it. */
+export async function revokeOtherDevices() {
+  const { store, user, currentSessionId } = await loadCurrentUserForSession();
+
+  await Promise.all(
+    user.devices
+      .filter((device) => device.id !== currentSessionId)
+      .map((device) => store.deleteSession(device.id)),
+  );
+
+  user.devices = user.devices
+    .filter((device) => device.id === currentSessionId)
+    .map((device) => ({ ...device, current: true }));
+  await store.updateUser(user);
+
+  return redactUser(user);
+}
+
+/** Ends a single other session and removes it from the device list. */
+export async function revokeDevice(deviceId: string) {
+  const { store, user, currentSessionId } = await loadCurrentUserForSession();
+
+  if (deviceId === currentSessionId) {
+    throw new Error("Use sign out to end the current session.");
+  }
+
+  await store.deleteSession(deviceId);
+  user.devices = user.devices.filter((device) => device.id !== deviceId);
+  await store.updateUser(user);
+
+  return redactUser(user);
 }
 
 async function readSessionUser() {

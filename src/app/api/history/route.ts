@@ -1,6 +1,7 @@
 import { NextResponse, after } from "next/server";
 import {
   clearHistory,
+  deleteHistoryEntry,
   getPrivateUser,
   recordHistory,
   upsertLibraryEntry,
@@ -163,9 +164,16 @@ export async function POST(request: Request) {
   }
 }
 
-export async function DELETE() {
+export async function DELETE(request: Request) {
   try {
     const sessionUser = await requireSessionUser();
+    const entryId = new URL(request.url).searchParams.get("id");
+
+    if (entryId) {
+      const removed = await deleteHistoryEntry(sessionUser.id, entryId);
+      return NextResponse.json({ removed });
+    }
+
     const user = await clearHistory(sessionUser.id);
     return NextResponse.json({ user });
   } catch (error) {

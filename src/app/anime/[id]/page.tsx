@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { AnimeDetailsShell } from "@/components/AnimeDetailsShell";
+import { isTabKey } from "@/components/AnimeDetailsShell/DetailsTabs";
 import { HeaderImageSetter } from "@/components/header-image-setter";
 import { ScrollToTop } from "@/components/scroll-to-top";
 import { getDisplayTitle } from "@/lib/format";
@@ -12,6 +13,7 @@ type AnimePageProps = {
   params: Promise<{
     id: string;
   }>;
+  searchParams: Promise<{ tab?: string }>;
 };
 
 export async function generateMetadata({
@@ -38,8 +40,12 @@ export async function generateMetadata({
   };
 }
 
-export default async function AnimePage({ params }: AnimePageProps) {
+export default async function AnimePage({
+  params,
+  searchParams,
+}: AnimePageProps) {
   const { id } = await params;
+  const { tab } = await searchParams;
   const animeId = Number(id);
 
   if (!Number.isFinite(animeId)) {
@@ -62,7 +68,11 @@ export default async function AnimePage({ params }: AnimePageProps) {
     <div className="detail-page">
       <ScrollToTop />
       <HeaderImageSetter image={anime.bannerImage || anime.coverImage} />
-      <AnimeDetailsShell anime={anime} watchHref={watchHref} />
+      <AnimeDetailsShell
+        anime={anime}
+        watchHref={watchHref}
+        initialTab={isTabKey(tab) ? tab : "overview"}
+      />
     </div>
   );
 }

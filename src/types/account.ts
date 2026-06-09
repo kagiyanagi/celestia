@@ -16,6 +16,14 @@ export type UserPreferences = {
   pauseHistory: boolean;
   /** Default audio track for playback. */
   defaultAudio: "sub" | "dub";
+  /** Notify when a new subbed episode airs for a tracked show. */
+  notifyEpisodes: boolean;
+  /** Notify when a new dubbed episode drops for a tracked show. */
+  notifyDubs: boolean;
+  /** Notify shortly before a tracked show's next episode airs. */
+  notifyUpcoming: boolean;
+  /** When enabled, the profile is viewable by anyone at /u/[username]. */
+  publicProfile: boolean;
 };
 
 export type DeviceSession = {
@@ -49,6 +57,16 @@ export type SyncedActivity = {
   progress: number;
   createdAt: string;
   source: "anilist" | "local";
+};
+
+export type FavoriteKind = "anime" | "character" | "voice_actor";
+
+/** A favourited anime, character, or voice actor (snapshot for display). */
+export type FavoriteItem = {
+  kind: FavoriteKind;
+  id: number;
+  name: string;
+  image: string | null;
 };
 
 export type LibraryEntry = {
@@ -102,6 +120,10 @@ export type UserRecord = {
   /** ISO timestamp of the last AniList → Celestia library pull; gates re-sync frequency. */
   aniListSyncedAt?: string | null;
   preferences: UserPreferences;
+  /** Anime ids the user has muted; no notifications are produced for them. */
+  mutedAnimeIds?: number[];
+  /** Favourited anime, characters, and voice actors. */
+  favorites?: FavoriteItem[];
   devices: DeviceSession[];
   libraryEntries: LibraryEntry[];
   historyEntries: HistoryEntry[];
@@ -141,3 +163,19 @@ export type PublicUser = Omit<
   UserRecord,
   "passwordHash" | "aniListAccessToken"
 >;
+
+/** Read-only view of a user shown at /u/[username] when publicProfile is on. */
+export type PublicProfileData = {
+  displayName: string;
+  username: string;
+  pronouns: string;
+  about: string;
+  avatar: string | null;
+  banner: string | null;
+  joinedAt: string;
+  aniListUrl: string | null;
+  daysWatched: number | null;
+  libraryEntries: LibraryEntry[];
+  activity: SyncedActivity[];
+  favorites: FavoriteItem[];
+};

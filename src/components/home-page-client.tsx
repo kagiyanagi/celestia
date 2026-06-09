@@ -3,12 +3,17 @@
 import { useEffect, useState } from "react";
 
 import { AiringBoard } from "@/components/airing-board";
+import { HomeGenreChips } from "@/components/home-genre-chips";
 import { HomeHeroCarousel } from "@/components/home-hero-carousel";
 import { HomePersonalSections } from "@/components/home-personal-sections";
+import { HomeRecommendations } from "@/components/home-recommendations";
 import { HomeShelf } from "@/components/home-shelf";
 import { HomeTrendingRail } from "@/components/home-trending-rail";
 import { HomeUpcomingGrid } from "@/components/home-upcoming-grid";
 import { useAuth } from "@/components/auth-provider";
+import { getCurrentAnimeSeason, formatSeasonLabel } from "@/lib/anime-season";
+import { buildBrowseHref, EMPTY_BROWSE_FILTERS } from "@/lib/browse-filters";
+import { getResumeEpisode } from "@/lib/resume";
 import type { HomeCollections } from "@/types/anime";
 
 type HomePageClientProps = {
@@ -60,12 +65,36 @@ export function HomePageClient({ initialCollections }: HomePageClientProps) {
       ? personalized.collections
       : initialCollections;
 
+  const currentSeason = getCurrentAnimeSeason();
+  const seasonHref = buildBrowseHref("/trending", {
+    ...EMPTY_BROWSE_FILTERS,
+    season: currentSeason.season,
+    yearMin: String(currentSeason.year),
+    yearMax: String(currentSeason.year),
+  });
+
+  // History is stored newest-first, so the first entry is the latest watch.
+  const lastWatched = user?.historyEntries?.[0] ?? null;
+  const resume = lastWatched
+    ? { anime: lastWatched.anime, episode: getResumeEpisode(lastWatched) }
+    : null;
+
   return (
     <>
-      <HomeHeroCarousel items={collections.topAiring.slice(0, 5)} />
+      <HomeHeroCarousel
+        items={collections.topAiring.slice(0, 5)}
+        resume={resume}
+      />
       <div className="page-shell">
         <HomePersonalSections user={null} />
+        <HomeGenreChips />
+        <HomeRecommendations />
         <HomeTrendingRail items={collections.trending} />
+        <HomeTrendingRail
+          items={collections.season}
+          title={formatSeasonLabel(currentSeason.season, currentSeason.year)}
+          href={seasonHref}
+        />
         <HomeUpcomingGrid items={collections.upcoming} />
         <AiringBoard items={collections.airingSoon} />
         <div className="home-shelf-row">

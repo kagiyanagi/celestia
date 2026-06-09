@@ -9,16 +9,23 @@ import type { LibraryStatus } from "@/types/account";
 export type BrowseSearchParams = PaginationSearchParams & {
   q?: string | string[];
   genre?: string | string[];
+  genreExclude?: string | string[];
   format?: string | string[];
-  year?: string | string[];
+  yearMin?: string | string[];
+  yearMax?: string | string[];
   sort?: string | string[];
   sortOrder?: string | string[];
   season?: string | string[];
   status?: string | string[];
   tag?: string | string[];
+  tagExclude?: string | string[];
   country?: string | string[];
   source?: string | string[];
+  scoreMin?: string | string[];
+  episodesMin?: string | string[];
+  episodesMax?: string | string[];
   list?: string | string[];
+  dubbed?: string | string[];
 };
 
 export type ParsedBrowseParams = {
@@ -29,17 +36,26 @@ export type ParsedBrowseParams = {
 export const EMPTY_BROWSE_FILTERS: BrowseFilters = {
   q: "",
   genre: "",
+  genreExclude: "",
   format: "",
-  year: "",
+  yearMin: "",
+  yearMax: "",
   sort: "",
   season: "",
   status: "",
   tag: "",
+  tagExclude: "",
   country: "",
   source: "",
+  scoreMin: "",
+  episodesMin: "",
+  episodesMax: "",
   sortOrder: "desc",
   list: "",
+  dubbed: "",
 };
+
+export const FIRST_BROWSE_YEAR = 1940;
 
 export const LIST_STATUS_OPTIONS: Array<
   BrowseFilterOption & { value: LibraryStatus }
@@ -74,6 +90,19 @@ export const SORT_OPTIONS: BrowseFilterOption[] = [
   { value: "release_date", label: "Release Date" },
   { value: "favourites", label: "Favourites" },
   { value: "trending", label: "Trending" },
+  { value: "title", label: "Title" },
+  { value: "episodes", label: "Episode Count" },
+  { value: "updated", label: "Recently Updated" },
+];
+
+export const SCORE_OPTIONS: BrowseFilterOption[] = [
+  { value: "50", label: "50+" },
+  { value: "60", label: "60+" },
+  { value: "70", label: "70+" },
+  { value: "75", label: "75+" },
+  { value: "80", label: "80+" },
+  { value: "85", label: "85+" },
+  { value: "90", label: "90+" },
 ];
 
 export const SEASON_OPTIONS: BrowseFilterOption[] = [
@@ -249,7 +278,55 @@ function readAllowedParam(
 function readYearParam(value: string | string[] | undefined): string {
   const rawValue = readParam(value);
 
-  return /^\d{4}$/.test(rawValue) ? rawValue : "";
+  if (!/^\d{4}$/.test(rawValue)) {
+    return "";
+  }
+
+  const year = Number(rawValue);
+  const currentYear = new Date().getFullYear();
+  return year >= FIRST_BROWSE_YEAR && year <= currentYear + 5 ? rawValue : "";
+}
+
+/** Sanitizes a comma-separated multi-value param: trims, drops blanks/dupes. */
+function readListParam(value: string | string[] | undefined): string {
+  const rawValue = readParam(value);
+  if (!rawValue) {
+    return "";
+  }
+
+  const seen = new Set<string>();
+  for (const part of rawValue.split(",")) {
+    const trimmed = part.trim();
+    if (trimmed) {
+      seen.add(trimmed);
+    }
+  }
+
+  return Array.from(seen).join(",");
+}
+
+function readBoundedIntParam(
+  value: string | string[] | undefined,
+  min: number,
+  max: number,
+): string {
+  const rawValue = readParam(value);
+  if (!/^\d+$/.test(rawValue)) {
+    return "";
+  }
+
+  const parsed = Number(rawValue);
+  return parsed >= min && parsed <= max ? String(parsed) : "";
+}
+
+/** Splits a sanitized comma list back into its values. */
+export function splitListFilter(value: string): string[] {
+  return value ? value.split(",").filter(Boolean) : [];
+}
+
+/** Joins selected values into the canonical comma-list form. */
+export function joinListFilter(values: string[]): string {
+  return Array.from(new Set(values.filter(Boolean))).join(",");
 }
 
 function readSortOrderParam(value: string | string[] | undefined): string {
@@ -270,6 +347,28 @@ export function getYearOptions(): BrowseFilterOption[] {
   return options;
 }
 
+/**
+ * Filter keys a section already pins, so the bar hides them rather than
+ * offering a redundant (and confusing) control. e.g. /movies is always
+ * format=MOVIE, /upcoming is always next season.
+ */
+export function getHiddenBrowseFilters(
+  section: BrowseSectionKey,
+): Set<keyof BrowseFilters> {
+  switch (section) {
+    case "movies":
+      return new Set(["format"]);
+    case "finished":
+      return new Set(["status"]);
+    case "airing":
+      return new Set(["status"]);
+    case "upcoming":
+      return new Set(["status", "season", "yearMin", "yearMax"]);
+    default:
+      return new Set();
+  }
+}
+
 export function getDefaultBrowseSort(section: BrowseSectionKey): string {
   switch (section) {
     case "trending":
@@ -288,23 +387,83 @@ export function getDefaultBrowseSort(section: BrowseSectionKey): string {
 export function parseBrowseParams(
   params: BrowseSearchParams,
 ): ParsedBrowseParams {
+  const yearMin = readYearParam(params.yearMin);
+  const yearMax = readYearParam(params.yearMax);
+  const episodesMin = readBoundedIntParam(params.episodesMin, 1, 10_000);
+  const episodesMax = readBoundedIntParam(params.episodesMax, 1, 10_000);
+
   return {
     page: parsePageParam(params.page),
     filters: {
       q: readParam(params.q),
-      genre: readParam(params.genre),
+      genre: readListParam(params.genre),
+      genreExclude: readListParam(params.genreExclude),
       format: readAllowedParam(params.format, FORMAT_VALUES),
-      year: readYearParam(params.year),
+      // Normalize an inverted range so min never exceeds max.
+      yearMin: yearMin && yearMax && yearMin > yearMax ? yearMax : yearMin,
+      yearMax: yearMin && yearMax && yearMin > yearMax ? yearMin : yearMax,
       sort: readAllowedParam(params.sort, SORT_VALUES),
       season: readAllowedParam(params.season, SEASON_VALUES),
       status: readAllowedParam(params.status, STATUS_VALUES),
-      tag: readParam(params.tag),
+      tag: readListParam(params.tag),
+      tagExclude: readListParam(params.tagExclude),
       country: readAllowedParam(params.country, COUNTRY_VALUES),
       source: readAllowedParam(params.source, SOURCE_VALUES),
+      scoreMin: readBoundedIntParam(params.scoreMin, 1, 100),
+      episodesMin:
+        episodesMin && episodesMax && Number(episodesMin) > Number(episodesMax)
+          ? episodesMax
+          : episodesMin,
+      episodesMax:
+        episodesMin && episodesMax && Number(episodesMin) > Number(episodesMax)
+          ? episodesMin
+          : episodesMax,
       sortOrder: readSortOrderParam(params.sortOrder),
       list: readAllowedParam(params.list, LIST_VALUES),
+      dubbed: readParam(params.dubbed) === "1" ? "1" : "",
     },
   };
+}
+
+/**
+ * Builds a descriptive page title from the active filters for SEO / shareable
+ * links, e.g. "Action Movies (2023)" or "naruto — Search".
+ */
+export function buildBrowseMetaTitle(
+  baseTitle: string,
+  filters: BrowseFilters,
+): string {
+  const query = filters.q.trim();
+  if (query) {
+    return `${query} — Search`;
+  }
+
+  const parts: string[] = [];
+  const genres = splitListFilter(filters.genre);
+  if (genres.length) {
+    parts.push(genres.slice(0, 2).join(" & "));
+  }
+  const format = FORMAT_OPTIONS.find(
+    (option) => option.value === filters.format,
+  )?.label;
+  if (format) {
+    parts.push(format);
+  }
+  parts.push(baseTitle);
+
+  let label = parts.join(" ");
+  if (filters.yearMin && filters.yearMax) {
+    label +=
+      filters.yearMin === filters.yearMax
+        ? ` (${filters.yearMin})`
+        : ` (${filters.yearMin}-${filters.yearMax})`;
+  } else if (filters.yearMin) {
+    label += ` (${filters.yearMin}+)`;
+  } else if (filters.yearMax) {
+    label += ` (to ${filters.yearMax})`;
+  }
+
+  return label;
 }
 
 export function buildBrowseHref(
