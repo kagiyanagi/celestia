@@ -2887,7 +2887,9 @@ b.schedule-tracked-tag.is-watched {
     font-weight: 700;
     font-size: 0.78rem;
     cursor: pointer;
-    transition: background 0.18s ease, border-color 0.18s ease;
+    transition:
+        background 0.18s ease,
+        border-color 0.18s ease;
 }
 
 .hero-tracking-inc:hover:not(:disabled) {
@@ -2981,7 +2983,10 @@ b.schedule-tracked-tag.is-watched {
     font-size: 0.85rem;
     font-weight: 600;
     color: var(--muted-strong);
-    transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
+    transition:
+        border-color 0.18s ease,
+        color 0.18s ease,
+        background 0.18s ease;
 }
 
 .external-link-chip:hover {
@@ -3738,7 +3743,7 @@ b.schedule-tracked-tag.is-watched {
         grid-template-columns: 1fr;
         gap: 16px;
     }
-    
+
     .browse-filter-actions {
         justify-content: space-between;
         flex-wrap: wrap;
@@ -6612,6 +6617,7 @@ b.schedule-tracked-tag.is-watched {
 
 .profile-hero {
     position: relative;
+    margin-top: -104px;
 }
 
 .profile-hero-banner,
@@ -6620,18 +6626,31 @@ b.schedule-tracked-tag.is-watched {
     inset: 0;
 }
 
+.profile-hero-banner {
+    object-fit: cover;
+}
+
 .profile-hero-scrim {
-    background: linear-gradient(
-        180deg,
-        rgba(4, 7, 10, 0.15),
-        rgba(4, 7, 10, 0.92) 70%
-    );
+    background:
+        linear-gradient(
+            to bottom,
+            rgba(0, 0, 0, 0.8) 0%,
+            rgba(0, 0, 0, 0.35) 15%,
+            rgba(0, 0, 0, 0) 30%
+        ),
+        linear-gradient(
+            to top,
+            rgba(4, 7, 10, 0.98) 0%,
+            rgba(4, 7, 10, 0.85) 25%,
+            rgba(4, 7, 10, 0.4) 50%,
+            rgba(4, 7, 10, 0) 75%
+        );
 }
 
 .profile-hero-content {
     position: relative;
     z-index: 1;
-    padding-top: 7rem;
+    padding-top: 13.5rem;
     padding-bottom: 3rem;
 }
 
@@ -6803,6 +6822,29 @@ b.schedule-tracked-tag.is-watched {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+}
+
+@media (max-width: 600px) {
+    .profile-setting-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1.25rem;
+    }
+
+    .profile-setting-row > .profile-setting-actions {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+    }
+
+    .profile-setting-row .secondary-action {
+        width: 100%;
+        padding: 1.1rem;
+    }
+
+    .profile-setting-row .custom-select {
+        width: 100%;
+    }
 }
 
 .profile-danger-zone {
@@ -7774,23 +7816,6 @@ b.schedule-tracked-tag.is-watched {
     margin: 0;
 }
 
-.watchlist-grid-card-edit {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    display: inline-flex;
-    width: 2.4rem;
-    height: 2.4rem;
-    align-items: center;
-    justify-content: center;
-    border-radius: 0.85rem;
-    background: rgba(0, 0, 0, 0.68);
-    padding: 0;
-    border: none;
-    color: inherit;
-    cursor: pointer;
-}
-
 .dialog-message.error,
 .auth-error {
     color: #ff8d8d;
@@ -8049,14 +8074,6 @@ a:active .shelf-card {
         padding-top: 84px; /* Reduced from 104px */
     }
 
-    .watchlist-grid-card-edit {
-        top: 1.2rem;
-        right: 2rem;
-        width: 2.3rem;
-        height: 2.3rem;
-        border-radius: 0.85rem;
-    }
-
     .page-shell {
         gap: 20px;
     }
@@ -8089,6 +8106,14 @@ a:active .shelf-card {
     .celestia-hero {
         margin-top: -84px;
         margin-bottom: 24px;
+    }
+
+    .profile-hero {
+        margin-top: -84px;
+    }
+
+    .profile-hero-content {
+        padding-top: 10rem;
     }
 
     .celestia-hero-inner {
@@ -8327,7 +8352,9 @@ a:active .shelf-card {
     background: transparent;
     color: var(--muted);
     cursor: pointer;
-    transition: background 140ms var(--ease-spring), color 140ms var(--ease-spring);
+    transition:
+        background 140ms var(--ease-spring),
+        color 140ms var(--ease-spring);
 }
 
 .browse-view-toggle button:hover {
@@ -8416,7 +8443,9 @@ a:active .shelf-card {
     cursor: pointer;
     opacity: 0;
     transform: translateY(-4px);
-    transition: opacity 150ms var(--ease-spring), transform 150ms var(--ease-spring);
+    transition:
+        opacity 150ms var(--ease-spring),
+        transform 150ms var(--ease-spring);
 }
 
 .anime-card:hover .card-quick-add-trigger,
@@ -8482,8 +8511,8 @@ a:active .shelf-card {
 }
 
 .anime-card.list .poster-shell {
-    aspect-ratio: 2 / 3;
     height: 100%;
+    width: 100%;
 }
 
 .anime-card.list .anime-card-body {
@@ -8665,6 +8694,13 @@ a:active .shelf-card {
 @media (hover: none) {
     .watchlist-grid-card-controls {
         opacity: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .watchlist-grid-card-controls {
+        top: 1rem;
+        right: 1.5rem;
     }
 }
 

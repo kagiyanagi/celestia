@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { AnimeCard } from "@/components/anime-card";
 import { useAuth } from "@/components/auth-provider";
@@ -27,8 +27,10 @@ function dedupeByAnime(entries: HistoryEntry[]): HistoryEntry[] {
 
 export function HomePersonalSections({
   user: initialUser,
+  hideWatchlist = false,
 }: {
   user: PublicUser | null;
+  hideWatchlist?: boolean;
 }) {
   const { user: authUser, refreshUser } = useAuth();
   const user = authUser || initialUser;
@@ -36,10 +38,64 @@ export function HomePersonalSections({
   const history = dedupeByAnime(user?.historyEntries || []);
   const library = user?.libraryEntries || [];
   const refreshRef = useRef(refreshUser);
+  const [episodeStills, setEpisodeStills] = useState<Record<string, string>>(
+    {},
+  );
 
   useEffect(() => {
     refreshRef.current = refreshUser;
   }, [refreshUser]);
+
+  // The shown Continue Watching cards that lack a per-episode still (AniList-
+  // synced watches carry none, so they'd otherwise fall back to the show's wide
+  // banner). Serialized so the effect only refires when the shown set changes.
+  const stillRequests = JSON.stringify(
+    history
+      .slice(0, 4)
+      .filter((entry) => !entry.episodeImage)
+      .map((entry) => ({
+        id: entry.id,
+        animeId: entry.animeId,
+        episode: getResumeEpisode(entry),
+      })),
+  );
+
+  // Lazily fetch the real (season-correct) episode still for those cards.
+  // Bounded to the few shown and demand-only — never blocks the page.
+  useEffect(() => {
+    const requests = JSON.parse(stillRequests) as Array<{
+      id: string;
+      animeId: number;
+      episode: number;
+    }>;
+
+    if (!requests.length) {
+      return;
+    }
+
+    const controller = new AbortController();
+
+    requests.forEach((request) => {
+      fetch(
+        `/api/anime/${request.animeId}/episode-image?ep=${request.episode}`,
+        { signal: controller.signal },
+      )
+        .then((response) => (response.ok ? response.json() : null))
+        .then((payload: { image?: string | null } | null) => {
+          if (payload?.image) {
+            setEpisodeStills((prev) => ({
+              ...prev,
+              [request.id]: payload.image as string,
+            }));
+          }
+        })
+        .catch(() => {
+          // Best-effort: the card keeps its banner/cover fallback.
+        });
+    });
+
+    return () => controller.abort();
+  }, [stillRequests]);
 
   // Keep Continue Watching fresh without a manual reload: refetch on mount
   // (back-navigation serves cached RSC payloads) and on tab refocus.
@@ -80,26 +136,8 @@ export function HomePersonalSections({
     );
   }
 
-  const aniList = user.aniListProfile;
-
   return (
     <>
-      {aniList ? (
-        <Link className="home-personal-block home-stats" href="/profile">
-          <span className="home-stats-item">
-            <strong>{aniList.daysWatched.toFixed(1)}</strong>
-            <small>Days Watched</small>
-          </span>
-          <span className="home-stats-item">
-            <strong>{aniList.animeCompleted}</strong>
-            <small>Anime Finished</small>
-          </span>
-          <span className="home-stats-item">
-            <strong>{aniList.animeCount}</strong>
-            <small>Total Anime</small>
-          </span>
-        </Link>
-      ) : null}
 
       {history.length ? (
         <section className="home-personal-block">
@@ -131,7 +169,7 @@ export function HomePersonalSections({
                 >
                   <span className="continue-card-thumb">
                     <EpisodeThumbnail
-                      src={entry.episodeImage || null}
+                      src={entry.episodeImage || episodeStills[entry.id] || null}
                       alt={entry.episodeTitle}
                       fallbackSrc={entry.anime.bannerImage || entry.anime.coverImage || null}
                     />
@@ -160,7 +198,7 @@ export function HomePersonalSections({
         </section>
       ) : null}
 
-      {watchlist.length ? (
+      {watchlist.length && !hideWatchlist ? (
         <section className="home-personal-block">
           <div className="home-section-head">
             <h2>Watchlist</h2>

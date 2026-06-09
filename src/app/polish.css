@@ -415,7 +415,7 @@ body {
             rgba(255, 255, 255, 0.08) 50%,
             rgba(255, 255, 255, 0.03) 70%
         ),
-        #000000;
+        var(--surface-0);
     background-size: 200% 100%;
     animation: watch-skeleton-shimmer 1.4s ease-in-out infinite;
 }
@@ -566,7 +566,7 @@ body.watch-theater-active .watch-player-frame {
     width: 92px;
     height: 38px;
     padding: 0 12px;
-    border-radius: 10px;
+    border-radius: var(--r-md);
     border: 1px solid var(--border-subtle);
     background: var(--surface-2);
     color: var(--text);
@@ -787,6 +787,105 @@ body.watch-theater-active .watch-player-frame {
 
 /* already set above via ::selection */
 
+/* ── Mobile: 768px ───────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+    .profile-stats-grid-visual {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ── Mobile: 640px — dense grids & panel padding ─────────────────────────── */
+
+@media (max-width: 640px) {
+    /* The shared discovery/search/browse grid sits at 4 columns down to
+     780px; on phones 3+ posters squeeze the card body text into broken
+     wraps, so step to 2 here — matching the width the same card renders
+     at in the trending rail. */
+    .anime-grid,
+    .loader-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+    }
+
+    /* Reclaim horizontal space inside panels. */
+    .home-section,
+    .airing-board,
+    .search-hero,
+    .tracker-panel,
+    .stream-card,
+    .episode-panel {
+        padding: 18px 16px;
+    }
+
+    .tab-content {
+        padding: 24px 16px;
+    }
+
+    /* Shrink the fixed thumbnail track so the copy keeps a usable width. */
+    .episode-card-new {
+        grid-template-columns: 132px minmax(0, 1fr);
+    }
+
+    .character-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* On a phone the details hero backdrop sits behind the poster + copy, so
+       blur and darken it a little to keep the foreground readable. The scale
+       hides the soft edges the blur would otherwise leave. */
+    .detail-backdrop {
+        transform: scale(1.06);
+        filter: blur(8px) saturate(0.92) brightness(0.68);
+    }
+
+    /* The Characters tab header packs an h2 + search box + count on one row;
+       on a phone that squeezes the heading into a broken wrap. Let the search
+       drop to its own full-width line below the title. */
+    .section-header-row {
+        flex-wrap: wrap;
+    }
+
+    .section-header-row h2 {
+        flex-shrink: 0;
+        font-size: 1.6rem;
+    }
+
+    .cast-search {
+        order: 1;
+        flex: 1 1 100%;
+        margin-left: 0;
+    }
+
+    /* Shrink the character + VA image tracks so the stacked name/role copy
+       between them keeps a usable width on a phone. */
+    .cast-card {
+        grid-template-columns: 76px minmax(0, 1fr) 76px;
+    }
+
+    .cast-info {
+        gap: 10px;
+        padding: 12px 14px;
+    }
+
+    /* The detail tab bar uses 40px gaps + 48px side padding, which crushes
+     its five labels ("Overview"… "More like this") into one-letter-wide
+     vertical columns on a phone. Turn it into a horizontal scroll strip
+     (scrollbars are hidden globally) with a gutter matching .tab-content. */
+    .anime-tabs-nav {
+        gap: 20px;
+        padding: 0 16px;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+    }
+
+    .anime-tabs-nav button {
+        flex: 0 0 auto;
+        white-space: nowrap;
+        font-size: 0.9rem;
+    }
+}
+
 /* ── Mobile: 480px — safeguard for small phones ──────────────────────────── */
 
 @media (max-width: 480px) {
@@ -926,97 +1025,6 @@ body.watch-theater-active .watch-player-frame {
 
     .search-modal-footer .search-modal-keybinds {
         display: none;
-    }
-}
-
-/* ── Mobile: 640px — dense grids & panel padding ─────────────────────────── */
-
-@media (max-width: 640px) {
-    /* The shared discovery/search/browse grid sits at 4 columns down to
-     780px; on phones 3+ posters squeeze the card body text into broken
-     wraps, so step to 2 here — matching the width the same card renders
-     at in the trending rail. */
-    .anime-grid,
-    .loader-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 14px;
-    }
-
-    /* Reclaim horizontal space inside panels. */
-    .home-section,
-    .airing-board,
-    .search-hero,
-    .tracker-panel,
-    .stream-card,
-    .episode-panel {
-        padding: 18px 16px;
-    }
-
-    .tab-content {
-        padding: 24px 16px;
-    }
-
-    /* Shrink the fixed thumbnail track so the copy keeps a usable width. */
-    .episode-card-new {
-        grid-template-columns: 132px minmax(0, 1fr);
-    }
-
-    .character-grid {
-        grid-template-columns: 1fr;
-    }
-
-    /* On a phone the details hero backdrop sits behind the poster + copy, so
-       blur and darken it a little to keep the foreground readable. The scale
-       hides the soft edges the blur would otherwise leave. */
-    .detail-backdrop {
-        transform: scale(1.06);
-        filter: blur(8px) saturate(0.92) brightness(0.68);
-    }
-
-    /* The Characters tab header packs an h2 + search box + count on one row;
-       on a phone that squeezes the heading into a broken wrap. Let the search
-       drop to its own full-width line below the title. */
-    .section-header-row {
-        flex-wrap: wrap;
-    }
-
-    .section-header-row h2 {
-        flex-shrink: 0;
-        font-size: 1.6rem;
-    }
-
-    .cast-search {
-        order: 1;
-        flex: 1 1 100%;
-        margin-left: 0;
-    }
-
-    /* Shrink the character + VA image tracks so the stacked name/role copy
-       between them keeps a usable width on a phone. */
-    .cast-card {
-        grid-template-columns: 76px minmax(0, 1fr) 76px;
-    }
-
-    .cast-info {
-        gap: 10px;
-        padding: 12px 14px;
-    }
-
-    /* The detail tab bar uses 40px gaps + 48px side padding, which crushes
-     its five labels ("Overview"… "More like this") into one-letter-wide
-     vertical columns on a phone. Turn it into a horizontal scroll strip
-     (scrollbars are hidden globally) with a gutter matching .tab-content. */
-    .anime-tabs-nav {
-        gap: 20px;
-        padding: 0 16px;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-    }
-
-    .anime-tabs-nav button {
-        flex: 0 0 auto;
-        white-space: nowrap;
-        font-size: 0.9rem;
     }
 }
 
@@ -1267,5 +1275,68 @@ button:not(:disabled),
 
     .site-footer-quote {
         font-size: 0.95rem;
+    }
+}
+
+/* ── Profile Stats Visuals ──────────────────────────────────────────────── */
+
+.radar-chart-container {
+    display: flex;
+    justify-content: center;
+    padding: 20px 0;
+}
+
+.radar-label {
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.donut-chart-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.donut-legend {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px 16px;
+    width: 100%;
+}
+
+.donut-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+}
+
+.donut-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.donut-label {
+    color: var(--text-secondary);
+    flex: 1;
+}
+
+.donut-count {
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.profile-stats-grid-visual {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 24px;
+}
+
+@media (max-width: 768px) {
+    .profile-stats-grid-visual {
+        grid-template-columns: 1fr;
     }
 }

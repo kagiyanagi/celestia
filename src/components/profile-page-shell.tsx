@@ -14,24 +14,19 @@ import { LogOut, Monitor, Pencil, Smartphone, Trash2 } from "lucide-react";
 import { AuthPanel } from "@/components/auth-panel";
 import { useAuth } from "@/components/auth-provider";
 import { CustomSelect } from "@/components/custom-select";
-import { EpisodeThumbnail } from "@/components/episode-thumbnail";
-import type { HistoryEntry, LibraryEntry } from "@/types/account";
+import { HomePersonalSections } from "@/components/home-personal-sections";
+import type { LibraryEntry } from "@/types/account";
 import { getDisplayTitle, formatRelativeSeconds, scoreLabel } from "@/lib/format";
 import { ProfileStatBars } from "@/components/profile-stat-bars";
 import { ProfileFavorites } from "@/components/profile-favorites";
 import {
   computeLibraryStats,
-  computeYearsInReview,
-  type YearInReview,
 } from "@/lib/profile-stats";
-import { getResumeEpisode } from "@/lib/resume";
 
 export function ProfilePageShell({
   library,
-  history,
 }: {
   library: LibraryEntry[];
-  history: HistoryEntry[];
 }) {
   const searchParams = useSearchParams();
   const { user, setUser } = useAuth();
@@ -45,8 +40,6 @@ export function ProfilePageShell({
   const [revoking, setRevoking] = useState<string | null>(null);
   const [unmuting, setUnmuting] = useState<number | null>(null);
   const [clearingHistory, setClearingHistory] = useState(false);
-  const [wrappedYear, setWrappedYear] = useState<number | null>(null);
-  const [wrappedCopied, setWrappedCopied] = useState(false);
   // Captured after mount so relative "last active" times don't diverge between
   // the server render and the client (which would trip hydration).
   const [now, setNow] = useState<number | null>(null);
@@ -65,13 +58,8 @@ export function ProfilePageShell({
   const libraryEntries = user?.libraryEntries.length
     ? user.libraryEntries
     : library;
-  const historyEntries = user?.historyEntries.length ? user.historyEntries : history;
   const stats = useMemo(
     () => computeLibraryStats(libraryEntries),
-    [libraryEntries],
-  );
-  const years = useMemo(
-    () => computeYearsInReview(libraryEntries),
     [libraryEntries],
   );
 
@@ -188,31 +176,6 @@ export function ProfilePageShell({
     }
   }
 
-  function copyWrapped(review: YearInReview) {
-    if (!user) return;
-    const title = review.topAnime
-      ? getDisplayTitle(review.topAnime.title, user.preferences.titleLanguage)
-      : null;
-    const parts = [
-      `My ${review.year} in anime on Celestia:`,
-      `${review.completed} completed`,
-      `${review.episodes} episodes`,
-    ];
-    if (review.meanScore != null) {
-      parts.push(`mean ${scoreLabel(review.meanScore)}`);
-    }
-    if (review.topGenre) {
-      parts.push(`top genre ${review.topGenre}`);
-    }
-    if (title) {
-      parts.push(`favourite ${title}`);
-    }
-    void navigator.clipboard?.writeText(parts.join(" · ")).then(() => {
-      setWrappedCopied(true);
-      window.setTimeout(() => setWrappedCopied(false), 2000);
-    });
-  }
-
   async function clearWatchHistory() {
     if (
       !window.confirm(
@@ -307,24 +270,6 @@ export function ProfilePageShell({
     });
   }
 
-  const recentHistory = historyEntries.slice(0, 12);
-  const continueWatching = (() => {
-    const seen = new Set<number>();
-    const items: { entry: HistoryEntry; resumeEp: number }[] = [];
-    for (const entry of historyEntries) {
-      if (seen.has(entry.animeId)) continue;
-      seen.add(entry.animeId);
-      const maxEpisode = entry.anime.airingCount ?? entry.anime.episodes ?? null;
-      const finishedShow =
-        entry.progressPercent >= 90 &&
-        maxEpisode != null &&
-        entry.episode >= maxEpisode;
-      if (finishedShow) continue;
-      items.push({ entry, resumeEp: getResumeEpisode(entry) });
-      if (items.length >= 12) break;
-    }
-    return items;
-  })();
   const libraryByAnimeId = new Map(
     libraryEntries.map((entry) => [entry.animeId, entry.anime]),
   );
@@ -332,8 +277,6 @@ export function ProfilePageShell({
     id,
     anime: libraryByAnimeId.get(id) ?? null,
   }));
-  const activeReview =
-    years.find((review) => review.year === wrappedYear) ?? years[0] ?? null;
 
   return (
     <div className="profile-page">
@@ -470,88 +413,7 @@ export function ProfilePageShell({
           </section>
         ) : null}
 
-        {continueWatching.length ? (
-          <section className="profile-section">
-            <div className="home-section-head">
-              <h2>Continue watching</h2>
-            </div>
-            <div className="profile-history-rail">
-              {continueWatching.map(({ entry, resumeEp }) => (
-                <Link
-                  key={entry.animeId}
-                  href={`/watch/${entry.animeId}?ep=${resumeEp}`}
-                  className="profile-history-card"
-                >
-                  <span className="profile-history-thumb">
-                    <EpisodeThumbnail
-                      src={entry.episodeImage || null}
-                      alt={entry.episodeTitle}
-                      fallbackSrc={
-                        entry.anime.bannerImage || entry.anime.coverImage || null
-                      }
-                    />
-                    {resumeEp === entry.episode && entry.progressPercent > 0 ? (
-                      <span className="profile-history-progress">
-                        <span
-                          style={{
-                            width: `${Math.min(100, entry.progressPercent)}%`,
-                          }}
-                        />
-                      </span>
-                    ) : null}
-                  </span>
-                  <small className="profile-history-series">
-                    {getDisplayTitle(
-                      entry.anime.title,
-                      user.preferences.titleLanguage,
-                    )}
-                  </small>
-                  <strong className="profile-history-episode">
-                    Episode {resumeEp}
-                  </strong>
-                </Link>
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        <section className="profile-section">
-          <div className="home-section-head">
-            <h2>History</h2>
-            <Link href="/history">View all</Link>
-          </div>
-          {recentHistory.length ? (
-            <div className="profile-history-rail">
-              {recentHistory.map((entry) => (
-                <Link
-                  key={entry.id}
-                  href={`/watch/${entry.animeId}?ep=${entry.episode}`}
-                  className="profile-history-card"
-                >
-                  <span className="profile-history-thumb">
-                    <EpisodeThumbnail
-                      src={entry.episodeImage || null}
-                      alt={entry.episodeTitle}
-                      fallbackSrc={entry.anime.bannerImage || entry.anime.coverImage || null}
-                    />
-                    {entry.durationLabel ? (
-                      <span className="profile-history-duration">{entry.durationLabel}</span>
-                    ) : null}
-                    {entry.progressPercent > 0 ? (
-                      <span className="profile-history-progress">
-                        <span style={{ width: `${Math.min(100, entry.progressPercent)}%` }} />
-                      </span>
-                    ) : null}
-                  </span>
-                  <small className="profile-history-series">{getDisplayTitle(entry.anime.title, user.preferences.titleLanguage)}</small>
-                  <strong className="profile-history-episode">{entry.episodeTitle}</strong>
-                </Link>
-              ))}
-            </div>
-          ) : (
-            <p className="profile-empty">Episodes you watch will show up here.</p>
-          )}
-        </section>
+        <HomePersonalSections user={user} hideWatchlist />
 
         {stats.total > 0 ? (
           <section className="profile-section">
@@ -596,103 +458,11 @@ export function ProfilePageShell({
                   <ProfileStatBars items={stats.formatBreakdown} />
                 </div>
               ) : null}
-              {stats.decadeBreakdown.length ? (
-                <div className="profile-stats-card">
-                  <h3>By decade</h3>
-                  <ProfileStatBars items={stats.decadeBreakdown} />
-                </div>
-              ) : null}
             </div>
           </section>
         ) : null}
 
         <ProfileFavorites favorites={user.favorites ?? []} />
-
-        {activeReview ? (
-          <section className="profile-section">
-            <div className="home-section-head">
-              <h2>Year in review</h2>
-              {years.length > 1 ? (
-                <div className="profile-wrapped-years">
-                  {years.map((review) => (
-                    <button
-                      key={review.year}
-                      type="button"
-                      className={`profile-wrapped-year ${
-                        review.year === activeReview.year ? "active" : ""
-                      }`}
-                      onClick={() => setWrappedYear(review.year)}
-                    >
-                      {review.year}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-            <div className="profile-wrapped-card">
-              <div className="profile-wrapped-head">
-                <span className="profile-wrapped-year-label">
-                  {activeReview.year}
-                </span>
-                <p className="profile-wrapped-headline">
-                  <strong>{activeReview.completed}</strong> anime completed
-                </p>
-              </div>
-              <div className="profile-wrapped-figures">
-                <div>
-                  <strong>{activeReview.episodes}</strong>
-                  <span>Episodes</span>
-                </div>
-                {activeReview.meanScore != null ? (
-                  <div>
-                    <strong>{scoreLabel(activeReview.meanScore)}</strong>
-                    <span>Mean score</span>
-                  </div>
-                ) : null}
-                {activeReview.topGenre ? (
-                  <div>
-                    <strong>{activeReview.topGenre}</strong>
-                    <span>Top genre</span>
-                  </div>
-                ) : null}
-              </div>
-              {activeReview.topAnime ? (
-                <Link
-                  href={`/anime/${activeReview.topAnime.id}`}
-                  className="profile-wrapped-top"
-                >
-                  <span className="profile-wrapped-top-poster">
-                    {activeReview.topAnime.coverImage ? (
-                      <Image
-                        src={activeReview.topAnime.coverImage}
-                        alt=""
-                        fill
-                        sizes="56px"
-                        className="poster-image"
-                      />
-                    ) : null}
-                  </span>
-                  <span className="profile-wrapped-top-meta">
-                    <span>Favourite of the year</span>
-                    <strong>
-                      {getDisplayTitle(
-                        activeReview.topAnime.title,
-                        user.preferences.titleLanguage,
-                      )}
-                    </strong>
-                  </span>
-                </Link>
-              ) : null}
-              <button
-                type="button"
-                className="secondary-action"
-                onClick={() => copyWrapped(activeReview)}
-              >
-                {wrappedCopied ? "Copied!" : "Copy summary"}
-              </button>
-            </div>
-          </section>
-        ) : null}
 
         {profile?.activity?.length ? (
           <section className="profile-section">
