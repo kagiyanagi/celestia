@@ -1,23 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
   LayoutGrid,
   List as ListIcon,
   Loader2,
 } from "lucide-react";
-import {
-  type FormEvent,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { BrowseFilterBar } from "@/components/browse-filter-bar";
 import { BrowseResultsGrid, type BrowseView } from "@/components/browse-results-grid";
@@ -95,7 +84,6 @@ export function BrowsePageShell({
   filterOptions,
   showSectionTitle = true,
 }: BrowsePageShellProps) {
-  const router = useRouter();
   const { user } = useAuth();
   const includeAdult = Boolean(
     user && !user.preferences.hideAdultContent && !filters.list,
@@ -176,7 +164,6 @@ export function BrowsePageShell({
 
   const activePageInfo = baseCollection.pageInfo;
   const currentPage = Math.max(1, activePageInfo.currentPage);
-  const lastPage = activePageInfo.lastPage ?? currentPage;
   const isLibraryView = isLibraryListFilter(filters.list);
 
   const appended = extra?.key === browseKey ? extra.items : [];
@@ -266,17 +253,6 @@ export function BrowsePageShell({
   const listLabel = getListFilterLabel(filters.list) || "Your list";
   const hasActiveQuery = filterKey !== basePath;
 
-  function pageHref(page: number): string {
-    return buildBrowseHref(basePath, filters, page);
-  }
-
-  function handleJump(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const input = new FormData(event.currentTarget).get("page");
-    const target = Math.min(lastPage, Math.max(1, Number(input) || 1));
-    router.push(pageHref(target));
-  }
-
   const pillGenres = PILL_GENRES.filter((genre) =>
     filterOptions.genres.some((option) => option.value === genre),
   );
@@ -288,12 +264,6 @@ export function BrowsePageShell({
       : [...activeGenres, genre];
     return buildBrowseHref(basePath, { ...filters, genre: joinListFilter(next) }, 1);
   }
-
-  const hasPreviousPage = currentPage > 1;
-  const hasNextPage =
-    activePageInfo.hasNextPage ||
-    (activePageInfo.lastPage !== null && currentPage < activePageInfo.lastPage);
-  const hasLastPage = activePageInfo.lastPage !== null && currentPage < lastPage;
 
   return (
     <div className="page-shell compact-page">
@@ -399,83 +369,6 @@ export function BrowsePageShell({
           </div>
         ) : null}
 
-        {!isLibraryView ? (
-          <nav className="pagination-nav" aria-label={`${title} pages`}>
-            {hasPreviousPage ? (
-              <Link
-                className="pagination-button"
-                href={pageHref(1)}
-                aria-label="First page"
-              >
-                <ChevronsLeft size={18} aria-hidden />
-              </Link>
-            ) : (
-              <span className="pagination-button disabled" aria-hidden>
-                <ChevronsLeft size={18} />
-              </span>
-            )}
-
-            {hasPreviousPage ? (
-              <Link
-                className="pagination-button"
-                href={pageHref(currentPage - 1)}
-                aria-label="Previous page"
-              >
-                <ChevronLeft size={18} aria-hidden />
-              </Link>
-            ) : (
-              <span className="pagination-button disabled" aria-hidden>
-                <ChevronLeft size={18} />
-              </span>
-            )}
-
-            <span className="pagination-button current" aria-current="page">
-              {currentPage}
-            </span>
-
-            {hasNextPage ? (
-              <Link
-                className="pagination-button"
-                href={pageHref(currentPage + 1)}
-                aria-label="Next page"
-              >
-                <ChevronRight size={18} aria-hidden />
-              </Link>
-            ) : (
-              <span className="pagination-button disabled" aria-hidden>
-                <ChevronRight size={18} />
-              </span>
-            )}
-
-            {hasLastPage ? (
-              <Link
-                className="pagination-button"
-                href={pageHref(lastPage)}
-                aria-label="Last page"
-              >
-                <ChevronsRight size={18} aria-hidden />
-              </Link>
-            ) : (
-              <span className="pagination-button disabled" aria-hidden>
-                <ChevronsRight size={18} />
-              </span>
-            )}
-
-            {activePageInfo.lastPage && activePageInfo.lastPage > 1 ? (
-              <form className="pagination-jump" onSubmit={handleJump}>
-                <input
-                  type="number"
-                  name="page"
-                  min={1}
-                  max={lastPage}
-                  defaultValue={currentPage}
-                  aria-label={`Jump to page (1-${lastPage})`}
-                />
-                <span>/ {lastPage}</span>
-              </form>
-            ) : null}
-          </nav>
-        ) : null}
       </section>
     </div>
   );

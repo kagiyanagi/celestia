@@ -7,7 +7,7 @@ export default async function ProfilePage() {
   const sessionUser = await getSessionUser();
 
   if (!sessionUser) {
-    return <ProfilePageShell history={[]} library={[]} />;
+    return <ProfilePageShell library={[]} />;
   }
 
   const user = await getPrivateUser(sessionUser.id);
@@ -18,7 +18,6 @@ export default async function ProfilePage() {
 
   return (
     <ProfilePageShell
-      history={user.historyEntries}
       library={user.libraryEntries}
     />
   );

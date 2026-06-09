@@ -1426,9 +1426,9 @@ const VIEWER_PROFILE_QUERY = `
 `;
 
 const VIEWER_ACTIVITY_QUERY = `
-  query ViewerActivity {
+  query ViewerActivity($userId: Int) {
     Page(page: 1, perPage: 50) {
-      activities(sort: ID_DESC, type: ANIME_LIST) {
+      activities(userId: $userId, sort: ID_DESC, type: ANIME_LIST) {
         ... on ListActivity {
           id
           progress
@@ -1783,14 +1783,24 @@ export async function exchangeAniListCode(code: string) {
 }
 
 export async function getAniListViewerProfile(accessToken: string) {
-  const [profileData, activityData] = await Promise.all([
-    fetchAniListWithToken<ViewerProfileResult>(accessToken, VIEWER_PROFILE_QUERY),
-    fetchAniListWithToken<ViewerActivityResult>(accessToken, VIEWER_ACTIVITY_QUERY),
-  ]);
+  const profileData = await fetchAniListWithToken<ViewerProfileResult>(
+    accessToken,
+    VIEWER_PROFILE_QUERY,
+  );
 
   if (!profileData.Viewer) {
     throw new Error("AniList viewer profile could not be loaded.");
   }
+
+  // Scope activity to this viewer. Without the userId filter, AniList's
+  // `Page.activities` returns the global, site-wide feed (everyone's watches),
+  // which would pollute the user's history with strangers' activity. The id
+  // comes from the profile, so this must run after it.
+  const activityData = await fetchAniListWithToken<ViewerActivityResult>(
+    accessToken,
+    VIEWER_ACTIVITY_QUERY,
+    { userId: profileData.Viewer.id },
+  );
 
   const animeStats = profileData.Viewer.statistics?.anime;
   const completedCount =

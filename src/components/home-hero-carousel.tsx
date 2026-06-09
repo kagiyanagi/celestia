@@ -3,30 +3,22 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Captions, Play, Star } from "lucide-react";
+import { Captions, Star } from "lucide-react";
 
 import { useBannerContext } from "@/components/banner-fallback-provider";
 import { DetailsSaveButton } from "@/components/details-save-button";
 import { DubBadge } from "@/components/dub-badge";
 
 import { cleanDescription, getDisplayTitle } from "@/lib/format";
-import { buildWatchHref } from "@/lib/watch-href";
 import { useTitleLanguage } from "@/components/use-title-language";
 import type { AnimeSummary } from "@/types/anime";
 
-type HomeResume = {
-  anime: AnimeSummary;
-  episode: number;
-};
-
 type HomeHeroCarouselProps = {
   items: AnimeSummary[];
-  resume?: HomeResume | null;
 };
 
 export function HomeHeroCarousel({
   items,
-  resume = null,
 }: HomeHeroCarouselProps) {
   const titleLanguage = useTitleLanguage();
   const [activeIndex, setActiveIndex] = useState(0);
@@ -37,15 +29,9 @@ export function HomeHeroCarousel({
   const [isPaused, setIsPaused] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
 
-  // For signed-in users the most recent watch leads the carousel as a "Jump
-  // back in" slide; it's deduped from the airing list so it never appears twice.
   const heroItems = useMemo(() => {
-    if (!resume) return items;
-    return [
-      resume.anime,
-      ...items.filter((item) => item.id !== resume.anime.id),
-    ].slice(0, 5);
-  }, [items, resume]);
+    return items.slice(0, 5);
+  }, [items]);
 
   const goNext = useCallback(() => {
     setActiveIndex((current) =>
@@ -239,7 +225,6 @@ export function HomeHeroCarousel({
               cleanDescription(item.description) ||
               (item.genres ?? []).slice(0, 3).join(" • ") ||
               "Anime";
-            const isResume = resume?.anime.id === item.id;
 
             return (
               <article
@@ -278,11 +263,6 @@ export function HomeHeroCarousel({
                 <div className="celestia-hero-shade" />
                 <div className="celestia-copy">
                   <div className="celestia-copy-main">
-                    {isResume ? (
-                      <span className="celestia-hero-kicker">
-                        Continue watching
-                      </span>
-                    ) : null}
                     <Link
                       href={`/anime/${item.id}`}
                       className="celestia-hero-title-link"
@@ -315,19 +295,7 @@ export function HomeHeroCarousel({
                   </div>
 
                   <div className="celestia-actions">
-                    {isResume && resume ? (
-                      <Link
-                        className="celestia-watch"
-                        href={buildWatchHref({
-                          animeId: item.id,
-                          episode: resume.episode,
-                        })}
-                        onClick={handleLinkClick}
-                      >
-                        <Play size={16} aria-hidden />
-                        Resume EP {resume.episode}
-                      </Link>
-                    ) : item.status === "NOT_YET_RELEASED" ? (
+                    {item.status === "NOT_YET_RELEASED" ? (
                       <div className="celestia-watch disabled">Coming Soon</div>
                     ) : (
                       <Link
@@ -345,8 +313,6 @@ export function HomeHeroCarousel({
             );
           })}
         </div>
-
-
 
         <div className="celestia-dots" aria-label="Featured airing anime">
           {heroItems.map((item, index) => (

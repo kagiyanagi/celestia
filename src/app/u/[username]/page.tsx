@@ -7,7 +7,7 @@ import { ProfileStatBars } from "@/components/profile-stat-bars";
 import { ProfileFavorites } from "@/components/profile-favorites";
 import { getPublicProfile } from "@/lib/account-store";
 import { getDisplayTitle, scoreLabel } from "@/lib/format";
-import { computeLibraryStats, computeYearsInReview } from "@/lib/profile-stats";
+import { computeLibraryStats } from "@/lib/profile-stats";
 
 type PublicProfileProps = {
   params: Promise<{ username: string }>;
@@ -48,7 +48,6 @@ export default async function PublicProfilePage({
   }
 
   const stats = computeLibraryStats(profile.libraryEntries);
-  const topYear = computeYearsInReview(profile.libraryEntries)[0] ?? null;
   const finished = profile.libraryEntries.filter(
     (entry) => entry.status === "completed",
   ).length;
@@ -130,62 +129,6 @@ export default async function PublicProfilePage({
       </section>
 
       <div className="page-shell profile-body">
-        {topYear ? (
-          <section className="profile-section">
-            <h2>Year in review</h2>
-            <div className="profile-wrapped-card">
-              <div className="profile-wrapped-head">
-                <span className="profile-wrapped-year-label">
-                  {topYear.year}
-                </span>
-                <p className="profile-wrapped-headline">
-                  <strong>{topYear.completed}</strong> anime completed
-                </p>
-              </div>
-              <div className="profile-wrapped-figures">
-                <div>
-                  <strong>{topYear.episodes}</strong>
-                  <span>Episodes</span>
-                </div>
-                {topYear.meanScore != null ? (
-                  <div>
-                    <strong>{scoreLabel(topYear.meanScore)}</strong>
-                    <span>Mean score</span>
-                  </div>
-                ) : null}
-                {topYear.topGenre ? (
-                  <div>
-                    <strong>{topYear.topGenre}</strong>
-                    <span>Top genre</span>
-                  </div>
-                ) : null}
-              </div>
-              {topYear.topAnime ? (
-                <Link
-                  href={`/anime/${topYear.topAnime.id}`}
-                  className="profile-wrapped-top"
-                >
-                  <span className="profile-wrapped-top-poster">
-                    {topYear.topAnime.coverImage ? (
-                      <Image
-                        src={topYear.topAnime.coverImage}
-                        alt=""
-                        fill
-                        sizes="56px"
-                        className="poster-image"
-                      />
-                    ) : null}
-                  </span>
-                  <span className="profile-wrapped-top-meta">
-                    <span>Favourite of the year</span>
-                    <strong>{getDisplayTitle(topYear.topAnime.title)}</strong>
-                  </span>
-                </Link>
-              ) : null}
-            </div>
-          </section>
-        ) : null}
-
         <ProfileFavorites favorites={profile.favorites} />
 
         {stats.total > 0 ? (
@@ -213,12 +156,6 @@ export default async function PublicProfilePage({
                 <div className="profile-stats-card">
                   <h3>Formats</h3>
                   <ProfileStatBars items={stats.formatBreakdown} />
-                </div>
-              ) : null}
-              {stats.decadeBreakdown.length ? (
-                <div className="profile-stats-card">
-                  <h3>By decade</h3>
-                  <ProfileStatBars items={stats.decadeBreakdown} />
                 </div>
               ) : null}
             </div>

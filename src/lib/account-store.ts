@@ -296,18 +296,26 @@ function mergeAniListPull(current: LibraryEntry[], incoming: LibraryEntry[]) {
 
 /**
  * Folds AniList list-activity ("watched episode N") into local watch history so
- * episodes marked watched on AniList surface in Celestia. A local entry for the
- * same anime+episode always wins (it carries the real still/title and an actual
- * Celestia watch), so this only fills gaps. AniList exposes no per-episode still
- * or title, so those stay empty and the card falls back to the cover art.
+ * episodes marked watched on AniList surface in Celestia. A native Celestia
+ * watch for the same anime+episode always wins (it carries the real still/title
+ * and an actual local watch), so this only fills gaps. AniList exposes no
+ * per-episode still or title, so those stay empty and the card falls back to
+ * the cover art.
+ *
+ * AniList-derived entries (id prefixed `anilist-`) are fully re-derived from the
+ * current activity feed each sync rather than accreted: the prior ones are
+ * dropped and rebuilt. This keeps them in step with AniList and self-heals any
+ * stale data — notably entries left by an earlier unscoped pull that mistook
+ * AniList's global feed for the viewer's. Native watches (UUID ids) are kept.
  */
 function mergeAniListHistory(
   current: HistoryEntry[],
   profile: AniListProfile,
   libraryEntries: LibraryEntry[],
 ) {
+  const native = current.filter((entry) => !entry.id.startsWith("anilist-"));
   const seen = new Set(
-    current.map((entry) => `${entry.animeId}:${entry.episode}`),
+    native.map((entry) => `${entry.animeId}:${entry.episode}`),
   );
   const animeById = new Map(
     libraryEntries.map((entry) => [entry.animeId, entry.anime]),
@@ -340,7 +348,7 @@ function mergeAniListHistory(
       });
     });
 
-  return [...current, ...additions]
+  return [...native, ...additions]
     .sort(
       (a, b) =>
         new Date(b.watchedAt).getTime() - new Date(a.watchedAt).getTime(),
