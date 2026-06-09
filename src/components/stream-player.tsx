@@ -69,15 +69,29 @@ export function StreamPlayer({
     return () => window.clearTimeout(timer);
   }, [loaded, sourceIndex, sources.length]);
 
+  const tryingFallback = sourceIndex > 0;
+
   return (
-    <iframe
-      src={activeSource.embedUrl}
-      title={title}
-      allow="autoplay; fullscreen; picture-in-picture"
-      allowFullScreen
-      referrerPolicy={activeSource.referrerPolicy ?? DEFAULT_REFERRER_POLICY}
-      onError={switchToFallback}
-      onLoad={() => setLoaded(true)}
-    />
+    <>
+      <iframe
+        src={activeSource.embedUrl}
+        title={title}
+        allow="autoplay; fullscreen; picture-in-picture"
+        allowFullScreen
+        referrerPolicy={activeSource.referrerPolicy ?? DEFAULT_REFERRER_POLICY}
+        onError={switchToFallback}
+        onLoad={() => setLoaded(true)}
+      />
+      {!loaded ? (
+        <div className="watch-player-skeleton" role="status" aria-live="polite">
+          <span className="watch-player-spinner" aria-hidden />
+          <span>
+            {tryingFallback
+              ? `Trying alternate source (${sourceIndex + 1} of ${sources.length})…`
+              : "Loading player…"}
+          </span>
+        </div>
+      ) : null}
+    </>
   );
 }

@@ -24,6 +24,8 @@ export async function GET() {
         joinedAt: user.joinedAt,
         aniListProfile: user.aniListProfile,
         preferences: user.preferences,
+        mutedAnimeIds: user.mutedAnimeIds ?? [],
+        favorites: user.favorites ?? [],
         devices: user.devices,
         libraryEntries: user.libraryEntries,
         historyEntries: user.historyEntries,

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { Search } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useAuth } from "@/components/auth-provider";
 import { AnimeDetails, CharacterCredit } from "@/types/anime";
 
 interface DetailsCastProps {
@@ -9,8 +10,21 @@ interface DetailsCastProps {
   onShowMore?: () => void;
 }
 
+type RoleFilter = "all" | "MAIN" | "SUPPORTING";
+
+const ROLE_FILTERS: Array<{ value: RoleFilter; label: string }> = [
+  { value: "all", label: "All" },
+  { value: "MAIN", label: "Main" },
+  { value: "SUPPORTING", label: "Supporting" },
+];
+
 function characterUrl(char: CharacterCredit): string {
   return `https://anilist.co/character/${char.id}`;
+}
+
+function roleLabel(role?: string | null): string {
+  if (!role) return "Character";
+  return role.charAt(0) + role.slice(1).toLowerCase();
 }
 
 function matchesCastQuery(char: CharacterCredit, query: string): boolean {
@@ -27,9 +41,13 @@ function matchesCastQuery(char: CharacterCredit, query: string): boolean {
 }
 
 export function DetailsCast({ anime, mode, onShowMore }: DetailsCastProps) {
+  const { user } = useAuth();
   const [query, setQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
   const [extraCharacters, setExtraCharacters] = useState<CharacterCredit[]>([]);
   const loadStartedRef = useRef(false);
+  // Dub watchers care about the English cast first; everyone else, Japanese.
+  const englishFirst = user?.preferences.defaultAudio === "dub";
 
   // The detail render ships only character page 1; once the full Cast tab is
   // shown, lazy-load the remaining pages from the API and append them. Keeps a
@@ -166,16 +184,34 @@ export function DetailsCast({ anime, mode, onShowMore }: DetailsCastProps) {
     );
   }
 
-  const allCharacters = mergedCharacters;
+  const allCharacters =
+    roleFilter === "all"
+      ? mergedCharacters
+      : mergedCharacters.filter((char) => char.role === roleFilter);
   const normalizedQuery = query.trim().toLowerCase();
   const visibleCharacters = normalizedQuery
     ? allCharacters.filter((char) => matchesCastQuery(char, normalizedQuery))
     : allCharacters;
+  const staff = anime.staff ?? [];
 
   return (
     <div className="tab-characters">
       <div className="section-header-row">
         <h2>Characters</h2>
+        <div className="cast-role-filter" role="tablist" aria-label="Filter by role">
+          {ROLE_FILTERS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="tab"
+              aria-selected={roleFilter === option.value}
+              className={roleFilter === option.value ? "is-active" : undefined}
+              onClick={() => setRoleFilter(option.value)}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
         <label className="ep-search cast-search">
           <Search size={16} aria-hidden />
           <input
@@ -218,52 +254,58 @@ export function DetailsCast({ anime, mode, onShowMore }: DetailsCastProps) {
               <div className="character-tab-copy">
                 <h3>{char.name}</h3>
                 {char.nativeName ? <p>{char.nativeName}</p> : null}
-                <span>{char.role || "Character"}</span>
+                <span>{roleLabel(char.role)}</span>
               </div>
             </div>
 
             <div className="voice-actor-stack">
-              <div className="voice-actor-row">
-                <div className="voice-actor-avatar">
-                  {char.voiceActors?.japanese?.image ? (
-                    <Image
-                      src={char.voiceActors.japanese.image}
-                      alt={char.voiceActors.japanese.name}
-                      fill
-                      sizes="56px"
-                    />
-                  ) : null}
+              {(englishFirst
+                ? ([
+                    ["English", char.voiceActors?.english],
+                    ["Japanese", char.voiceActors?.japanese],
+                  ] as const)
+                : ([
+                    ["Japanese", char.voiceActors?.japanese],
+                    ["English", char.voiceActors?.english],
+                  ] as const)
+              ).map(([language, actor]) => (
+                <div className="voice-actor-row" key={language}>
+                  <div className="voice-actor-avatar">
+                    {actor?.image ? (
+                      <Image src={actor.image} alt={actor.name} fill sizes="56px" />
+                    ) : null}
+                  </div>
+                  <div className="voice-actor-copy">
+                    <strong>{actor?.name || "Not listed"}</strong>
+                    <span>{language} VA</span>
+                  </div>
                 </div>
-                <div className="voice-actor-copy">
-                  <strong>
-                    {char.voiceActors?.japanese?.name || "Not listed"}
-                  </strong>
-                  <span>Japanese VA</span>
-                </div>
-              </div>
-
-              <div className="voice-actor-row">
-                <div className="voice-actor-avatar">
-                  {char.voiceActors?.english?.image ? (
-                    <Image
-                      src={char.voiceActors.english.image}
-                      alt={char.voiceActors.english.name}
-                      fill
-                      sizes="56px"
-                    />
-                  ) : null}
-                </div>
-                <div className="voice-actor-copy">
-                  <strong>
-                    {char.voiceActors?.english?.name || "Not listed"}
-                  </strong>
-                  <span>English VA</span>
-                </div>
-              </div>
+              ))}
             </div>
           </a>
         ))}
       </div>
+
+      {staff.length > 0 ? (
+        <div className="staff-section">
+          <h2>Staff</h2>
+          <div className="staff-grid">
+            {staff.map((member) => (
+              <div className="staff-card" key={`${member.id}-${member.role}`}>
+                <div className="staff-img">
+                  {member.image ? (
+                    <Image src={member.image} alt={member.name} fill sizes="100px" />
+                  ) : null}
+                </div>
+                <div className="staff-info">
+                  <span className="staff-role">{member.role}</span>
+                  <strong className="staff-name">{member.name}</strong>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

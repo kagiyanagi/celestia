@@ -1,21 +1,29 @@
 import type { Metadata } from "next";
 
 import { BrowsePageShell } from "@/components/browse-page-shell";
-import { parseBrowseParams, type BrowseSearchParams } from "@/lib/browse-filters";
+import {
+  buildBrowseMetaTitle,
+  parseBrowseParams,
+  type BrowseSearchParams,
+} from "@/lib/browse-filters";
 import {
   getBrowseCollection,
   getBrowseFilterOptions,
 } from "@/lib/providers/anilist";
-
-export const metadata: Metadata = {
-  title: "Trending"
-};
 
 export const revalidate = 900;
 
 type TrendingPageProps = {
   searchParams?: Promise<BrowseSearchParams>;
 };
+
+export async function generateMetadata({
+  searchParams,
+}: TrendingPageProps): Promise<Metadata> {
+  const params = searchParams ? await searchParams : {};
+  const { filters } = parseBrowseParams(params);
+  return { title: buildBrowseMetaTitle("Trending", filters) };
+}
 
 export default async function TrendingPage({ searchParams }: TrendingPageProps) {
   const params = searchParams ? await searchParams : {};

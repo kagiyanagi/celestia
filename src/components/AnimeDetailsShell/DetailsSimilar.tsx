@@ -1,7 +1,4 @@
-import Image from "next/image";
-import Link from "next/link";
-import { getDisplayTitle } from "@/lib/format";
-import { useTitleLanguage } from "@/components/use-title-language";
+import { AnimeCard } from "@/components/anime-card";
 import type { AnimeSummary } from "@/types/anime";
 
 interface DetailsSimilarProps {
@@ -9,35 +6,18 @@ interface DetailsSimilarProps {
 }
 
 export function DetailsSimilar({ recommendations }: DetailsSimilarProps) {
-  const titleLanguage = useTitleLanguage();
+  if (recommendations.length === 0) {
+    return <div className="empty-panel">No recommendations for this title yet.</div>;
+  }
+
+  // Reuse the shared card so recommendations get the same score, dub badge,
+  // library-status chip, and hover quick-add as everywhere else. AniList
+  // already returns these sorted by recommendation strength (RATING_DESC).
   return (
     <div className="tab-similar">
-      <div className="relations-grid">
+      <div className="anime-grid">
         {recommendations.map((rec) => (
-          <Link
-            key={rec.id}
-            href={`/anime/${rec.id}`}
-            className="relation-card-wide"
-          >
-            <div className="rel-poster">
-              {rec.coverImage && (
-                <Image
-                  src={rec.coverImage}
-                  alt={getDisplayTitle(rec.title, titleLanguage)}
-                  fill
-                  sizes="80px"
-                />
-              )}
-            </div>
-            <div className="rel-info">
-              <strong className="rel-title">
-                {getDisplayTitle(rec.title, titleLanguage)}
-              </strong>
-              <span className="rel-meta">
-                {rec.format} • {rec.season} {rec.seasonYear}
-              </span>
-            </div>
-          </Link>
+          <AnimeCard key={rec.id} anime={rec} />
         ))}
       </div>
     </div>

@@ -6,6 +6,8 @@ import {
   useContext,
   useEffect,
   useState,
+  type Dispatch,
+  type SetStateAction,
 } from "react";
 import type { PublicUser } from "@/types/account";
 
@@ -13,7 +15,7 @@ type AuthContextValue = {
   user: PublicUser | null;
   loading: boolean;
   refreshUser: () => Promise<void>;
-  setUser: (user: PublicUser | null) => void;
+  setUser: Dispatch<SetStateAction<PublicUser | null>>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);

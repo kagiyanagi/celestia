@@ -101,3 +101,20 @@ export function useDubCount(id: number): number | null {
 
   return context?.counts.get(id) ?? null;
 }
+
+/**
+ * Registers many ids at once and returns the resolved-count map. Used by the
+ * browse grid's "dubbed only" filter, which must read counts across the page.
+ */
+export function useDubCounts(ids: number[]): Map<number, number> {
+  const context = useContext(DubBadgeContext);
+  const key = ids.join(",");
+
+  useEffect(() => {
+    ids.forEach((id) => context?.register(id));
+    // `key` captures the id set; re-register only when it changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [context, key]);
+
+  return context?.counts ?? new Map<number, number>();
+}

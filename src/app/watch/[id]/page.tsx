@@ -1,8 +1,11 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { cookies } from "next/headers";
+import { notFound, redirect } from "next/navigation";
 
+import { buildWatchHref } from "@/lib/watch-href";
 import { HeaderImageSetter } from "@/components/header-image-setter";
 import { WatchCompletionPrompt } from "@/components/watch-completion-prompt";
 import { WatchEpisodeTabs } from "@/components/watch-episode-tabs";
@@ -285,6 +288,83 @@ function RelationCard({ relation }: { relation: RelationItem }) {
   );
 }
 
+type EpisodeLink = { number: number; page: number };
+
+type PlayerSectionProps = {
+  animeId: number;
+  title: string;
+  secondaryTitle: string | null;
+  episode: number;
+  page: number;
+  order: "asc" | "desc";
+  currentEpisodeTitle: string;
+  previousEpisode: EpisodeLink | null;
+  nextEpisode: EpisodeLink | null;
+  providerOptions: ReturnType<typeof getStreamingProviderOptions>;
+  streamingConfigured: boolean;
+  trackingAnime: AnimeSummary;
+  episodeTitle: string;
+  episodeImage: string | null;
+  durationLabel: string | null;
+  totalEpisodes: number;
+  // Source-resolution inputs — awaited inside this boundary so a slow provider
+  // never blocks the surrounding shell (episode list, related, recommendations).
+  canRequestSource: boolean;
+  streamLookupTitle: string[];
+  providerAnimeId: number | null;
+  audioPreference: StreamAudioType | null;
+  server: string | undefined;
+  expectedEpisodes: number | null;
+};
+
+function PlayerSkeleton() {
+  return (
+    <section className="watch-player-stage">
+      <div className="watch-player-frame">
+        <div className="watch-player-skeleton" aria-hidden />
+        <div className="watch-player-loading" role="status" aria-live="polite">
+          <span className="watch-player-spinner" aria-hidden />
+          <span>Finding a source…</span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// Resolves the embed inside a Suspense boundary. The page no longer awaits the
+// stream provider before first paint — the shell streams immediately and the
+// player swaps in when the (often slow, replaceable) provider responds.
+async function PlayerSection({
+  canRequestSource,
+  streamLookupTitle,
+  providerAnimeId,
+  audioPreference,
+  server,
+  expectedEpisodes,
+  ...panel
+}: PlayerSectionProps) {
+  const source = canRequestSource
+    ? await getStreamSource({
+        animeTitle: streamLookupTitle,
+        providerAnimeId,
+        episode: panel.episode,
+        providerId: server,
+        audio: audioPreference,
+        expectedEpisodes,
+        anilistId: panel.animeId,
+      })
+    : null;
+
+  return (
+    <WatchPlayerPanel
+      {...panel}
+      // The player only needs the current embed; drop the provider's full
+      // episode list (huge for mega-shows) — the browser owns navigation.
+      initialSource={source ? { ...source, episodes: [] } : null}
+    />
+  );
+}
+
 export async function generateMetadata({
   params,
   searchParams,
@@ -325,6 +405,25 @@ export default async function WatchPage({
     notFound();
   }
 
+  // Resume: with no explicit episode, jump to the next unwatched episode from
+  // the viewer's tracked progress instead of always starting at episode 1.
+  if (ep === undefined) {
+    const trackedProgress =
+      viewer?.libraryEntries.find((entry) => entry.animeId === animeId)
+        ?.progress ?? 0;
+    if (trackedProgress > 0) {
+      const limit = getReleasedEpisodeLimit(anime);
+      const maxEpisode = limit ?? anime.episodes ?? trackedProgress;
+      const resumeEpisode = Math.min(
+        trackedProgress + 1,
+        Math.max(1, maxEpisode),
+      );
+      if (resumeEpisode > 1) {
+        redirect(buildWatchHref({ animeId, episode: resumeEpisode }));
+      }
+    }
+  }
+
   const title = getDisplayTitle(anime.title, viewer?.preferences.titleLanguage);
   const secondaryTitle = getSecondaryTitle(
     anime.title,
@@ -346,34 +445,28 @@ export default async function WatchPage({
   const episode = clampEpisodeToLimit(requestedEpisode, releasedEpisodeLimit);
   const canRequestSource =
     releasedEpisodeLimit === null || releasedEpisodeLimit > 0;
-  const source = canRequestSource
-    ? await getStreamSource({
-        animeTitle: streamLookupTitle,
-        providerAnimeId,
-        episode,
-        providerId: server,
-        audio: audioPreference,
-        expectedEpisodes: anime.episodes ?? anime.airingCount ?? null,
-        anilistId: anime.id,
-      })
-    : null;
+  const streamingConfigured = isStreamingConfigured();
   const providerOptions = getStreamingProviderOptions();
+  // Honor the remembered server (set by the panel on switch) when the URL
+  // carries no explicit server.
+  const preferredServer =
+    server ?? (await cookies()).get("celestia_server")?.value;
   const activeProviderId =
-    source?.providerId ||
-    getActiveStreamingProviderId(server) ||
+    getActiveStreamingProviderId(preferredServer) ||
     providerOptions[0]?.id ||
     null;
-  const activeProviderAnimeId = source?.animeId || providerAnimeId;
-  const activeAudio = source?.audio || audioPreference || null;
+  const activeProviderAnimeId = providerAnimeId;
+  const activeAudio = audioPreference || null;
+  // The episode list is built from catalog metadata only, so it renders without
+  // waiting on the stream provider (resolved separately in <PlayerSection>).
   const fallbackTotal =
     releasedEpisodeLimit ??
-    (source?.episodes.length ||
-      anime.streamingEpisodes?.length ||
+    (anime.streamingEpisodes?.length ||
       anime.airingCount ||
       anime.episodes ||
       episode);
   const episodes = buildEpisodeList({
-    providerEpisodes: source?.episodes || [],
+    providerEpisodes: [],
     metadataEpisodes: anime.streamingEpisodes || [],
     fallbackTotal,
     releasedEpisodeLimit,
@@ -455,7 +548,7 @@ export default async function WatchPage({
         episodeTitle={currentEpisode?.title || `Episode ${episode}`}
         episodeImage={currentEpisode?.thumbnail || null}
         durationLabel={anime.duration ? `${anime.duration}:00` : null}
-        hasSource={Boolean(source?.embedUrl)}
+        hasSource={canRequestSource && streamingConfigured}
       />
 
       <WatchSelectionProvider
@@ -465,28 +558,35 @@ export default async function WatchPage({
           sid: activeProviderAnimeId,
         }}
       >
-        <WatchPlayerPanel
-          // Episode switches are real route navigations, so the panel stays
-          // mounted and its `useState(initialSource)` seed would otherwise go
-          // stale (player keeps the old episode while metadata updates). Keying
-          // on the episode remounts it with the freshly resolved source; server/
-          // audio swaps keep the same ep, so they still swap in place.
-          key={`${anime.id}:${episode}`}
-          animeId={anime.id}
-          title={title}
-          secondaryTitle={secondaryTitle}
-          episode={episode}
-          page={episodePage}
-          order={episodeOrder}
-          currentEpisodeTitle={currentEpisode?.title || `Episode ${episode}`}
-          previousEpisode={previousEpisodeLink}
-          nextEpisode={nextEpisodeLink}
-          providerOptions={providerOptions}
-          streamingConfigured={isStreamingConfigured()}
-          // The player only needs the current embed; drop the provider's full
-          // episode list (huge for mega-shows) — the browser owns navigation.
-          initialSource={source ? { ...source, episodes: [] } : null}
-        />
+        {/* Episode switches are real route navigations; keying the boundary on
+            the episode remounts the player with a freshly resolved source,
+            while server/audio swaps keep the same ep and swap in place. */}
+        <Suspense key={`${anime.id}:${episode}`} fallback={<PlayerSkeleton />}>
+          <PlayerSection
+            animeId={anime.id}
+            title={title}
+            secondaryTitle={secondaryTitle}
+            episode={episode}
+            page={episodePage}
+            order={episodeOrder}
+            currentEpisodeTitle={currentEpisode?.title || `Episode ${episode}`}
+            previousEpisode={previousEpisodeLink}
+            nextEpisode={nextEpisodeLink}
+            providerOptions={providerOptions}
+            streamingConfigured={streamingConfigured}
+            trackingAnime={recorderAnime}
+            episodeTitle={currentEpisode?.title || `Episode ${episode}`}
+            episodeImage={currentEpisode?.thumbnail || null}
+            durationLabel={anime.duration ? `${anime.duration}:00` : null}
+            totalEpisodes={episodes.length}
+            canRequestSource={canRequestSource}
+            streamLookupTitle={streamLookupTitle}
+            providerAnimeId={providerAnimeId}
+            audioPreference={audioPreference}
+            server={preferredServer}
+            expectedEpisodes={anime.episodes ?? anime.airingCount ?? null}
+          />
+        </Suspense>
 
         <section className="watch-section-panel" id="episodes">
           <WatchEpisodeTabs
@@ -510,6 +610,7 @@ export default async function WatchPage({
             }))}
             activeEpisode={episode}
             currentEpisode={currentEpisodeOverview}
+            trackingAnime={recorderAnime}
           />
         </section>
       </WatchSelectionProvider>

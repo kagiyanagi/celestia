@@ -358,6 +358,321 @@ body {
     border: 1px solid rgba(34, 197, 94, 0.2);
 }
 
+/* ── Watch page — player controls & tracking ─────────────────────────────── */
+
+.watch-player-top-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.watch-icon-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    border: 1px solid var(--border-subtle);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--muted-strong);
+    cursor: pointer;
+    transition:
+        background 120ms ease,
+        border-color 120ms ease,
+        color 120ms ease;
+}
+
+.watch-icon-toggle:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--border-default);
+    color: #ffffff;
+}
+
+.watch-icon-toggle.active {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: var(--border-strong);
+    color: #ffffff;
+}
+
+.watch-player-skeleton {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    border-radius: inherit;
+    color: var(--muted);
+    font-size: 0.82rem;
+    letter-spacing: 0.03em;
+    background:
+        linear-gradient(
+            110deg,
+            rgba(255, 255, 255, 0.03) 30%,
+            rgba(255, 255, 255, 0.08) 50%,
+            rgba(255, 255, 255, 0.03) 70%
+        ),
+        #000000;
+    background-size: 200% 100%;
+    animation: watch-skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes watch-skeleton-shimmer {
+    to {
+        background-position: -200% 0;
+    }
+}
+
+.watch-empty-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+    margin-top: 6px;
+    padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid var(--border-default);
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.watch-empty-action:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.watch-empty-action:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.watch-now-side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+}
+
+.watch-now-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.watch-track-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 36px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid var(--border-subtle);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--muted-strong);
+    font-size: 0.82rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition:
+        background 120ms ease,
+        border-color 120ms ease,
+        color 120ms ease;
+}
+
+.watch-track-button:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.09);
+    border-color: var(--border-default);
+    color: #ffffff;
+}
+
+.watch-track-button.active {
+    color: #4ade80;
+    border-color: rgba(34, 197, 94, 0.35);
+    background: rgba(34, 197, 94, 0.1);
+}
+
+.watch-track-button:disabled {
+    cursor: default;
+}
+
+.watch-track-button .library-status-chip {
+    border: 0;
+    padding: 0;
+    background: none;
+}
+
+.watch-progress-line {
+    display: inline-block;
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.watch-toast {
+    position: fixed;
+    left: 50%;
+    bottom: 28px;
+    transform: translateX(-50%);
+    z-index: 60;
+    padding: 11px 18px;
+    border-radius: 999px;
+    background: var(--surface-3);
+    border: 1px solid var(--border-default);
+    color: #ffffff;
+    font-size: 0.85rem;
+    font-weight: 700;
+    box-shadow: var(--shadow-lg);
+    animation: watch-toast-in 160ms ease;
+}
+
+@keyframes watch-toast-in {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 8px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+.watch-theater-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: rgba(0, 0, 0, 0.82);
+    animation: fade-in 160ms ease;
+}
+
+body.watch-theater-active .watch-player-stage {
+    position: relative;
+    z-index: 40;
+}
+
+body.watch-theater-active .watch-player-frame {
+    max-width: min(1500px, 96vw);
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* Episode browser additions */
+.ep-goto input {
+    width: 92px;
+    height: 38px;
+    padding: 0 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-2);
+    color: var(--text);
+    font-size: 0.85rem;
+}
+
+.ep-goto input:focus {
+    outline: none;
+    border-color: var(--border-strong);
+}
+
+.ep-thumb {
+    position: relative;
+}
+
+.ep-mark-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    border: 1px solid var(--border-default);
+    background: rgba(0, 0, 0, 0.6);
+    color: #ffffff;
+    cursor: pointer;
+    opacity: 0;
+    transition:
+        opacity 120ms ease,
+        background 120ms ease;
+}
+
+.episode-card-new:hover .ep-mark-btn,
+.ep-mark-btn:focus-visible {
+    opacity: 1;
+}
+
+.ep-mark-btn:hover {
+    background: rgba(34, 197, 94, 0.85);
+}
+
+.ep-mark-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+/* Overview — about-this-anime block */
+.watch-ep-show {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.watch-ep-show h3 {
+    margin: 0 0 10px;
+    font-size: 0.95rem;
+}
+
+.watch-ep-show-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.watch-ep-show-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--border-subtle);
+    background: var(--surface-2);
+    color: var(--muted-strong);
+    font-size: 0.76rem;
+    font-weight: 700;
+}
+
+.watch-ep-genres {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+    color: var(--muted);
+}
+
+.watch-ep-genre-chip {
+    padding: 3px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--border-subtle);
+    font-size: 0.74rem;
+    color: var(--muted-strong);
+}
+
+.watch-ep-show-synopsis {
+    margin: 12px 0 0;
+    color: var(--muted);
+    line-height: 1.6;
+    font-size: 0.9rem;
+}
+
 /* ── Episode cards ───────────────────────────────────────────────────────── */
 
 .watch-episode-card {

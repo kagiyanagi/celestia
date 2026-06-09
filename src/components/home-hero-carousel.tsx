@@ -2,42 +2,76 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { Captions, Star } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Captions, Play, Star } from "lucide-react";
 
 import { useBannerContext } from "@/components/banner-fallback-provider";
 import { DetailsSaveButton } from "@/components/details-save-button";
 import { DubBadge } from "@/components/dub-badge";
 
-import { getDisplayTitle } from "@/lib/format";
+import { cleanDescription, getDisplayTitle } from "@/lib/format";
+import { buildWatchHref } from "@/lib/watch-href";
 import { useTitleLanguage } from "@/components/use-title-language";
 import type { AnimeSummary } from "@/types/anime";
 
-type HomeHeroCarouselProps = {
-  items: AnimeSummary[];
+type HomeResume = {
+  anime: AnimeSummary;
+  episode: number;
 };
 
-export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
+type HomeHeroCarouselProps = {
+  items: AnimeSummary[];
+  resume?: HomeResume | null;
+};
+
+export function HomeHeroCarousel({
+  items,
+  resume = null,
+}: HomeHeroCarouselProps) {
   const titleLanguage = useTitleLanguage();
   const [activeIndex, setActiveIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [dragOffset, setDragOffset] = useState(0);
   const [isClickPrevented, setIsClickPrevented] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  // For signed-in users the most recent watch leads the carousel as a "Jump
+  // back in" slide; it's deduped from the airing list so it never appears twice.
+  const heroItems = useMemo(() => {
+    if (!resume) return items;
+    return [
+      resume.anime,
+      ...items.filter((item) => item.id !== resume.anime.id),
+    ].slice(0, 5);
+  }, [items, resume]);
+
+  const goNext = useCallback(() => {
+    setActiveIndex((current) =>
+      heroItems.length ? (current + 1) % heroItems.length : 0,
+    );
+  }, [heroItems.length]);
+
+  const goPrev = useCallback(() => {
+    setActiveIndex((current) =>
+      heroItems.length ? (current - 1 + heroItems.length) % heroItems.length : 0,
+    );
+  }, [heroItems.length]);
 
   // Banners AniList is missing resolve client-side (off the render path); slides
   // with an AniList banner show it immediately, the rest swap in when resolved.
   const bannerCtx = useBannerContext();
   useEffect(() => {
-    items.forEach((item) => {
+    heroItems.forEach((item) => {
       if (!item.bannerImage) {
         bannerCtx?.register(item.id);
       }
     });
-  }, [items, bannerCtx]);
+  }, [heroItems, bannerCtx]);
   const bannerFor = (item: AnimeSummary | undefined): string | null =>
     item ? item.bannerImage ?? bannerCtx?.banners.get(item.id) ?? null : null;
-  const activeImage = bannerFor(items[activeIndex] ?? items[0]);
+  const activeImage = bannerFor(heroItems[activeIndex] ?? heroItems[0]);
 
   useEffect(() => {
     if (!activeImage) {
@@ -60,18 +94,26 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
   }, [activeImage]);
 
   useEffect(() => {
-    if (items.length < 2) {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReducedMotion(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  // Autoplay pauses on hover/focus and is disabled entirely when the user
+  // prefers reduced motion or is mid-drag.
+  useEffect(() => {
+    if (heroItems.length < 2 || isPaused || isDragging || reducedMotion) {
       return;
     }
 
-    const timer = window.setInterval(() => {
-      setActiveIndex((current) => (current + 1) % items.length);
-    }, 6000);
+    const timer = window.setInterval(goNext, 6000);
 
     return () => window.clearInterval(timer);
-  }, [items.length]);
+  }, [heroItems.length, isPaused, isDragging, reducedMotion, goNext]);
 
-  if (!items.length) {
+  if (!heroItems.length) {
     return null;
   }
 
@@ -99,9 +141,11 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
 
     const threshold = 100;
     if (dragOffset > threshold) {
-      setActiveIndex((current) => (current - 1 + items.length) % items.length);
+      setActiveIndex(
+        (current) => (current - 1 + heroItems.length) % heroItems.length,
+      );
     } else if (dragOffset < -threshold) {
-      setActiveIndex((current) => (current + 1) % items.length);
+      setActiveIndex((current) => (current + 1) % heroItems.length);
     }
 
     setIsDragging(false);
@@ -113,6 +157,23 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
   const handleMouseLeave = () => {
     if (isDragging) {
       handleMouseUp();
+    }
+    setIsPaused(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      goPrev();
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      goNext();
+    }
+  };
+
+  const handleBlur = (e: React.FocusEvent) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+      setIsPaused(false);
     }
   };
 
@@ -147,10 +208,17 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
   return (
     <section
       className="celestia-hero"
+      role="region"
+      aria-roledescription="carousel"
+      aria-label="Featured anime"
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
+      onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={handleMouseLeave}
+      onFocus={() => setIsPaused(true)}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -161,11 +229,17 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
           className="celestia-hero-track"
           style={{
             transform: `translateX(calc(-${activeIndex * 100}% + ${dragOffset}px))`,
-            transition: isDragging ? "none" : "transform 0.5s ease",
+            transition:
+              isDragging || reducedMotion ? "none" : "transform 0.5s ease",
           }}
         >
-          {items.map((item, index) => {
+          {heroItems.map((item, index) => {
             const title = getDisplayTitle(item.title, titleLanguage);
+            const synopsis =
+              cleanDescription(item.description) ||
+              (item.genres ?? []).slice(0, 3).join(" • ") ||
+              "Anime";
+            const isResume = resume?.anime.id === item.id;
 
             return (
               <article
@@ -204,6 +278,11 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
                 <div className="celestia-hero-shade" />
                 <div className="celestia-copy">
                   <div className="celestia-copy-main">
+                    {isResume ? (
+                      <span className="celestia-hero-kicker">
+                        Continue watching
+                      </span>
+                    ) : null}
                     <Link
                       href={`/anime/${item.id}`}
                       className="celestia-hero-title-link"
@@ -211,10 +290,7 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
                     >
                       <h1>{title}</h1>
                     </Link>
-                    <p className="celestia-description">
-                      {(item.genres ?? []).slice(0, 3).join(" • ") || "Anime"}{" "}
-                      with fresh episodes and a simple watch flow.
-                    </p>
+                    <p className="celestia-description">{synopsis}</p>
                     <div className="celestia-pills">
                       <span>{item.format || "Anime"}</span>
                       {typeof item.averageScore === "number" ? (
@@ -239,7 +315,19 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
                   </div>
 
                   <div className="celestia-actions">
-                    {item.status === "NOT_YET_RELEASED" ? (
+                    {isResume && resume ? (
+                      <Link
+                        className="celestia-watch"
+                        href={buildWatchHref({
+                          animeId: item.id,
+                          episode: resume.episode,
+                        })}
+                        onClick={handleLinkClick}
+                      >
+                        <Play size={16} aria-hidden />
+                        Resume EP {resume.episode}
+                      </Link>
+                    ) : item.status === "NOT_YET_RELEASED" ? (
                       <div className="celestia-watch disabled">Coming Soon</div>
                     ) : (
                       <Link
@@ -258,8 +346,10 @@ export function HomeHeroCarousel({ items }: HomeHeroCarouselProps) {
           })}
         </div>
 
+
+
         <div className="celestia-dots" aria-label="Featured airing anime">
-          {items.map((item, index) => (
+          {heroItems.map((item, index) => (
             <button
               aria-label={`Show ${getDisplayTitle(item.title, titleLanguage)}`}
               className={index === activeIndex ? "active" : ""}

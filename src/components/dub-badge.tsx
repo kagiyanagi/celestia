@@ -15,11 +15,13 @@ export function DubBadge({
   initial = null,
   iconSize = 12,
   withTitle = false,
+  className,
 }: {
   animeId: number;
   initial?: number | null;
   iconSize?: number;
   withTitle?: boolean;
+  className?: string;
 }) {
   const fetched = useDubCount(animeId);
   const count = initial ?? fetched;
@@ -29,7 +31,10 @@ export function DubBadge({
   }
 
   return (
-    <span {...(withTitle ? { title: "Dubbed" } : {})}>
+    <span
+      {...(className ? { className } : {})}
+      {...(withTitle ? { title: "Dubbed" } : {})}
+    >
       <Mic size={iconSize} aria-hidden />
       {count}
     </span>

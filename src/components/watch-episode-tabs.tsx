@@ -6,17 +6,25 @@ import {
   ListVideo,
   MessageSquare,
   Star,
+  Tag,
 } from "lucide-react";
 import { useState } from "react";
 
+import { useAuth } from "@/components/auth-provider";
 import {
   EpisodeBrowser,
   type BrowserEpisode,
   type EpisodeBrowserAnime,
 } from "@/components/episode-browser";
+import { LibraryStatusChip } from "@/components/library-status-chip";
 import { formatIsoDate, formatIsoDateTime } from "@/lib/format";
+import type { AnimeSummary } from "@/types/anime";
 
 type WatchTabKey = "overview" | "episodes" | "comments";
+
+// Comments are a designed-but-not-wired feature; keep the markup in tree but
+// off the live UI until a real, moderated backend exists.
+const COMMENTS_ENABLED = false;
 
 /** The current episode's own metadata, surfaced in the Overview tab. */
 export type WatchEpisodeOverview = {
@@ -31,40 +39,36 @@ export type WatchEpisodeOverview = {
 const TABS: { key: WatchTabKey; label: string; icon: typeof ListVideo }[] = [
   { key: "overview", label: "Overview", icon: Info },
   { key: "episodes", label: "Episodes", icon: ListVideo },
-  { key: "comments", label: "Comments", icon: MessageSquare },
+  ...(COMMENTS_ENABLED
+    ? [{ key: "comments" as const, label: "Comments", icon: MessageSquare }]
+    : []),
 ];
 
-// Placeholder thread shown until real comments are wired up. Intentionally
-// inert — see WatchComments below.
-const SAMPLE_COMMENTS: {
-  id: number;
-  author: string;
-  when: string;
-  body: string;
-}[] = [
-  {
-    id: 1,
-    author: "celestia",
-    when: "2 hours ago",
-    body: "Comments aren't live yet — this is a preview of how the thread will look once they ship.",
-  },
-  {
-    id: 2,
-    author: "viewer_42",
-    when: "5 hours ago",
-    body: "That mid-episode turn was unreal. Easily one of the strongest cliffhangers this season.",
-  },
-  {
-    id: 3,
-    author: "sakura_n",
-    when: "yesterday",
-    body: "The animation in the second half went absurdly hard. Replaying it a few times already.",
-  },
-];
+function stripHtml(value: string): string {
+  return value
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
-function EpisodeOverview({ episode }: { episode: WatchEpisodeOverview }) {
+function EpisodeOverview({
+  episode,
+  show,
+}: {
+  episode: WatchEpisodeOverview;
+  show: AnimeSummary;
+}) {
+  const { user } = useAuth();
   const released =
     formatIsoDateTime(episode.airDateTime) || formatIsoDate(episode.airDate);
+  const entry =
+    user?.libraryEntries.find((item) => item.animeId === show.id) || null;
+  const showSynopsis = show.description ? stripHtml(show.description) : null;
+  const studioNames = (show.studios || [])
+    .map((studio) => studio.name)
+    .filter((name): name is string => Boolean(name))
+    .slice(0, 2);
 
   return (
     <div className="watch-ep-overview">
@@ -105,9 +109,58 @@ function EpisodeOverview({ episode }: { episode: WatchEpisodeOverview }) {
             "No synopsis has been published for this episode yet."}
         </p>
       </div>
+
+      <div className="watch-ep-show">
+        <h3>About this anime</h3>
+        <div className="watch-ep-show-meta">
+          {show.averageScore ? (
+            <span className="watch-ep-show-pill">
+              <Star size={13} aria-hidden />
+              {(show.averageScore / 10).toFixed(1)} / 10
+            </span>
+          ) : null}
+          {studioNames.length > 0 ? (
+            <span className="watch-ep-show-pill">{studioNames.join(", ")}</span>
+          ) : null}
+          {entry ? <LibraryStatusChip status={entry.status} inline /> : null}
+          {entry && entry.score > 0 ? (
+            <span className="watch-ep-show-pill">
+              Your score {(entry.score / 10).toFixed(1)}
+            </span>
+          ) : null}
+        </div>
+        {show.genres && show.genres.length > 0 ? (
+          <div className="watch-ep-genres">
+            <Tag size={13} aria-hidden />
+            {show.genres.slice(0, 6).map((genre) => (
+              <span key={genre} className="watch-ep-genre-chip">
+                {genre}
+              </span>
+            ))}
+          </div>
+        ) : null}
+        {showSynopsis ? (
+          <p className="watch-ep-show-synopsis">{showSynopsis}</p>
+        ) : null}
+      </div>
     </div>
   );
 }
+
+// Placeholder thread retained for when comments ship; gated off by default.
+const SAMPLE_COMMENTS: {
+  id: number;
+  author: string;
+  when: string;
+  body: string;
+}[] = [
+  {
+    id: 1,
+    author: "celestia",
+    when: "2 hours ago",
+    body: "Comments aren't live yet — this is a preview of how the thread will look once they ship.",
+  },
+];
 
 function WatchComments() {
   return (
@@ -116,23 +169,6 @@ function WatchComments() {
         <MessageSquare size={16} aria-hidden />
         Comments are coming soon — this is a preview and isn&apos;t live yet.
       </div>
-
-      <form
-        className="watch-ep-comment-form"
-        // Dummy UI only — nothing is submitted.
-        onSubmit={(event) => event.preventDefault()}
-      >
-        <div className="watch-ep-comment-avatar" aria-hidden />
-        <textarea
-          className="watch-ep-comment-input"
-          placeholder="Add a comment…"
-          rows={3}
-          disabled
-        />
-        <button type="submit" className="watch-ep-comment-submit" disabled>
-          Post
-        </button>
-      </form>
 
       <ul className="watch-ep-comment-list">
         {SAMPLE_COMMENTS.map((comment) => (
@@ -159,11 +195,13 @@ export function WatchEpisodeTabs({
   episodes,
   activeEpisode,
   currentEpisode,
+  trackingAnime,
 }: {
   anime: EpisodeBrowserAnime;
   episodes: BrowserEpisode[];
   activeEpisode: number;
   currentEpisode: WatchEpisodeOverview;
+  trackingAnime: AnimeSummary;
 }) {
   const [tab, setTab] = useState<WatchTabKey>("overview");
 
@@ -183,15 +221,18 @@ export function WatchEpisodeTabs({
         ))}
       </nav>
 
-      {tab === "overview" ? <EpisodeOverview episode={currentEpisode} /> : null}
+      {tab === "overview" ? (
+        <EpisodeOverview episode={currentEpisode} show={trackingAnime} />
+      ) : null}
       {tab === "episodes" ? (
         <EpisodeBrowser
           anime={anime}
           episodes={episodes}
           activeEpisode={activeEpisode}
+          trackingAnime={trackingAnime}
         />
       ) : null}
-      {tab === "comments" ? <WatchComments /> : null}
+      {tab === "comments" && COMMENTS_ENABLED ? <WatchComments /> : null}
     </div>
   );
 }

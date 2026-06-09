@@ -27,6 +27,10 @@ function pickPreferences(value: Partial<UserPreferences>) {
     "hideAdultContent",
     "autoplayTrailers",
     "pauseHistory",
+    "notifyEpisodes",
+    "notifyDubs",
+    "notifyUpcoming",
+    "publicProfile",
   ] as const) {
     if (typeof value[key] === "boolean") {
       next[key] = value[key];

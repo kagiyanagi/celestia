@@ -1,10 +1,12 @@
-import { Clock, Mic } from "lucide-react";
+import { Clock, Mic, Award } from "lucide-react";
 import { AnimeDetails } from "@/types/anime";
 import { AiringCountdown } from "@/components/airing-countdown";
 import { useAuth } from "@/components/auth-provider";
 import { compactNumber, formatAiringTime } from "@/lib/format";
 import { formatDate } from "./helpers";
 import { DetailsCast } from "./DetailsCast";
+import { DetailsExternalLinks } from "./DetailsExternalLinks";
+import { DetailsScoreChart } from "./DetailsScoreChart";
 
 interface DetailsOverviewProps {
   anime: AnimeDetails;
@@ -45,6 +47,17 @@ export function DetailsOverview({
               fallbackSeconds={anime.dubInfo.nextDubEpisode.timeUntilAiring}
             />
           </span>
+        </div>
+      )}
+
+      {anime.rankings && anime.rankings.length > 0 && (
+        <div className="rankings-row">
+          {anime.rankings.map((ranking) => (
+            <span key={ranking} className="ranking-badge">
+              <Award size={14} aria-hidden />
+              {ranking}
+            </span>
+          ))}
         </div>
       )}
 
@@ -201,6 +214,10 @@ export function DetailsOverview({
           ))}
         </div>
       </div>
+
+      <DetailsScoreChart distribution={anime.scoreDistribution ?? []} />
+
+      <DetailsExternalLinks links={anime.externalLinks ?? []} />
 
       <DetailsCast
         anime={anime}

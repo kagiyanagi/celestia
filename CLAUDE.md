@@ -64,6 +64,17 @@ Streaming must stay outside the core domain model. Playback data is requested on
 
 Higher-level domain stores wrap `getStore()`: `account-store.ts` (profile, library, history), `stream-mapping-store.ts` (verified stream matches).
 
+### Tracking & sync (library + history)
+Library and watch history are the durable product value (not streaming). Both live **inline on the user record** as `libraryEntries` / `historyEntries` (see `src/types/account.ts`), not as normalized tables — so every tracking write is a whole-user update through `account-store.ts` helpers, never a direct `getStore()` call. A `LibraryEntry` carries status (`planning`/`watching`/`on_hold`/`dropped`/`completed`/`rewatching`), score/progress/repeat/notes/dates, `addedAt` (notification window anchor — see Notifications), and `aniListEntryId` (the link to its AniList list row).
+
+AniList sync is **two-way**:
+- **Push (write-through):** editing the library (`/api/library`) or recording an episode (`/api/history`) also calls `saveAniListLibraryEntry` / `deleteAniListLibraryEntry` when the user has a linked token. The returned AniList list-entry id is persisted as `aniListEntryId` so later writes target the exact remote row instead of creating duplicates.
+- **Pull (read-back):** `syncAniListLibrary` (`anilist-sync.ts`) fetches the viewer's AniList library + profile and merges via `applyAniListSync`, so edits made directly on AniList surface here. It's gated by `aniListSyncedAt` with a 60s TTL (`{ force: true }` bypasses), so the read paths (library load, session refresh) don't issue a GraphQL round-trip every request; the explicit `/api/anilist/sync` POST forces it. A failed pull is swallowed — sync must never break a page.
+- **Conflict resolution:** newest-`updatedAt`-wins, where AniList's real edit time drives it (`mergeAniListPull` / `mergeLibraryEntries`). Per `docs/ARCHITECTURE.md`, conflicts are surfaced, never silently overwritten. AniList watch activity is merged into Celestia history (`mergeAniListHistory`), skipped entirely when `preferences.pauseHistory` is set.
+- **OAuth link:** `/api/anilist/connect` (sets the `celestia_anilist_state` cookie, requires a session) → AniList authorize → `/api/anilist/callback` verifies state and exchanges the code via `exchangeAniListCode`; the token is encrypted at rest (see Auth & sessions) and the session id is regenerated on link.
+
+List import: `mal-import.ts` parses the MyAnimeList XML export format (AniList exports the same format, so one parser covers both) into MAL-id-keyed entries. `/api/library/import` resolves those ids to AniList summaries via `getAnimeSummariesByMalIds`, then bulk-loads through `importLibraryEntries` (size/entry-count guarded, malformed rows skipped). It reuses the same newest-wins merge as sync, so importing never clobbers newer local edits.
+
 ### Auth & sessions
 `src/lib/auth.ts` owns cookie sessions (`celestia_session`), scrypt password hashing, guest accounts, and device tracking. `requireSessionUser()` / `getSessionUser()` gate API routes; they return a **redacted** `PublicUser` (never the raw `UserRecord` with secrets). Session IDs are regenerated on privilege escalation (e.g. AniList OAuth link). Stored OAuth tokens are encrypted at rest by `src/lib/crypto.ts` (AES-256-GCM keyed off `APP_SECRET`; self-describing `enc:v1:` prefix; dev falls back to a machine-local secret).
 

@@ -3,8 +3,33 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
-import { Bell, Check, CheckCheck, Mic, Trash2, Tv } from "lucide-react";
+import {
+  Bell,
+  BellOff,
+  Check,
+  CheckCheck,
+  Clock,
+  Mic,
+  Trash2,
+  Tv,
+} from "lucide-react";
+import { buildWatchHref } from "@/lib/watch-href";
 import type { AnimeNotification } from "@/types/anime";
+
+/**
+ * Episode/dub drops link straight to the player at that episode; upcoming
+ * reminders aren't watchable yet, so they go to the detail page.
+ */
+function notificationHref(notification: AnimeNotification): string {
+  if (notification.type === "upcoming") {
+    return `/anime/${notification.animeId}`;
+  }
+  return buildWatchHref({
+    animeId: notification.animeId,
+    episode: notification.episode,
+    audio: notification.type === "dub" ? "dub" : null,
+  });
+}
 
 /** Lets the header bell re-fetch its unread badge after a change here. */
 function broadcastChange() {
@@ -28,6 +53,16 @@ function relativeTime(epochSeconds: number): string {
   const days = Math.floor(hours / 24);
   if (days < 7) return `${days}d ago`;
   return `${Math.floor(days / 7)}w ago`;
+}
+
+function timeUntil(epochSeconds: number): string {
+  const diff = epochSeconds - Math.floor(Date.now() / 1000);
+  if (diff <= 0) return "now";
+  const minutes = Math.floor(diff / 60);
+  if (minutes < 60) return `in ${Math.max(1, minutes)}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `in ${hours}h`;
+  return `in ${Math.floor(hours / 24)}d`;
 }
 
 export function NotificationsPageShell({
@@ -88,12 +123,25 @@ export function NotificationsPageShell({
     }).catch(() => undefined);
   }, []);
 
+  const mute = useCallback((animeId: number) => {
+    // Drop every row for this show, not just the clicked one.
+    setNotifications((prev) =>
+      prev.filter((notification) => notification.animeId !== animeId),
+    );
+    broadcastChange();
+    fetch("/api/notifications", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "mute", animeId }),
+    }).catch(() => undefined);
+  }, []);
+
   return (
     <main className="notifications-page">
       <header className="notifications-head">
         <div>
           <h1>Notifications</h1>
-          <p>New episodes and dubs for the anime on your list.</p>
+          <p>New, upcoming, and dubbed episodes for the anime on your list.</p>
         </div>
         <button
           type="button"
@@ -128,7 +176,7 @@ export function NotificationsPageShell({
               className={`notification-row${notification.read ? "" : " is-unread"}`}
             >
               <Link
-                href={`/anime/${notification.animeId}`}
+                href={notificationHref(notification)}
                 className="notification-link"
                 onClick={() => {
                   if (!notification.read) markRead(notification.id);
@@ -148,17 +196,26 @@ export function NotificationsPageShell({
                   <span className="notif-kind">
                     {notification.type === "dub" ? (
                       <Mic size={13} aria-hidden />
+                    ) : notification.type === "upcoming" ? (
+                      <Clock size={13} aria-hidden />
                     ) : (
                       <Tv size={13} aria-hidden />
                     )}
                     {notification.type === "dub"
                       ? "New dub episode"
-                      : "New episode"}
+                      : notification.type === "upcoming"
+                        ? "Airing soon"
+                        : "New episode"}
                   </span>
                   <strong className="notif-title">{notification.title}</strong>
                   <span className="notif-sub">
-                    Episode {notification.episode} •{" "}
-                    {relativeTime(notification.airedAt)}
+                    {notification.episodeTo
+                      ? `Episodes ${notification.episode}–${notification.episodeTo}`
+                      : `Episode ${notification.episode}`}{" "}
+                    •{" "}
+                    {notification.type === "upcoming"
+                      ? timeUntil(notification.airedAt)
+                      : relativeTime(notification.airedAt)}
                   </span>
                 </span>
                 {!notification.read ? (
@@ -177,6 +234,15 @@ export function NotificationsPageShell({
                     <Check size={16} aria-hidden />
                   </button>
                 ) : null}
+                <button
+                  type="button"
+                  className="notif-action"
+                  onClick={() => mute(notification.animeId)}
+                  aria-label="Mute this show"
+                  title="Mute this show"
+                >
+                  <BellOff size={16} aria-hidden />
+                </button>
                 <button
                   type="button"
                   className="notif-action"

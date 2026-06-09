@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 
 import { BrowsePageShell } from "@/components/browse-page-shell";
 import {
+  buildBrowseMetaTitle,
   parseBrowseParams,
   type BrowseSearchParams,
 } from "@/lib/browse-filters";
@@ -10,15 +11,18 @@ import {
   getBrowseFilterOptions,
 } from "@/lib/providers/anilist";
 
-export const metadata: Metadata = {
-  title: "Search",
-};
-
 export const revalidate = 900;
 
 type SearchPageProps = {
   searchParams: Promise<BrowseSearchParams>;
 };
+
+export async function generateMetadata({
+  searchParams,
+}: SearchPageProps): Promise<Metadata> {
+  const { filters } = parseBrowseParams(await searchParams);
+  return { title: buildBrowseMetaTitle("Search", filters) };
+}
 
 export default async function SearchPage({ searchParams }: SearchPageProps) {
   const params = await searchParams;

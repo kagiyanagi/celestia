@@ -1,14 +1,20 @@
 "use client";
 
+import { useMemo } from "react";
+
 import { AnimeCard } from "@/components/anime-card";
 import { useAuth } from "@/components/auth-provider";
+import { useDubCounts } from "@/components/dub-badge-provider";
 import {
   getListFilterLabel,
   isLibraryStatusFilter,
+  splitListFilter,
 } from "@/lib/browse-filters";
 import { getDisplayTitle } from "@/lib/format";
 import type { LibraryEntry } from "@/types/account";
 import type { AnimeSummary, BrowseFilters } from "@/types/anime";
+
+export type BrowseView = "grid" | "list";
 
 function matchesFilters(anime: AnimeSummary, filters: BrowseFilters): boolean {
   const query = filters.q.trim().toLowerCase();
@@ -30,7 +36,13 @@ function matchesFilters(anime: AnimeSummary, filters: BrowseFilters): boolean {
     }
   }
 
-  if (filters.genre && !(anime.genres || []).includes(filters.genre)) {
+  const genres = anime.genres || [];
+  const includeGenres = splitListFilter(filters.genre);
+  if (includeGenres.length && !includeGenres.every((g) => genres.includes(g))) {
+    return false;
+  }
+  const excludeGenres = splitListFilter(filters.genreExclude);
+  if (excludeGenres.length && excludeGenres.some((g) => genres.includes(g))) {
     return false;
   }
 
@@ -38,7 +50,11 @@ function matchesFilters(anime: AnimeSummary, filters: BrowseFilters): boolean {
     return false;
   }
 
-  if (filters.year && String(anime.seasonYear || "") !== filters.year) {
+  const year = anime.seasonYear || anime.startDate?.year || 0;
+  if (filters.yearMin && (!year || year < Number(filters.yearMin))) {
+    return false;
+  }
+  if (filters.yearMax && (!year || year > Number(filters.yearMax))) {
     return false;
   }
 
@@ -51,6 +67,18 @@ function matchesFilters(anime: AnimeSummary, filters: BrowseFilters): boolean {
   }
 
   if (filters.source && anime.source !== filters.source) {
+    return false;
+  }
+
+  if (filters.scoreMin && (anime.averageScore ?? 0) < Number(filters.scoreMin)) {
+    return false;
+  }
+
+  const episodes = anime.episodes || 0;
+  if (filters.episodesMin && (!episodes || episodes < Number(filters.episodesMin))) {
+    return false;
+  }
+  if (filters.episodesMax && (!episodes || episodes > Number(filters.episodesMax))) {
     return false;
   }
 
@@ -82,6 +110,16 @@ function sortLibraryItems(
       return sorted.sort(
         (a, b) => ((a.trending || 0) - (b.trending || 0)) * direction,
       );
+    case "episodes":
+      return sorted.sort(
+        (a, b) => ((a.episodes || 0) - (b.episodes || 0)) * direction,
+      );
+    case "title":
+      return sorted.sort(
+        (a, b) =>
+          getDisplayTitle(a.title).localeCompare(getDisplayTitle(b.title)) *
+          direction,
+      );
     case "popularity":
     default:
       return sorted.sort(
@@ -105,14 +143,17 @@ function filterLibraryEntries(
  * Browse results with the viewer-relative "Your list" filter applied
  * client-side. Library views source directly from the viewer's library (the
  * catalog API knows nothing about it), with the other filters applied locally;
- * "Not in your list" hides saved titles from the catalog page.
+ * "Not in your list" hides saved titles from the catalog page. The "dubbed
+ * only" filter is also client-side, reading hydrated dub badge counts.
  */
 export function BrowseResultsGrid({
   items,
   filters,
+  view = "grid",
 }: {
   items: AnimeSummary[];
   filters: BrowseFilters;
+  view?: BrowseView;
 }) {
   const { user } = useAuth();
   const libraryEntries = user?.libraryEntries || [];
@@ -120,7 +161,7 @@ export function BrowseResultsGrid({
   const isLibraryView =
     filters.list === "in" || isLibraryStatusFilter(filters.list);
 
-  let visible: AnimeSummary[];
+  let base: AnimeSummary[];
   let note: string | null = null;
 
   if (isLibraryView) {
@@ -128,29 +169,45 @@ export function BrowseResultsGrid({
     const matched = selectedEntries
       .map((entry) => entry.anime)
       .filter((anime) => matchesFilters(anime, filters));
-    visible = sortLibraryItems(matched, filters.sort, filters.sortOrder);
+    base = sortLibraryItems(matched, filters.sort, filters.sortOrder);
     const listLabel =
       filters.list === "in"
         ? "saved"
         : getListFilterLabel(filters.list).toLowerCase();
-    note = `Showing ${visible.length} of your ${selectedEntries.length} ${listLabel} titles.`;
+    note = `Showing ${base.length} of your ${selectedEntries.length} ${listLabel} titles.`;
   } else if (filters.list === "out") {
-    visible = items.filter((anime) => !libraryIds.has(anime.id));
-    if (visible.length !== items.length) {
-      note = `Showing ${visible.length} of ${items.length} titles on this page not yet on your list.`;
+    base = items.filter((anime) => !libraryIds.has(anime.id));
+    if (base.length !== items.length) {
+      note = `Showing ${base.length} of ${items.length} titles on this page not yet on your list.`;
     }
   } else {
-    visible = items;
+    base = items;
+  }
+
+  const dubbedOnly = filters.dubbed === "1";
+  const dubCounts = useDubCounts(
+    useMemo(() => (dubbedOnly ? base.map((anime) => anime.id) : []), [
+      dubbedOnly,
+      base,
+    ]),
+  );
+
+  let visible = base;
+  if (dubbedOnly) {
+    visible = base.filter((anime) => (dubCounts.get(anime.id) ?? 0) > 0);
+    note = `Dubbed only — ${visible.length} of ${base.length} on this page (dub data loads as you browse).`;
   }
 
   if (!visible.length) {
     return (
       <div className="empty-panel">
-        {isLibraryView
-          ? "Nothing in this list matches these filters."
-          : filters.list === "out"
-            ? "No titles on this page match your list filter. Try the next page."
-            : "No titles found for this page."}
+        {dubbedOnly
+          ? "No dubbed titles found on this page yet — try the next page."
+          : isLibraryView
+            ? "Nothing in this list matches these filters."
+            : filters.list === "out"
+              ? "No titles on this page match your list filter. Try the next page."
+              : "No titles found for this page."}
       </div>
     );
   }
@@ -158,9 +215,15 @@ export function BrowseResultsGrid({
   return (
     <>
       {note ? <p className="browse-list-note">{note}</p> : null}
-      <div className="anime-grid search-results">
+      <div
+        className={
+          view === "list"
+            ? "anime-list search-results"
+            : "anime-grid search-results"
+        }
+      >
         {visible.map((anime) => (
-          <AnimeCard anime={anime} key={anime.id} />
+          <AnimeCard anime={anime} key={anime.id} variant={view} />
         ))}
       </div>
     </>

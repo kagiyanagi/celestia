@@ -91,6 +91,9 @@ export type AniListDetailsMedia = AniListMedia & {
     context: string;
   }> | null;
   externalLinks: ExternalLink[] | null;
+  stats: {
+    scoreDistribution: Array<{ score: number; amount: number }> | null;
+  } | null;
   characters: {
     pageInfo?: {
       hasNextPage?: boolean | null;
@@ -313,5 +316,9 @@ export function transformAnimeDetails(media: AniListDetailsMedia): AnimeDetails 
         .filter((node): node is AniListMedia => Boolean(node))
         .map(transformAnimeSummary) || [],
     externalLinks: media.externalLinks || [],
+    scoreDistribution:
+      media.stats?.scoreDistribution
+        ?.filter((bucket) => bucket.score != null && bucket.amount != null)
+        .sort((a, b) => a.score - b.score) || [],
   };
 }

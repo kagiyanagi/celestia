@@ -29,6 +29,7 @@ export class UniqueConstraintError extends Error {
 export type Store = {
   getUserById(id: string): Promise<UserRecord | null>;
   getUserByEmail(email: string): Promise<UserRecord | null>;
+  getUserByUsername(username: string): Promise<UserRecord | null>;
   insertUser(user: UserRecord): Promise<void>;
   updateUser(user: UserRecord): Promise<void>;
   deleteUser(id: string): Promise<void>;
@@ -248,6 +249,14 @@ function createPostgresStore(sql: Sql): Store {
       return userFromRow(rows[0]);
     },
 
+    async getUserByUsername(username) {
+      await ensureSchema(sql);
+      const rows = await sql<{ payload: unknown }[]>`
+        select payload from users where username = ${username} limit 1
+      `;
+      return userFromRow(rows[0]);
+    },
+
     async insertUser(user) {
       await ensureSchema(sql);
       try {
@@ -460,6 +469,11 @@ function createFileStore(): Store {
     async getUserByEmail(email) {
       const db = await readFileDb();
       return db.users.find((user) => user.email === email) || null;
+    },
+
+    async getUserByUsername(username) {
+      const db = await readFileDb();
+      return db.users.find((user) => user.username === username) || null;
     },
 
     async insertUser(user) {

@@ -1,8 +1,12 @@
 import Image from "next/image";
-import Link from "next/link";
-import { Play, Share2, Radio } from "lucide-react";
+import { Radio } from "lucide-react";
 import { DetailsSaveButton } from "@/components/details-save-button";
+import { DetailsFavoriteButton } from "@/components/details-favorite-button";
 import { AnimeDetails } from "@/types/anime";
+import { DetailsShareButton } from "./DetailsShareButton";
+import { DetailsWatchButton } from "./DetailsWatchButton";
+import { DetailsTrackingBar } from "./DetailsTrackingBar";
+import { DetailsSynopsis } from "./DetailsSynopsis";
 
 interface DetailsHeroProps {
   anime: AnimeDetails;
@@ -51,23 +55,13 @@ export function DetailsHero({
             )}
           </div>
           <div className="hero-actions-row">
-            {anime.status === "NOT_YET_RELEASED" ? (
-              <div className="hero-watch-btn disabled">
-                <Play size={18} fill="currentColor" />
-                Not Yet Released
-              </div>
-            ) : (
-              <Link className="hero-watch-btn" href={watchHref}>
-                <Play size={18} fill="currentColor" />
-                Watch Now
-              </Link>
-            )}
+            <DetailsWatchButton anime={anime} watchHref={watchHref} />
             <DetailsSaveButton anime={anime} />
+            <DetailsFavoriteButton anime={anime} />
           </div>
+          <DetailsTrackingBar anime={anime} />
           <div className="hero-actions-row hero-links-row">
-            <button className="hero-icon-btn" title="Share">
-              <Share2 size={20} />
-            </button>
+            <DetailsShareButton title={title} />
             <a
               href={`https://anilist.co/anime/${anime.id}`}
               target="_blank"
@@ -130,7 +124,9 @@ export function DetailsHero({
               </span>
             ) : null}
           </div>
-          <p className="hero-synopsis">{anime.description}</p>
+          {anime.description ? (
+            <DetailsSynopsis description={anime.description} />
+          ) : null}
         </div>
       </div>
     </section>

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   dismissNotifications,
   markNotificationsRead,
+  setAnimeMuted,
 } from "@/lib/account-store";
 import { getSessionUser, requireSessionUser } from "@/lib/auth";
 import {
@@ -30,7 +31,9 @@ export async function GET() {
  * Updates notification state. Body `{ action }`:
  *  - "read-all" (default, or no body) marks everything read via a timestamp;
  *  - "read"     marks the given `ids` read;
- *  - "dismiss"  deletes the given `ids`.
+ *  - "dismiss"  deletes the given `ids`;
+ *  - "mute"     stops all notifications for `animeId`;
+ *  - "unmute"   re-enables notifications for `animeId`.
  */
 export async function POST(request: Request) {
   try {
@@ -39,12 +42,18 @@ export async function POST(request: Request) {
     const body = (await request.json().catch(() => ({}))) as {
       action?: string;
       ids?: unknown;
+      animeId?: unknown;
     };
     const ids = Array.isArray(body.ids)
       ? body.ids.filter((id): id is string => typeof id === "string").slice(0, 200)
       : [];
 
-    if (body.action === "dismiss" && ids.length > 0) {
+    if (
+      (body.action === "mute" || body.action === "unmute") &&
+      typeof body.animeId === "number"
+    ) {
+      await setAnimeMuted(user.id, body.animeId, body.action === "mute");
+    } else if (body.action === "dismiss" && ids.length > 0) {
       await dismissNotifications(user.id, ids);
     } else if (body.action === "read" && ids.length > 0) {
       await markNotificationsRead(user.id, ids);
