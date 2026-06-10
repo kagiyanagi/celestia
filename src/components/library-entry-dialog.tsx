@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/components/auth-provider";
+import { useToast } from "@/components/toast-provider";
 import type { LibraryEntry, LibraryStatus } from "@/types/account";
 import type { AnimeSummary } from "@/types/anime";
 
@@ -38,6 +39,7 @@ export function LibraryEntryDialog({
   onClose: () => void;
 }) {
   const { user, setUser } = useAuth();
+  const { toast } = useToast();
   const [statusOpen, setStatusOpen] = useState(false);
   const [entry, setEntry] = useState<LibraryEntry | null>(
     user?.libraryEntries.find((item) => item.animeId === anime.id) || null,
@@ -145,12 +147,21 @@ export function LibraryEntryDialog({
         }
         if (payload.syncWarning) {
           setError(payload.syncWarning);
+          toast({ type: "error", title: "AniList sync failed", message: payload.syncWarning });
           return;
         }
+        const animeTitle =
+          anime.title?.english ||
+          anime.title?.userPreferred ||
+          anime.title?.romaji ||
+          "Anime";
+        toast({ type: "success", message: `${animeTitle} saved to your list.` });
         onClose();
       });
     } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : "Could not save this entry.");
+      const msg = caughtError instanceof Error ? caughtError.message : "Could not save this entry.";
+      setError(msg);
+      toast({ type: "error", message: msg });
     } finally {
       setSaving(false);
     }
@@ -187,12 +198,21 @@ export function LibraryEntryDialog({
         );
         if (payload.syncWarning) {
           setError(payload.syncWarning);
+          toast({ type: "error", title: "AniList sync failed", message: payload.syncWarning });
           return;
         }
+        const animeTitle =
+          anime.title?.english ||
+          anime.title?.userPreferred ||
+          anime.title?.romaji ||
+          "Anime";
+        toast({ type: "success", message: `${animeTitle} removed from your list.` });
         onClose();
       });
     } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : "Could not remove this entry.");
+      const msg = caughtError instanceof Error ? caughtError.message : "Could not remove this entry.";
+      setError(msg);
+      toast({ type: "error", message: msg });
     } finally {
       setSaving(false);
     }

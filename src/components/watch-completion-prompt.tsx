@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { AnimeSummary } from "@/types/anime";
+import { useToast } from "@/components/toast-provider";
 
 const TICK_MS = 5_000;
 // Don't nag if the viewer only glanced at the episode — they clearly didn't
@@ -19,9 +19,9 @@ type PendingExit =
  * of assuming a watch the moment the page opens. Watch time is measured while
  * the tab is visible (the player is a cross-origin embed, so true position is
  * unreadable). When the viewer leaves the episode — an in-app link, the browser
- * back button, switching episodes, going home — a small dialog asks whether to
- * mark it watched. Only on confirmation does it post to /api/history, which
- * bumps the library and syncs AniList. Server/audio swaps stay on the same
+ * back button, switching episodes, going home — a small toast confirmation asks
+ * whether to mark it watched. Only on confirmation does it post to /api/history,
+ * which bumps the library and syncs AniList. Server/audio swaps stay on the same
  * episode and never prompt.
  */
 export function WatchCompletionPrompt({
@@ -40,24 +40,21 @@ export function WatchCompletionPrompt({
   hasSource: boolean;
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [promptMinutes, setPromptMinutes] = useState(0);
+  const { toast } = useToast();
 
   // Event handlers run outside React's render, so the values they read live in
   // refs to stay current without re-binding listeners.
   const watchedRef = useRef(0);
   const resolvedRef = useRef(false);
-  const openRef = useRef(false);
+  const promptOpenRef = useRef(false);
   const armedRef = useRef(false);
   const bypassPopRef = useRef(false);
   const pendingRef = useRef<PendingExit | null>(null);
-
-  function openDialog() {
-    setPromptMinutes(Math.floor(watchedRef.current / 60));
-    openRef.current = true;
-    setOpen(true);
-  }
+  // Keep stable refs to router and toast so event listeners stay bound once
+  const routerRef = useRef(router);
+  const toastRef = useRef(toast);
+  useEffect(() => { routerRef.current = router; }, [router]);
+  useEffect(() => { toastRef.current = toast; }, [toast]);
 
   useEffect(() => {
     if (!hasSource) {
@@ -67,6 +64,7 @@ export function WatchCompletionPrompt({
     // Per-episode mount: a route navigation to a new episode remounts this.
     watchedRef.current = 0;
     resolvedRef.current = false;
+    promptOpenRef.current = false;
     armedRef.current = false;
     bypassPopRef.current = false;
     pendingRef.current = null;
@@ -74,7 +72,7 @@ export function WatchCompletionPrompt({
     function eligible(): boolean {
       return (
         !resolvedRef.current &&
-        !openRef.current &&
+        !promptOpenRef.current &&
         watchedRef.current >= MIN_WATCH_SECONDS
       );
     }
@@ -96,6 +94,84 @@ export function WatchCompletionPrompt({
       }
       armedRef.current = true;
       window.history.pushState(null, "", window.location.href);
+    }
+
+    function continueExit() {
+      const pending = pendingRef.current;
+      pendingRef.current = null;
+      promptOpenRef.current = false;
+
+      if (!pending) return;
+
+      if (pending.kind === "back") {
+        bypassPopRef.current = true;
+        window.history.back();
+        return;
+      }
+      routerRef.current.push(pending.href);
+    }
+
+    function markWatched() {
+      // Fire-and-forget: the viewer asked to leave, so don't block the exit on
+      // the network. The save (and AniList mirror) finishes in the background.
+      void fetch("/api/history", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          anime,
+          episode,
+          episodeTitle,
+          episodeImage,
+          durationLabel,
+          progressPercent: 100,
+          progressOnly: false,
+        }),
+      })
+        .then(async (res) => {
+          if (!res.ok) throw new Error("Save failed");
+          toastRef.current({
+            type: "success",
+            message: `Episode ${episode} marked as watched.`,
+          });
+        })
+        .catch(() => {
+          toastRef.current({
+            type: "error",
+            title: "Couldn't save progress",
+            message: "Your watch history may not have been updated.",
+          });
+        });
+
+      resolvedRef.current = true;
+      continueExit();
+    }
+
+    function cancelExit() {
+      // The viewer wants to stay — drop the pending exit and re-arm the back
+      // guard so a later back press is caught again.
+      pendingRef.current = null;
+      promptOpenRef.current = false;
+      if (!armedRef.current && !resolvedRef.current) {
+        armedRef.current = true;
+        window.history.pushState(null, "", window.location.href);
+      }
+    }
+
+    function openPrompt() {
+      promptOpenRef.current = true;
+      const epLabel = episodeTitle ? ` — ${episodeTitle}` : "";
+      const minutes = Math.floor(watchedRef.current / 60);
+      const timeNote = minutes > 0 ? ` You've spent about ${minutes} min on it.` : "";
+
+      toastRef.current({
+        type: "confirmation",
+        title: "Mark as watched?",
+        message: `Did you finish episode ${episode}${epLabel}?${timeNote} We'll only update your progress if you say so.`,
+        confirmLabel: "Mark watched",
+        cancelLabel: "Not yet",
+        onConfirm: markWatched,
+        onCancel: cancelExit,
+      });
     }
 
     function onClick(event: MouseEvent) {
@@ -147,7 +223,7 @@ export function WatchCompletionPrompt({
         kind: "href",
         href: url.pathname + url.search + url.hash,
       };
-      openDialog();
+      openPrompt();
     }
 
     function onPopState() {
@@ -170,7 +246,7 @@ export function WatchCompletionPrompt({
       }
 
       pendingRef.current = { kind: "back" };
-      openDialog();
+      openPrompt();
     }
 
     const interval = window.setInterval(() => {
@@ -191,111 +267,8 @@ export function WatchCompletionPrompt({
       document.removeEventListener("click", onClick, true);
       window.removeEventListener("popstate", onPopState);
     };
-  }, [anime.id, episode, hasSource]);
+  }, [anime, episode, episodeTitle, episodeImage, durationLabel, hasSource]);
 
-  function continueExit() {
-    const pending = pendingRef.current;
-    pendingRef.current = null;
-    openRef.current = false;
-    setOpen(false);
-
-    if (!pending) {
-      return;
-    }
-    if (pending.kind === "back") {
-      bypassPopRef.current = true;
-      window.history.back();
-      return;
-    }
-    router.push(pending.href);
-  }
-
-  function markWatched() {
-    // Fire-and-forget: the viewer asked to leave, so don't block the exit on
-    // the network. The save (and AniList mirror) finishes in the background.
-    void fetch("/api/history", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        anime,
-        episode,
-        episodeTitle,
-        episodeImage,
-        durationLabel,
-        progressPercent: 100,
-        progressOnly: false,
-      }),
-    }).catch(() => {
-      // A failed save shouldn't matter once the viewer has moved on.
-    });
-    resolvedRef.current = true;
-    // Hold a brief "Saved" confirmation so the action lands instead of the
-    // dialog blinking out — the save itself already flew off in the background.
-    setSaved(true);
-    window.setTimeout(continueExit, 650);
-  }
-
-  function skipWatched() {
-    resolvedRef.current = true;
-    continueExit();
-  }
-
-  function cancelExit() {
-    // The viewer wants to stay — drop the pending exit and re-arm the back
-    // guard so a later back press is caught again.
-    pendingRef.current = null;
-    openRef.current = false;
-    setOpen(false);
-    if (!armedRef.current && !resolvedRef.current) {
-      armedRef.current = true;
-      window.history.pushState(null, "", window.location.href);
-    }
-  }
-
-  if (!open || typeof document === "undefined") {
-    return null;
-  }
-
-  return createPortal(
-    <div className="dialog-backdrop" role="presentation" onClick={cancelExit}>
-      <div
-        className="save-dialog watch-confirm-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Mark episode as watched"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="save-dialog-body">
-          <h2>Mark as watched?</h2>
-          <p className="watch-confirm-text">
-            Did you finish episode {episode}
-            {episodeTitle ? ` — ${episodeTitle}` : ""}?
-            {promptMinutes > 0
-              ? ` You've spent about ${promptMinutes} min on it.`
-              : ""}{" "}
-            We&apos;ll only update your progress if you say so.
-          </p>
-          <div className="save-dialog-buttons">
-            <button
-              type="button"
-              className="secondary-action"
-              onClick={skipWatched}
-              disabled={saved}
-            >
-              Not yet
-            </button>
-            <button
-              type="button"
-              className="primary-action"
-              onClick={markWatched}
-              disabled={saved}
-            >
-              {saved ? "Saved ✓" : "Mark watched"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>,
-    document.body,
-  );
+  // This component is purely behavioural — it renders nothing of its own.
+  return null;
 }

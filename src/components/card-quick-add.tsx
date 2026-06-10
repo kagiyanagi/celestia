@@ -4,6 +4,7 @@ import { Ban, Bookmark, Check, Pause, Play, Plus, RotateCcw } from "lucide-react
 import { type MouseEvent, startTransition, useState } from "react";
 
 import { useAuth } from "@/components/auth-provider";
+import { useToast } from "@/components/toast-provider";
 import type { LibraryEntry, LibraryStatus } from "@/types/account";
 import type { AnimeSummary } from "@/types/anime";
 
@@ -27,6 +28,7 @@ const STATUS_OPTIONS: Array<{
  */
 export function CardQuickAdd({ anime }: { anime: AnimeSummary }) {
   const { user, setUser } = useAuth();
+  const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -78,9 +80,10 @@ export function CardQuickAdd({ anime }: { anime: AnimeSummary }) {
               : user,
           );
         });
+        toast({ type: "success", message: `Added to ${STATUS_OPTIONS.find((o) => o.value === status)?.label ?? status}.` });
       }
     } catch {
-      // Non-fatal: the card stays usable, the user can retry or use the dialog.
+      toast({ type: "error", message: "Couldn't update your list. Try again." });
     } finally {
       setSaving(false);
       setOpen(false);

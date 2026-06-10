@@ -1,7 +1,8 @@
 "use client";
 
-import { startTransition, useEffect, useState } from "react";
+import { startTransition, useEffect, useRef, useState } from "react";
 import { Check, Minus, Plus } from "lucide-react";
+import { useToast } from "@/components/toast-provider";
 
 type LocalTrackingState = {
   status: "planning" | "watching" | "completed";
@@ -18,8 +19,15 @@ type LocalTrackerProps = {
   totalEpisodes: number | null;
 };
 
+const DEBOUNCE_MS = 500;
+
 export function LocalTracker({ animeId, totalEpisodes }: LocalTrackerProps) {
   const storageKey = `celestia:track:${animeId}`;
+  const { toast } = useToast();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Track the initial state so we don't toast on first hydration
+  const isFirstRender = useRef(true);
+
   const [state, setState] = useState<LocalTrackingState>(() => {
     if (typeof window === "undefined") {
       return defaultState;
@@ -40,7 +48,22 @@ export function LocalTracker({ animeId, totalEpisodes }: LocalTrackerProps) {
 
   useEffect(() => {
     window.localStorage.setItem(storageKey, JSON.stringify(state));
-  }, [state, storageKey]);
+
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+
+    // Debounce toasts so rapid +/- taps only fire once after the user pauses
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      toast({ type: "success", message: "Progress saved locally." });
+    }, DEBOUNCE_MS);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [state, storageKey, toast]);
 
   function updateState(nextState: LocalTrackingState) {
     startTransition(() => setState(nextState));

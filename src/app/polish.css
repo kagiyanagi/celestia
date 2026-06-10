@@ -793,6 +793,50 @@ body.watch-theater-active .watch-player-frame {
     .profile-stats-grid-visual {
         grid-template-columns: 1fr;
     }
+
+    /* Stack the avatar + text vertically and centre everything on tablet/mobile */
+    .profile-header-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .profile-header-copy {
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 540px) {
+    /* On small phones, switch avatar+text to a stacked column layout */
+    .profile-header-copy {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+
+    /* Slightly smaller avatar on mobile */
+    .profile-avatar {
+        width: 5.5rem;
+        height: 5.5rem;
+    }
+
+    /* Tighten metadata badges on mobile */
+    .profile-metadata {
+        gap: 0.5rem;
+        margin-top: 0.4rem;
+        margin-bottom: 0.25rem;
+    }
+
+    /* Keep bio readable but don't let it overflow awkwardly */
+    .profile-bio {
+        font-size: 0.92rem;
+        line-height: 1.55;
+    }
+
+    /* Edit button sits naturally below content, no need for space-between */
+    .secondary-action.profile-edit-trigger {
+        align-self: flex-start;
+    }
 }
 
 /* ── Mobile: 640px — dense grids & panel padding ─────────────────────────── */
