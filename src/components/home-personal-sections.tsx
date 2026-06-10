@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { AnimeCard } from "@/components/anime-card";
 import { useAuth } from "@/components/auth-provider";
@@ -38,64 +38,41 @@ export function HomePersonalSections({
   const history = dedupeByAnime(user?.historyEntries || []);
   const library = user?.libraryEntries || [];
   const refreshRef = useRef(refreshUser);
-  const [episodeStills, setEpisodeStills] = useState<Record<string, string>>(
-    {},
-  );
+  type EnrichedEp = { number: number; title: string | null; thumbnail: string | null };
+  const [enrichedEpisodes, setEnrichedEpisodes] = useState<Record<number, EnrichedEp[]>>({});
 
   useEffect(() => {
     refreshRef.current = refreshUser;
   }, [refreshUser]);
 
-  // The shown Continue Watching cards that lack a per-episode still (AniList-
-  // synced watches carry none, so they'd otherwise fall back to the show's wide
-  // banner). Serialized so the effect only refires when the shown set changes.
-  const stillRequests = JSON.stringify(
-    history
-      .slice(0, 4)
-      .filter((entry) => !entry.episodeImage)
-      .map((entry) => ({
-        id: entry.id,
-        animeId: entry.animeId,
-        episode: getResumeEpisode(entry),
-      })),
-  );
+  const uniqueAnimeIds = useMemo(() => {
+    return Array.from(new Set(history.slice(0, 4).map((entry) => entry.animeId)));
+  }, [history]);
 
-  // Lazily fetch the real (season-correct) episode still for those cards.
-  // Bounded to the few shown and demand-only — never blocks the page.
+  const uniqueAnimeIdsStr = JSON.stringify(uniqueAnimeIds);
+
   useEffect(() => {
-    const requests = JSON.parse(stillRequests) as Array<{
-      id: string;
-      animeId: number;
-      episode: number;
-    }>;
-
-    if (!requests.length) {
-      return;
-    }
+    const ids = JSON.parse(uniqueAnimeIdsStr) as number[];
+    if (!ids.length) return;
 
     const controller = new AbortController();
 
-    requests.forEach((request) => {
-      fetch(
-        `/api/anime/${request.animeId}/episode-image?ep=${request.episode}`,
-        { signal: controller.signal },
-      )
+    ids.forEach((animeId) => {
+      fetch(`/api/anime/${animeId}/episodes`, { signal: controller.signal })
         .then((response) => (response.ok ? response.json() : null))
-        .then((payload: { image?: string | null } | null) => {
-          if (payload?.image) {
-            setEpisodeStills((prev) => ({
+        .then((payload: { episodes?: EnrichedEp[] } | null) => {
+          if (payload?.episodes) {
+            setEnrichedEpisodes((prev) => ({
               ...prev,
-              [request.id]: payload.image as string,
+              [animeId]: payload.episodes || [],
             }));
           }
         })
-        .catch(() => {
-          // Best-effort: the card keeps its banner/cover fallback.
-        });
+        .catch(() => {});
     });
 
     return () => controller.abort();
-  }, [stillRequests]);
+  }, [uniqueAnimeIdsStr]);
 
   // Keep Continue Watching fresh without a manual reload: refetch on mount
   // (back-navigation serves cached RSC payloads) and on tab refocus.
@@ -158,6 +135,29 @@ export function HomePersonalSections({
                   ? entry.progressPercent
                   : 0;
 
+              const episodesList = enrichedEpisodes[entry.animeId];
+              const targetMeta = episodesList?.find((ep) => ep.number === targetEpisode);
+
+              const displayImage =
+                targetMeta?.thumbnail ||
+                (!advance ? entry.episodeImage : null) ||
+                null;
+
+              const isGenericTitle = (val: string | null | undefined, num: number) => {
+                if (!val) return true;
+                const normalized = val.trim().toLowerCase();
+                return normalized === `episode ${num}` || normalized === `ep ${num}`;
+              };
+
+              const rawTitle = targetMeta?.title || (!advance ? entry.episodeTitle : null);
+              const displayTitle = !isGenericTitle(rawTitle, targetEpisode)
+                ? rawTitle
+                : `Episode ${targetEpisode}`;
+
+              const strongLabel = advance
+                ? `Up next: ${displayTitle}`
+                : displayTitle || `Episode ${targetEpisode}`;
+
               return (
                 <Link
                   key={entry.id}
@@ -169,8 +169,8 @@ export function HomePersonalSections({
                 >
                   <span className="continue-card-thumb">
                     <EpisodeThumbnail
-                      src={entry.episodeImage || episodeStills[entry.id] || null}
-                      alt={entry.episodeTitle}
+                      src={displayImage}
+                      alt={displayTitle || entry.episodeTitle}
                       fallbackSrc={entry.anime.bannerImage || entry.anime.coverImage || null}
                     />
                     {entry.durationLabel ? (
@@ -189,7 +189,7 @@ export function HomePersonalSections({
                       </span>
                       <small>{getDisplayTitle(entry.anime.title, titleLanguage)}</small>
                     </span>
-                    <strong>{advance ? "Up next" : entry.episodeTitle}</strong>
+                    <strong>{strongLabel}</strong>
                   </span>
                 </Link>
               );

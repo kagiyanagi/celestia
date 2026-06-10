@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Compass, PlayCircle, Search, Trash2, X } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { EpisodeThumbnail } from "@/components/episode-thumbnail";
 import type { HistoryEntry } from "@/types/account";
 import { getDisplayTitle } from "@/lib/format";
@@ -48,24 +48,6 @@ function timeLabel(value: string) {
   }).format(new Date(value));
 }
 
-function matchesQuery(entry: HistoryEntry, query: string): boolean {
-  const haystack = [
-    entry.episodeTitle,
-    getDisplayTitle(entry.anime.title),
-    entry.anime.title?.romaji,
-    entry.anime.title?.english,
-    entry.anime.title?.native,
-    String(entry.episode),
-    `ep ${entry.episode}`,
-    `episode ${entry.episode}`,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
-  return haystack.includes(query);
-}
-
 // Consecutive days (ending today, with a one-day grace) that have at least one
 // watched episode. Built from local-midnight keys so it survives month rollover.
 function computeStreak(entries: HistoryEntry[]): number {
@@ -107,6 +89,38 @@ export function HistoryPageClient({
   const clearTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const normalizedQuery = query.trim().toLowerCase();
 
+  type EnrichedEp = { number: number; title: string | null; thumbnail: string | null };
+  const [enrichedEpisodes, setEnrichedEpisodes] = useState<Record<number, EnrichedEp[]>>({});
+
+  const uniqueAnimeIds = useMemo(() => {
+    return Array.from(new Set(historyEntries.map((entry) => entry.animeId)));
+  }, [historyEntries]);
+
+  const uniqueAnimeIdsStr = JSON.stringify(uniqueAnimeIds);
+
+  useEffect(() => {
+    const ids = JSON.parse(uniqueAnimeIdsStr) as number[];
+    if (!ids.length) return;
+
+    const controller = new AbortController();
+
+    ids.forEach((animeId) => {
+      fetch(`/api/anime/${animeId}/episodes`, { signal: controller.signal })
+        .then((response) => (response.ok ? response.json() : null))
+        .then((payload: { episodes?: EnrichedEp[] } | null) => {
+          if (payload?.episodes) {
+            setEnrichedEpisodes((prev) => ({
+              ...prev,
+              [animeId]: payload.episodes || [],
+            }));
+          }
+        })
+        .catch(() => {});
+    });
+
+    return () => controller.abort();
+  }, [uniqueAnimeIdsStr]);
+
   const stats = useMemo(() => {
     const shows = new Set(historyEntries.map((entry) => entry.animeId));
     const weekAgo = new Date().getTime() - 7 * 86_400_000;
@@ -140,7 +154,41 @@ export function HistoryPageClient({
       if (status === "progress" && entry.progressPercent >= FINISHED_AT) {
         return false;
       }
-      return normalizedQuery ? matchesQuery(entry, normalizedQuery) : true;
+
+      if (normalizedQuery) {
+        const episodesList = enrichedEpisodes[entry.animeId];
+        const targetMeta = episodesList?.find((ep) => ep.number === entry.episode);
+
+        const isGenericTitle = (val: string | null | undefined, num: number) => {
+          if (!val) return true;
+          const normalized = val.trim().toLowerCase();
+          return normalized === `episode ${num}` || normalized === `ep ${num}`;
+        };
+
+        const rawTitle = targetMeta?.title || entry.episodeTitle;
+        const displayTitle = !isGenericTitle(rawTitle, entry.episode)
+          ? rawTitle
+          : `Episode ${entry.episode}`;
+
+        const haystack = [
+          displayTitle,
+          entry.episodeTitle,
+          getDisplayTitle(entry.anime.title, titleLanguage),
+          entry.anime.title?.romaji,
+          entry.anime.title?.english,
+          entry.anime.title?.native,
+          String(entry.episode),
+          `ep ${entry.episode}`,
+          `episode ${entry.episode}`,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
+        return haystack.includes(normalizedQuery);
+      }
+
+      return true;
     });
 
     // While searching, group by anime (episodes in order) so a title query
@@ -173,7 +221,7 @@ export function HistoryPageClient({
       },
       {},
     );
-  }, [historyEntries, normalizedQuery, status, titleLanguage]);
+  }, [historyEntries, enrichedEpisodes, normalizedQuery, status, titleLanguage]);
   const groupEntries = Object.entries(groups);
 
   function removeEntry(id: string) {
@@ -321,73 +369,91 @@ export function HistoryPageClient({
                 ) : null}
               </h2>
               <div className="history-stack">
-                {items.map((entry) => (
-                  <div className="history-card-wrap" key={entry.id}>
-                    <Link
-                      href={buildWatchHref({
-                        animeId: entry.animeId,
-                        episode: getResumeEpisode(entry),
-                      })}
-                      className="history-card"
-                    >
-                      <span className="history-card-thumb">
-                        <EpisodeThumbnail
-                          src={entry.episodeImage || null}
-                          alt={entry.episodeTitle}
-                          fallbackSrc={
-                            entry.anime.bannerImage ||
-                            entry.anime.coverImage ||
-                            null
-                          }
-                        />
-                        {entry.progressPercent > 0 ? (
-                          <span className="history-card-progress">
-                            <span
-                              style={{
-                                width: `${Math.min(100, entry.progressPercent)}%`,
-                              }}
-                            />
-                          </span>
-                        ) : null}
-                      </span>
-                      <span className="history-card-copy">
-                        <span className="ep-meta-row">
-                          <span className="ep-meta-item">Ep {entry.episode}</span>
-                          {entry.durationLabel ? (
-                            <span className="ep-meta-item">
-                              {entry.durationLabel}
-                            </span>
-                          ) : null}
-                          <span
-                            className="ep-meta-item"
-                            suppressHydrationWarning
-                          >
-                            {timeLabel(entry.watchedAt)}
-                          </span>
-                          {entry.progressPercent > 0 &&
-                          entry.progressPercent < FINISHED_AT ? (
-                            <span className="ep-meta-item history-card-resume">
-                              <PlayCircle size={13} aria-hidden />
-                              {Math.round(entry.progressPercent)}%
+                {items.map((entry) => {
+                  const episodesList = enrichedEpisodes[entry.animeId];
+                  const targetMeta = episodesList?.find((ep) => ep.number === entry.episode);
+
+                  const displayImage = targetMeta?.thumbnail || entry.episodeImage || null;
+
+                  const isGenericTitle = (val: string | null | undefined, num: number) => {
+                    if (!val) return true;
+                    const normalized = val.trim().toLowerCase();
+                    return normalized === `episode ${num}` || normalized === `ep ${num}`;
+                  };
+
+                  const rawTitle = targetMeta?.title || entry.episodeTitle;
+                  const displayTitle = !isGenericTitle(rawTitle, entry.episode)
+                    ? rawTitle
+                    : `Episode ${entry.episode}`;
+
+                  return (
+                    <div className="history-card-wrap" key={entry.id}>
+                      <Link
+                        href={buildWatchHref({
+                          animeId: entry.animeId,
+                          episode: getResumeEpisode(entry),
+                        })}
+                        className="history-card"
+                      >
+                        <span className="history-card-thumb">
+                          <EpisodeThumbnail
+                            src={displayImage}
+                            alt={displayTitle || entry.episodeTitle}
+                            fallbackSrc={
+                              entry.anime.bannerImage ||
+                              entry.anime.coverImage ||
+                              null
+                            }
+                          />
+                          {entry.progressPercent > 0 ? (
+                            <span className="history-card-progress">
+                              <span
+                                style={{
+                                  width: `${Math.min(100, entry.progressPercent)}%`,
+                                }}
+                              />
                             </span>
                           ) : null}
                         </span>
-                        <strong>{entry.episodeTitle}</strong>
-                        <small>
-                          {getDisplayTitle(entry.anime.title, titleLanguage)}
-                        </small>
-                      </span>
-                    </Link>
-                    <button
-                      type="button"
-                      className="history-card-remove"
-                      aria-label="Remove from history"
-                      onClick={() => removeEntry(entry.id)}
-                    >
-                      <X size={16} aria-hidden />
-                    </button>
-                  </div>
-                ))}
+                        <span className="history-card-copy">
+                          <span className="ep-meta-row">
+                            <span className="ep-meta-item">Ep {entry.episode}</span>
+                            {entry.durationLabel ? (
+                              <span className="ep-meta-item">
+                                {entry.durationLabel}
+                              </span>
+                            ) : null}
+                            <span
+                              className="ep-meta-item"
+                              suppressHydrationWarning
+                            >
+                              {timeLabel(entry.watchedAt)}
+                            </span>
+                            {entry.progressPercent > 0 &&
+                            entry.progressPercent < FINISHED_AT ? (
+                              <span className="ep-meta-item history-card-resume">
+                                <PlayCircle size={13} aria-hidden />
+                                {Math.round(entry.progressPercent)}%
+                              </span>
+                            ) : null}
+                          </span>
+                          <strong>{displayTitle}</strong>
+                          <small>
+                            {getDisplayTitle(entry.anime.title, titleLanguage)}
+                          </small>
+                        </span>
+                      </Link>
+                      <button
+                        type="button"
+                        className="history-card-remove"
+                        aria-label="Remove from history"
+                        onClick={() => removeEntry(entry.id)}
+                      >
+                        <X size={16} aria-hidden />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </section>
           ))
