@@ -5,8 +5,9 @@ import {
   getUpcomingEpisodes,
 } from "@/lib/providers/anilist";
 import { getRecentDubDrops } from "@/lib/providers/anime-schedule";
+import { getAnimeNews } from "@/lib/providers/jikan";
 import type { LibraryStatus, PublicUser } from "@/types/account";
-import type { AnimeNotification } from "@/types/anime";
+import type { AnimeNotification, AnimeSummary, AnimeNewsArticle } from "@/types/anime";
 
 // How far back a release still counts as "new".
 const WINDOW_DAYS = 30;
@@ -56,7 +57,9 @@ function getNotificationCacheKey(user: PublicUser): string {
     user.preferences.titleLanguage,
     `${user.preferences.notifyEpisodes !== false ? 1 : 0}${
       user.preferences.notifyDubs !== false ? 1 : 0
-    }${user.preferences.notifyUpcoming !== false ? 1 : 0}`,
+    }${user.preferences.notifyUpcoming !== false ? 1 : 0}:${
+      (user.preferences.notifyNewsStatuses ?? ["watching", "planning"]).join(",")
+    }`,
     (user.mutedAnimeIds ?? []).join(","),
     user.notificationsLastReadAt ?? "",
     (user.notificationReadIds ?? []).join(","),
@@ -90,7 +93,21 @@ export async function getUserNotifications(
     (entry) =>
       NOTIFY_STATUSES.has(entry.status) && !mutedIds.has(entry.animeId),
   );
-  if (tracked.length === 0) {
+
+  const newsStatuses = new Set<LibraryStatus>(
+    user.preferences.notifyNewsStatuses ?? ["watching", "planning"]
+  );
+  const newsTracked = (user.libraryEntries || [])
+    .filter(
+      (entry) =>
+        newsStatuses.has(entry.status) &&
+        !mutedIds.has(entry.animeId) &&
+        entry.anime.idMal
+    )
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .slice(0, 15);
+
+  if (tracked.length === 0 && newsTracked.length === 0) {
     return { notifications: [], unreadCount: 0 };
   }
 
@@ -109,17 +126,17 @@ export async function getUserNotifications(
 
   const limited = tracked.slice(0, MAX_TRACKED);
   const ids = limited.map((entry) => entry.animeId);
-  const animeById = new Map(limited.map((entry) => [entry.animeId, entry.anime]));
+  const allAnimeById = new Map((user.libraryEntries || []).map((entry) => [entry.animeId, entry.anime]));
   // Per-anime cutoff: a drop only counts once the show is on the user's list.
   const trackedSinceById = new Map(
-    limited.map((entry) => [entry.animeId, trackedSince(entry)]),
+    (user.libraryEntries || []).map((entry) => [entry.animeId, trackedSince(entry)]),
   );
 
   const [subDrops, dubDrops, upcoming] = await Promise.all([
-    notifyEpisodes
+    notifyEpisodes && ids.length > 0
       ? withSoftTimeout(getRecentEpisodeDrops(ids, since), 6_000, [])
       : Promise.resolve([]),
-    notifyDubs
+    notifyDubs && limited.length > 0
       ? withSoftTimeout(
           getRecentDubDrops(
             limited.map((entry) => ({
@@ -132,7 +149,7 @@ export async function getUserNotifications(
           [],
         )
       : Promise.resolve([]),
-    notifyUpcoming
+    notifyUpcoming && ids.length > 0
       ? withSoftTimeout(getUpcomingEpisodes(ids, UPCOMING_WINDOW_SECONDS), 6_000, [])
       : Promise.resolve([]),
   ]);
@@ -180,7 +197,7 @@ export async function getUserNotifications(
     const id = `${drop.animeId}:dub:${drop.episode}`;
     if (dismissedIds.has(id)) continue;
     if (drop.airedAt < (trackedSinceById.get(drop.animeId) ?? 0)) continue;
-    const anime = animeById.get(drop.animeId);
+    const anime = allAnimeById.get(drop.animeId);
     notifications.push({
       id,
       type: "dub",
@@ -191,6 +208,54 @@ export async function getUserNotifications(
       airedAt: drop.airedAt,
       read: drop.airedAt <= lastReadAt || readIds.has(id),
     });
+  }
+
+  // Fetch news articles from Jikan
+  const newsArticlesByAnime: Array<{ animeId: number; anime: AnimeSummary; articles: AnimeNewsArticle[] }> = [];
+  if (newsStatuses.size > 0 && newsTracked.length > 0) {
+    for (let i = 0; i < newsTracked.length; i += 3) {
+      const chunk = newsTracked.slice(i, i + 3);
+      const chunkResults = await Promise.all(
+        chunk.map(async (entry) => {
+          try {
+            const articles = await withSoftTimeout(
+              getAnimeNews(entry.anime.idMal!),
+              4_000,
+              []
+            );
+            return { animeId: entry.animeId, anime: entry.anime, articles };
+          } catch {
+            return { animeId: entry.animeId, anime: entry.anime, articles: [] };
+          }
+        })
+      );
+      newsArticlesByAnime.push(...chunkResults);
+    }
+  }
+
+  // Map news articles to notifications
+  for (const { animeId, anime, articles } of newsArticlesByAnime) {
+    const trackedSinceTime = trackedSinceById.get(animeId) ?? 0;
+    for (const article of articles) {
+      const id = `${animeId}:news:${article.id}`;
+      if (dismissedIds.has(id)) continue;
+
+      const airedAt = Math.floor(Date.parse(article.date) / 1000);
+      if (airedAt < since) continue;
+      if (airedAt < trackedSinceTime) continue;
+
+      notifications.push({
+        id,
+        type: "news",
+        animeId,
+        title: article.title,
+        animeTitle: getDisplayTitle(anime.title, user.preferences.titleLanguage),
+        coverImage: article.imageUrl || anime.coverImage || null,
+        episode: 0,
+        airedAt,
+        read: airedAt <= lastReadAt || readIds.has(id),
+      });
+    }
   }
 
   const grouped = groupNotifications(notifications, readIds, dismissedIds);
@@ -218,7 +283,9 @@ function groupNotifications(
 ): AnimeNotification[] {
   const groups = new Map<string, AnimeNotification[]>();
   for (const notification of notifications) {
-    const key = `${notification.animeId}:${notification.type}`;
+    const key = notification.type === "news"
+      ? `${notification.animeId}:${notification.type}:${notification.id}`
+      : `${notification.animeId}:${notification.type}`;
     const bucket = groups.get(key);
     if (bucket) {
       bucket.push(notification);

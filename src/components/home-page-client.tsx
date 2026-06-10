@@ -7,6 +7,7 @@ import { HomeGenreChips } from "@/components/home-genre-chips";
 import { HomeHeroCarousel } from "@/components/home-hero-carousel";
 import { HomePersonalSections } from "@/components/home-personal-sections";
 import { HomeRecommendations } from "@/components/home-recommendations";
+import { HomeMissedSequels } from "@/components/home-missed-sequels";
 import { HomeShelf } from "@/components/home-shelf";
 import { HomeTrendingRail } from "@/components/home-trending-rail";
 import { HomeUpcomingGrid } from "@/components/home-upcoming-grid";
@@ -81,6 +82,7 @@ export function HomePageClient({ initialCollections }: HomePageClientProps) {
         <HomePersonalSections user={null} />
         <HomeGenreChips />
         <HomeRecommendations />
+        <HomeMissedSequels />
         <HomeTrendingRail items={collections.trending} />
         <HomeTrendingRail
           items={collections.season}

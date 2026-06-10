@@ -22,6 +22,8 @@ export type UserPreferences = {
   notifyDubs: boolean;
   /** Notify shortly before a tracked show's next episode airs. */
   notifyUpcoming: boolean;
+  /** Library statuses for which news notifications should be sent. */
+  notifyNewsStatuses?: LibraryStatus[];
   /** When enabled, the profile is viewable by anyone at /u/[username]. */
   publicProfile: boolean;
 };

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Compass, PlayCircle, Search, Trash2, X } from "lucide-react";
+import { PlayCircle, Search, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { EpisodeThumbnail } from "@/components/episode-thumbnail";
 import type { HistoryEntry } from "@/types/account";
@@ -9,13 +9,10 @@ import { getDisplayTitle } from "@/lib/format";
 import { useTitleLanguage } from "@/components/use-title-language";
 import { getResumeEpisode } from "@/lib/resume";
 import { buildWatchHref } from "@/lib/watch-href";
-import { buildBrowseHref, EMPTY_BROWSE_FILTERS } from "@/lib/browse-filters";
 
 // Matches the resume threshold in lib/resume.ts: an episode is "finished" once
 // it crosses 90%, otherwise it still counts as in-progress.
 const FINISHED_AT = 90;
-
-type StatusFilter = "all" | "progress" | "finished";
 
 function startOfDay(value: Date): Date {
   const date = new Date(value);
@@ -48,28 +45,6 @@ function timeLabel(value: string) {
   }).format(new Date(value));
 }
 
-// Consecutive days (ending today, with a one-day grace) that have at least one
-// watched episode. Built from local-midnight keys so it survives month rollover.
-function computeStreak(entries: HistoryEntry[]): number {
-  const days = new Set(
-    entries.map((entry) => startOfDay(new Date(entry.watchedAt)).getTime()),
-  );
-
-  if (!days.size) return 0;
-
-  const cursor = startOfDay(new Date());
-  if (!days.has(cursor.getTime())) {
-    cursor.setDate(cursor.getDate() - 1);
-  }
-
-  let streak = 0;
-  while (days.has(cursor.getTime())) {
-    streak += 1;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-
-  return streak;
-}
 
 export function HistoryPageClient({
   entries,
@@ -81,7 +56,6 @@ export function HistoryPageClient({
   const titleLanguage = useTitleLanguage();
   const [historyEntries, setHistoryEntries] = useState(entries);
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<StatusFilter>("all");
   const [paused, setPaused] = useState(pauseHistory);
   // Holds the cleared entries while the Undo window is open; the server delete
   // is deferred until the window closes, so Undo never needs a re-create.
@@ -121,40 +95,9 @@ export function HistoryPageClient({
     return () => controller.abort();
   }, [uniqueAnimeIdsStr]);
 
-  const stats = useMemo(() => {
-    const shows = new Set(historyEntries.map((entry) => entry.animeId));
-    const weekAgo = new Date().getTime() - 7 * 86_400_000;
-    const thisWeek = historyEntries.filter(
-      (entry) => new Date(entry.watchedAt).getTime() >= weekAgo,
-    ).length;
-
-    const genreCounts = new Map<string, number>();
-    for (const entry of historyEntries) {
-      for (const genre of entry.anime.genres ?? []) {
-        genreCounts.set(genre, (genreCounts.get(genre) ?? 0) + 1);
-      }
-    }
-    const topGenre =
-      [...genreCounts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-
-    return {
-      episodes: historyEntries.length,
-      shows: shows.size,
-      thisWeek,
-      streak: computeStreak(historyEntries),
-      topGenre,
-    };
-  }, [historyEntries]);
 
   const groups = useMemo(() => {
     const filtered = historyEntries.filter((entry) => {
-      if (status === "finished" && entry.progressPercent < FINISHED_AT) {
-        return false;
-      }
-      if (status === "progress" && entry.progressPercent >= FINISHED_AT) {
-        return false;
-      }
-
       if (normalizedQuery) {
         const episodesList = enrichedEpisodes[entry.animeId];
         const targetMeta = episodesList?.find((ep) => ep.number === entry.episode);
@@ -221,7 +164,7 @@ export function HistoryPageClient({
       },
       {},
     );
-  }, [historyEntries, enrichedEpisodes, normalizedQuery, status, titleLanguage]);
+  }, [historyEntries, enrichedEpisodes, normalizedQuery, titleLanguage]);
   const groupEntries = Object.entries(groups);
 
   function removeEntry(id: string) {
@@ -267,12 +210,6 @@ export function HistoryPageClient({
     });
   }
 
-  const filters: { value: StatusFilter; label: string }[] = [
-    { value: "all", label: "All" },
-    { value: "progress", label: "Continue" },
-    { value: "finished", label: "Finished" },
-  ];
-
   return (
     <div className="history-layout page-shell">
       {paused ? (
@@ -287,40 +224,7 @@ export function HistoryPageClient({
         </div>
       ) : null}
 
-      {historyEntries.length ? (
-        <div className="history-summary">
-          <span className="history-stat">
-            <strong>{stats.episodes}</strong>
-            <small>Episodes watched</small>
-          </span>
-          <span className="history-stat">
-            <strong>{stats.shows}</strong>
-            <small>Series</small>
-          </span>
-          <span className="history-stat">
-            <strong>{stats.thisWeek}</strong>
-            <small>This week</small>
-          </span>
-          <span className="history-stat">
-            <strong>{stats.streak}</strong>
-            <small>Day streak</small>
-          </span>
-          {stats.topGenre ? (
-            <Link
-              className="history-discover"
-              href={buildBrowseHref("/search", {
-                ...EMPTY_BROWSE_FILTERS,
-                genre: stats.topGenre,
-              })}
-            >
-              <Compass size={16} aria-hidden />
-              <span>
-                More <strong>{stats.topGenre}</strong>
-              </span>
-            </Link>
-          ) : null}
-        </div>
-      ) : null}
+
 
       <div className="history-toolbar">
         <label className="history-search">
@@ -331,20 +235,6 @@ export function HistoryPageClient({
             placeholder="Search by anime, episode title, or episode number"
           />
         </label>
-        <div className="history-filters" role="tablist">
-          {filters.map((filter) => (
-            <button
-              key={filter.value}
-              type="button"
-              role="tab"
-              aria-selected={status === filter.value}
-              className={status === filter.value ? "is-active" : undefined}
-              onClick={() => setStatus(filter.value)}
-            >
-              {filter.label}
-            </button>
-          ))}
-        </div>
         <button
           className="history-clear"
           type="button"
@@ -405,15 +295,6 @@ export function HistoryPageClient({
                               null
                             }
                           />
-                          {entry.progressPercent > 0 ? (
-                            <span className="history-card-progress">
-                              <span
-                                style={{
-                                  width: `${Math.min(100, entry.progressPercent)}%`,
-                                }}
-                              />
-                            </span>
-                          ) : null}
                         </span>
                         <span className="history-card-copy">
                           <span className="ep-meta-row">
@@ -460,13 +341,13 @@ export function HistoryPageClient({
         ) : (
           <section className="empty-state">
             <h1>
-              {normalizedQuery || status !== "all"
+              {normalizedQuery
                 ? "Nothing here matches your filters"
                 : "No watch history yet"}
             </h1>
             <p>
-              {normalizedQuery || status !== "all"
-                ? "Try a different search or switch the filter back to All."
+              {normalizedQuery
+                ? "Try a different search."
                 : "Episodes you open from the watch page will show up here."}
             </p>
           </section>

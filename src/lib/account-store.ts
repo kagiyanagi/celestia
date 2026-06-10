@@ -91,7 +91,7 @@ export async function getPublicProfile(
     displayName: user.displayName,
     username: user.username,
     pronouns: user.pronouns,
-    about: user.about,
+    about: user.about || user.aniListProfile?.about || "",
     avatar: user.avatar,
     banner: user.banner,
     joinedAt: user.joinedAt,
@@ -122,6 +122,9 @@ export async function setAniListConnection(input: {
     user.avatar = input.profile.avatar || user.avatar;
     user.banner = input.profile.banner || user.banner;
     user.displayName = input.profile.name || user.displayName;
+    if (!user.about || user.about.trim() === "") {
+      user.about = input.profile.about || "";
+    }
     user.libraryEntries = mergeLibraryEntries(
       user.libraryEntries,
       input.libraryEntries,
@@ -371,6 +374,9 @@ export async function applyAniListSync(input: {
     user.aniListProfile = input.profile;
     user.avatar = input.profile.avatar || user.avatar;
     user.banner = input.profile.banner || user.banner;
+    if (!user.about || user.about.trim() === "") {
+      user.about = input.profile.about || "";
+    }
     user.libraryEntries = mergeAniListPull(
       user.libraryEntries,
       input.libraryEntries,
@@ -583,6 +589,9 @@ export async function refreshAniListProfile(
     user.aniListProfile = profile;
     user.avatar = profile.avatar || user.avatar;
     user.banner = profile.banner || user.banner;
+    if (!user.about || user.about.trim() === "") {
+      user.about = profile.about || "";
+    }
     return sanitizeUser(user);
   });
 }

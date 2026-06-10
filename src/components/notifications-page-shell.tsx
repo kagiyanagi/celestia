@@ -10,6 +10,7 @@ import {
   CheckCheck,
   Clock,
   Mic,
+  Newspaper,
   Trash2,
   Tv,
 } from "lucide-react";
@@ -23,6 +24,9 @@ import type { AnimeNotification } from "@/types/anime";
 function notificationHref(notification: AnimeNotification): string {
   if (notification.type === "upcoming") {
     return `/anime/${notification.animeId}`;
+  }
+  if (notification.type === "news") {
+    return `/anime/${notification.animeId}?tab=news`;
   }
   return buildWatchHref({
     animeId: notification.animeId,
@@ -198,6 +202,8 @@ export function NotificationsPageShell({
                       <Mic size={13} aria-hidden />
                     ) : notification.type === "upcoming" ? (
                       <Clock size={13} aria-hidden />
+                    ) : notification.type === "news" ? (
+                      <Newspaper size={13} aria-hidden />
                     ) : (
                       <Tv size={13} aria-hidden />
                     )}
@@ -205,17 +211,25 @@ export function NotificationsPageShell({
                       ? "New dub episode"
                       : notification.type === "upcoming"
                         ? "Airing soon"
-                        : "New episode"}
+                        : notification.type === "news"
+                          ? `News • ${notification.animeTitle || "Anime"}`
+                          : "New episode"}
                   </span>
                   <strong className="notif-title">{notification.title}</strong>
                   <span className="notif-sub">
-                    {notification.episodeTo
-                      ? `Episodes ${notification.episode}–${notification.episodeTo}`
-                      : `Episode ${notification.episode}`}{" "}
-                    •{" "}
-                    {notification.type === "upcoming"
-                      ? timeUntil(notification.airedAt)
-                      : relativeTime(notification.airedAt)}
+                    {notification.type === "news" ? (
+                      relativeTime(notification.airedAt)
+                    ) : (
+                      <>
+                        {notification.episodeTo
+                          ? `Episodes ${notification.episode}–${notification.episodeTo}`
+                          : `Episode ${notification.episode}`}{" "}
+                        •{" "}
+                        {notification.type === "upcoming"
+                          ? timeUntil(notification.airedAt)
+                          : relativeTime(notification.airedAt)}
+                      </>
+                    )}
                   </span>
                 </span>
                 {!notification.read ? (
