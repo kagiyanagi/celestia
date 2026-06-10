@@ -1,6 +1,7 @@
 import { cookies, headers } from "next/headers";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { cache } from "react";
+import { getCachedUserRecord } from "@/lib/account-store";
 import { getStore } from "@/lib/db";
 import type {
   DeviceSession,
@@ -405,7 +406,7 @@ async function readSessionUser() {
       .catch(() => undefined);
   }
 
-  const user = await store.getUserById(session.userId);
+  const user = await getCachedUserRecord(session.userId);
 
   if (!user) {
     return null;

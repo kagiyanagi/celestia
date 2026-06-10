@@ -71,9 +71,15 @@ function getSqlClient(): Sql | null {
 
   if (!sqlClient) {
     sqlClient = postgres(env.databaseUrl, {
-      max: 1,
+      // A single connection serializes every query app-wide: a background
+      // AniList sync would block a user's "mark watched". The Neon pooler
+      // (PgBouncer) fronts this, so a small client pool is safe and lets
+      // concurrent requests run in parallel instead of queueing.
+      max: 10,
       idle_timeout: 30,
       connect_timeout: 10,
+      // Required for the Neon pooler (transaction-mode PgBouncer can't reuse
+      // server-side prepared statements across pooled connections).
       prepare: false,
     });
   }

@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
-import { getAnimeDetails } from "@/lib/providers/anilist";
+import { getEpisodeList } from "@/lib/providers/anilist";
 import { PUBLIC_LONG_CACHE } from "@/lib/http/cache";
 
 /**
  * Returns the full list of episodes for a single anime, carrying their
  * descriptive titles, descriptions, thumbnails, and other catalog metadata.
- * Sourced from the server cache (which merges AniList + AniZip + Kitsu).
+ * Sourced from the server cache (which merges AniList + AniZip + Kitsu). Uses
+ * the lightweight getEpisodeList rather than the full getAnimeDetails — this
+ * endpoint only needs episodes, not Jikan ratings / dub status / banner.
  */
 export async function GET(
   request: Request,
@@ -22,14 +24,11 @@ export async function GET(
   }
 
   try {
-    const anime = await getAnimeDetails(animeId);
-    if (!anime) {
-      return NextResponse.json({ episodes: [] });
-    }
+    const episodes = await getEpisodeList(animeId);
 
     return NextResponse.json(
       {
-        episodes: (anime.streamingEpisodes || []).map((ep) => ({
+        episodes: episodes.map((ep) => ({
           number: ep.number,
           title: ep.title || null,
           thumbnail: ep.thumbnail || null,
