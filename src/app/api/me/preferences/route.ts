@@ -38,6 +38,7 @@ function pickPreferences(value: Partial<UserPreferences>) {
   }
 
   for (const key of [
+    "whiteMode",
     "hideAdultContent",
     "autoplayTrailers",
     "pauseHistory",

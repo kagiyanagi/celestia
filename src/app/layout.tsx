@@ -7,6 +7,7 @@ import { DubBadgeProvider } from "@/components/dub-badge-provider";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { ToastProvider } from "@/components/toast-provider";
+import { getSessionUser } from "@/lib/auth";
 import "./globals.css";
 import "./polish.css";
 
@@ -38,16 +39,19 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const user = await getSessionUser();
+  const theme = user?.preferences?.whiteMode ? "light" : "dark";
+
   return (
-    <html lang="en">
+    <html lang="en" data-theme={theme} style={{ colorScheme: theme }}>
       <body className={`${paytoneOne.variable} ${manrope.variable}`}>
         <ToastProvider>
-          <AuthProvider initialUser={null}>
+          <AuthProvider initialUser={user}>
             <DubBadgeProvider>
               <BannerFallbackProvider>
                 <SiteHeader />

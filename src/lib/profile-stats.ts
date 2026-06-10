@@ -1,5 +1,4 @@
 import type { LibraryEntry, LibraryStatus } from "@/types/account";
-import type { AnimeSummary } from "@/types/anime";
 
 export type CountBucket = { label: string; count: number };
 

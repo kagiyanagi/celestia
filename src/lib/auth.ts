@@ -21,6 +21,7 @@ function createId(size = 16) {
 function defaultPreferences(): UserPreferences {
   return {
     titleLanguage: "english",
+    whiteMode: false,
     hideAdultContent: true,
     autoplayTrailers: false,
     pauseHistory: false,
