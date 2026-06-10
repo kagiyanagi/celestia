@@ -28,6 +28,7 @@ function defaultPreferences(): UserPreferences {
     notifyEpisodes: true,
     notifyDubs: true,
     notifyUpcoming: true,
+    notifyNewsStatuses: ["watching", "planning"],
     publicProfile: false,
   };
 }

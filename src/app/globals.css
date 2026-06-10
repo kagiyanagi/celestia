@@ -7513,29 +7513,6 @@ b.schedule-tracked-tag.is-watched {
     border-color: var(--line-strong);
 }
 
-.history-filters {
-    display: inline-flex;
-    gap: 0.35rem;
-    padding: 0.3rem;
-    border: 1px solid var(--line);
-    border-radius: 1rem;
-    background: var(--panel);
-}
-
-.history-filters button {
-    padding: 0.5rem 1rem;
-    border: 0;
-    border-radius: 0.75rem;
-    background: transparent;
-    color: var(--muted);
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.history-filters button.is-active {
-    background: var(--text);
-    color: var(--bg);
-}
 
 .history-card-wrap {
     position: relative;

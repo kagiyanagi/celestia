@@ -10,18 +10,33 @@ import {
   type ChangeEvent,
   type FormEvent,
 } from "react";
-import { LogOut, Monitor, Pencil, Smartphone, Trash2 } from "lucide-react";
+import { Calendar, ExternalLink, LogOut, Monitor, Pencil, Smartphone, Trash2 } from "lucide-react";
 import { AuthPanel } from "@/components/auth-panel";
 import { useAuth } from "@/components/auth-provider";
 import { CustomSelect } from "@/components/custom-select";
+import { DropdownMultiSelect } from "@/components/dropdown-multi-select";
 import { HomePersonalSections } from "@/components/home-personal-sections";
 import type { LibraryEntry } from "@/types/account";
-import { getDisplayTitle, formatRelativeSeconds, scoreLabel } from "@/lib/format";
-import { ProfileStatBars } from "@/components/profile-stat-bars";
+import { getDisplayTitle, formatRelativeSeconds } from "@/lib/format";
+import { ProfileStatsSection } from "@/components/profile-stats-section";
 import { ProfileFavorites } from "@/components/profile-favorites";
 import {
   computeLibraryStats,
 } from "@/lib/profile-stats";
+
+function formatJoinedDate(isoString: string): string {
+  try {
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return "";
+    const months = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+    return `${months[date.getMonth()]} ${date.getFullYear()}`;
+  } catch {
+    return "";
+  }
+}
 
 export function ProfilePageShell({
   library,
@@ -76,9 +91,6 @@ export function ProfilePageShell({
   }
 
   const profile = user.aniListProfile;
-  const finishedCount = libraryEntries.filter(
-    (entry) => entry.status === "completed",
-  ).length;
   // Real watch time is only available from AniList. We don't track per-episode
   // runtime locally, so for non-AniList profiles this stays unknown rather than
   // being faked from an assumed 24-min episode length.
@@ -303,38 +315,42 @@ export function ProfilePageShell({
                     <span className="profile-pronouns">{user.pronouns}</span>
                   ) : null}
                 </p>
+                <div className="profile-metadata">
+                  <span className="metadata-badge">
+                    <Calendar size={13} />
+                    Joined {formatJoinedDate(user.joinedAt)}
+                  </span>
+                  {user.aniListProfile?.siteUrl ? (
+                    <a
+                      href={user.aniListProfile.siteUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="metadata-badge interactive"
+                    >
+                      <ExternalLink size={13} />
+                      AniList: {user.aniListProfile.name}
+                    </a>
+                  ) : null}
+                </div>
                 {user.about ? (
                   <p className="profile-bio">{user.about}</p>
+                ) : user.aniListProfile?.about ? (
+                  <p className="profile-bio">{user.aniListProfile.about}</p>
                 ) : (
                   <p className="profile-bio profile-bio-empty">
                     Hope you had a great day!
                   </p>
                 )}
-                <button
-                  className="secondary-action profile-edit-trigger"
-                  type="button"
-                  onClick={openEdit}
-                >
-                  <Pencil size={15} />
-                  Edit profile
-                </button>
               </div>
             </div>
-
-            <div className="profile-stats-inline">
-              <div>
-                <strong>{daysWatched != null ? daysWatched.toFixed(1) : "—"}</strong>
-                <span>Days Watched</span>
-              </div>
-              <div>
-                <strong>{profile?.animeCompleted || finishedCount}</strong>
-                <span>Anime Finished</span>
-              </div>
-              <div>
-                <strong>{profile?.animeCount || libraryEntries.length}</strong>
-                <span>Total Anime</span>
-              </div>
-            </div>
+            <button
+              className="secondary-action profile-edit-trigger"
+              type="button"
+              onClick={openEdit}
+            >
+              <Pencil size={15} />
+              Edit profile
+            </button>
           </div>
         </div>
       </section>
@@ -415,52 +431,7 @@ export function ProfilePageShell({
 
         <HomePersonalSections user={user} hideWatchlist />
 
-        {stats.total > 0 ? (
-          <section className="profile-section">
-            <h2>Stats</h2>
-            <div className="profile-stats-summary">
-              <div>
-                <strong>{stats.episodesWatched}</strong>
-                <span>Episodes watched</span>
-              </div>
-              {stats.meanScore != null ? (
-                <div>
-                  <strong>{scoreLabel(stats.meanScore)}</strong>
-                  <span>Mean score</span>
-                </div>
-              ) : null}
-              <div>
-                <strong>{stats.scoredCount}</strong>
-                <span>Rated</span>
-              </div>
-            </div>
-            <div className="profile-stats-grid">
-              {stats.statusBreakdown.length ? (
-                <div className="profile-stats-card">
-                  <h3>Status</h3>
-                  <ProfileStatBars
-                    items={stats.statusBreakdown.map((item) => ({
-                      label: item.label,
-                      count: item.count,
-                    }))}
-                  />
-                </div>
-              ) : null}
-              {stats.topGenres.length ? (
-                <div className="profile-stats-card">
-                  <h3>Top genres</h3>
-                  <ProfileStatBars items={stats.topGenres} />
-                </div>
-              ) : null}
-              {stats.formatBreakdown.length ? (
-                <div className="profile-stats-card">
-                  <h3>Formats</h3>
-                  <ProfileStatBars items={stats.formatBreakdown} />
-                </div>
-              ) : null}
-            </div>
-          </section>
-        ) : null}
+        <ProfileStatsSection stats={stats} daysWatched={daysWatched} />
 
         <ProfileFavorites favorites={user.favorites ?? []} />
 
@@ -640,6 +611,26 @@ export function ProfilePageShell({
               </div>
             );
           })}
+
+          <div className="profile-setting-row">
+            <div>
+              <strong>News Alerts</strong>
+              <span>Notify when industry news drops for anime matching selected watch statuses.</span>
+            </div>
+            <DropdownMultiSelect
+              options={[
+                { value: "watching", label: "Watching" },
+                { value: "planning", label: "Planning to Watch" },
+                { value: "completed", label: "Watched" },
+                { value: "on_hold", label: "On Hold" },
+                { value: "rewatching", label: "Rewatching" },
+              ]}
+              selected={user.preferences.notifyNewsStatuses ?? ["watching", "planning"]}
+              ariaLabel="News Alerts watch status filters"
+              dropup
+              onChange={(value) => void updatePreference({ notifyNewsStatuses: value })}
+            />
+          </div>
 
           {mutedShows.length ? (
             <div className="profile-muted">

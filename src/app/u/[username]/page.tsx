@@ -1,13 +1,26 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Calendar, ExternalLink } from "lucide-react";
 
-import { ProfileStatBars } from "@/components/profile-stat-bars";
+import { ProfileStatsSection } from "@/components/profile-stats-section";
 import { ProfileFavorites } from "@/components/profile-favorites";
 import { getPublicProfile } from "@/lib/account-store";
-import { getDisplayTitle, scoreLabel } from "@/lib/format";
 import { computeLibraryStats } from "@/lib/profile-stats";
+
+function formatJoinedDate(isoString: string): string {
+  try {
+    const date = new Date(isoString);
+    if (isNaN(date.getTime())) return "";
+    const months = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+    return `${months[date.getMonth()]} ${date.getFullYear()}`;
+  } catch {
+    return "";
+  }
+}
 
 type PublicProfileProps = {
   params: Promise<{ username: string }>;
@@ -48,10 +61,6 @@ export default async function PublicProfilePage({
   }
 
   const stats = computeLibraryStats(profile.libraryEntries);
-  const finished = profile.libraryEntries.filter(
-    (entry) => entry.status === "completed",
-  ).length;
-
   return (
     <div className="profile-page">
       <section className="profile-hero">
@@ -92,36 +101,30 @@ export default async function PublicProfilePage({
                     <span className="profile-pronouns">{profile.pronouns}</span>
                   ) : null}
                 </p>
+                <div className="profile-metadata">
+                  <span className="metadata-badge">
+                    <Calendar size={13} />
+                    Joined {formatJoinedDate(profile.joinedAt)}
+                  </span>
+                  {profile.aniListUrl ? (
+                    <a
+                      href={profile.aniListUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="metadata-badge interactive"
+                    >
+                      <ExternalLink size={13} />
+                      AniList Profile
+                    </a>
+                  ) : null}
+                </div>
                 {profile.about ? (
                   <p className="profile-bio">{profile.about}</p>
-                ) : null}
-                {profile.aniListUrl ? (
-                  <a
-                    className="secondary-action profile-edit-trigger"
-                    href={profile.aniListUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    View on AniList
-                  </a>
-                ) : null}
-              </div>
-            </div>
-
-            <div className="profile-stats-inline">
-              {profile.daysWatched != null ? (
-                <div>
-                  <strong>{profile.daysWatched.toFixed(1)}</strong>
-                  <span>Days Watched</span>
-                </div>
-              ) : null}
-              <div>
-                <strong>{finished}</strong>
-                <span>Anime Finished</span>
-              </div>
-              <div>
-                <strong>{stats.total}</strong>
-                <span>Total Anime</span>
+                ) : (
+                  <p className="profile-bio profile-bio-empty">
+                    {"This user hasn't written a biography yet."}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -131,38 +134,11 @@ export default async function PublicProfilePage({
       <div className="page-shell profile-body">
         <ProfileFavorites favorites={profile.favorites} />
 
-        {stats.total > 0 ? (
-          <section className="profile-section">
-            <h2>Stats</h2>
-            <div className="profile-stats-grid">
-              {stats.statusBreakdown.length ? (
-                <div className="profile-stats-card">
-                  <h3>Status</h3>
-                  <ProfileStatBars
-                    items={stats.statusBreakdown.map((item) => ({
-                      label: item.label,
-                      count: item.count,
-                    }))}
-                  />
-                </div>
-              ) : null}
-              {stats.topGenres.length ? (
-                <div className="profile-stats-card">
-                  <h3>Top genres</h3>
-                  <ProfileStatBars items={stats.topGenres} />
-                </div>
-              ) : null}
-              {stats.formatBreakdown.length ? (
-                <div className="profile-stats-card">
-                  <h3>Formats</h3>
-                  <ProfileStatBars items={stats.formatBreakdown} />
-                </div>
-              ) : null}
-            </div>
-          </section>
-        ) : (
-          <p className="profile-empty">This profile has no public stats yet.</p>
-        )}
+        <ProfileStatsSection 
+          stats={stats} 
+          daysWatched={profile.daysWatched} 
+          emptyMessage="This profile has no public stats yet."
+        />
       </div>
     </div>
   );

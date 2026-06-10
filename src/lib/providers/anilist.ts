@@ -1906,3 +1906,142 @@ export async function deleteAniListLibraryEntry(
     id: entryId,
   });
 }
+
+const MISSED_SEQUELS_RELATIONS_QUERY = `
+  query ($ids: [Int!]) {
+    Page(page: 1, perPage: 50) {
+      media(id_in: $ids, type: ANIME) {
+        id
+        relations {
+          edges {
+            relationType
+            node {
+              type
+              isAdult
+              ${MEDIA_CARD_FIELDS}
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+type RelationsQueryResult = {
+  Page: {
+    media: Array<{
+      id: number;
+      relations: {
+        edges: Array<{
+          relationType: string;
+          node: AniListMedia & { type: string; isAdult: boolean };
+        } | null>;
+      } | null;
+    }> | null;
+  } | null;
+};
+
+export async function getMissedSequels(
+  libraryEntries: LibraryEntry[],
+  includeAdult = false,
+): Promise<AnimeSummary[]> {
+  const completed = libraryEntries.filter((entry) => entry.status === "completed");
+
+  const sortedCompleted = [...completed].sort((a, b) => {
+    const timeA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+    const timeB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+    return timeB - timeA;
+  });
+
+  const targetCompleted = sortedCompleted.slice(0, 80);
+  if (targetCompleted.length === 0) {
+    return [];
+  }
+
+  const ids = targetCompleted.map((entry) => entry.animeId);
+  const chunks: number[][] = [];
+  const chunkSize = 50;
+  for (let i = 0; i < ids.length; i += chunkSize) {
+    chunks.push(ids.slice(i, i + chunkSize));
+  }
+
+  const libraryMap = new Map<number, LibraryEntry>();
+  libraryEntries.forEach((entry) => libraryMap.set(entry.animeId, entry));
+
+  const parentTimes = new Map<number, number>();
+  targetCompleted.forEach((entry) => {
+    const t = entry.updatedAt ? new Date(entry.updatedAt).getTime() : 0;
+    parentTimes.set(entry.animeId, t);
+  });
+
+  const results = await Promise.all(
+    chunks.map((chunk) =>
+      fetchAniList<RelationsQueryResult>(
+        MISSED_SEQUELS_RELATIONS_QUERY,
+        { ids: chunk },
+        900,
+      ).catch((err) => {
+        console.warn("Failed to fetch relations chunk in getMissedSequels", err);
+        return null;
+      })
+    )
+  );
+
+  const candidatesMap = new Map<number, { maxParentTime: number; media: AniListMedia }>();
+
+  for (const data of results) {
+    if (!data?.Page?.media) continue;
+
+    for (const mediaItem of data.Page.media) {
+      const parentId = mediaItem.id;
+      const parentTime = parentTimes.get(parentId) || 0;
+
+      const edges = mediaItem.relations?.edges ?? [];
+      for (const edge of edges) {
+        if (!edge) continue;
+
+        const relationType = edge.relationType;
+        const node = edge.node;
+
+        if (
+          relationType !== "SEQUEL" &&
+          relationType !== "SIDE_STORY" &&
+          relationType !== "SPIN_OFF"
+        ) {
+          continue;
+        }
+
+        if (node.type !== "ANIME") {
+          continue;
+        }
+
+        const localEntry = libraryMap.get(node.id);
+        if (localEntry) {
+          continue;
+        }
+
+        const status = node.status;
+        if (status !== "FINISHED" && status !== "RELEASING") {
+          continue;
+        }
+
+        if (!includeAdult && node.isAdult) {
+          continue;
+        }
+
+        const existing = candidatesMap.get(node.id);
+        if (!existing || parentTime > existing.maxParentTime) {
+          candidatesMap.set(node.id, {
+            maxParentTime: parentTime,
+            media: node,
+          });
+        }
+      }
+    }
+  }
+
+  return Array.from(candidatesMap.values())
+    .sort((a, b) => b.maxParentTime - a.maxParentTime)
+    .map((c) => transformAnimeSummary(c.media));
+}
+

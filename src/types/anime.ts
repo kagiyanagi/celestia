@@ -115,7 +115,7 @@ export type FranchiseGraph = {
   height: number;
 };
 
-export type AnimeNotificationType = "episode" | "dub" | "upcoming";
+export type AnimeNotificationType = "episode" | "dub" | "upcoming" | "news";
 
 /** A new-release notice for an anime on the user's list. */
 export type AnimeNotification = {
@@ -123,6 +123,7 @@ export type AnimeNotification = {
   type: AnimeNotificationType;
   animeId: number;
   title: string;
+  animeTitle?: string;
   coverImage: string | null;
   /** Lowest episode in the notice (the only episode when not grouped). */
   episode: number;

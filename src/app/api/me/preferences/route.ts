@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
 import { requireSessionUser } from "@/lib/auth";
 import { updatePreferences } from "@/lib/account-store";
-import type { UserPreferences } from "@/types/account";
+import type { LibraryStatus, UserPreferences } from "@/types/account";
 
 const TITLE_LANGUAGES = new Set(["english", "romaji", "native"]);
 const AUDIO_TRACKS = new Set(["sub", "dub"]);
+const LIBRARY_STATUSES = new Set([
+  "planning",
+  "watching",
+  "on_hold",
+  "dropped",
+  "completed",
+  "rewatching",
+]);
 
 function pickPreferences(value: Partial<UserPreferences>) {
   const next: Partial<UserPreferences> = {};
@@ -21,6 +29,12 @@ function pickPreferences(value: Partial<UserPreferences>) {
     AUDIO_TRACKS.has(value.defaultAudio)
   ) {
     next.defaultAudio = value.defaultAudio;
+  }
+
+  if (Array.isArray(value.notifyNewsStatuses)) {
+    next.notifyNewsStatuses = value.notifyNewsStatuses.filter((status) =>
+      typeof status === "string" && LIBRARY_STATUSES.has(status)
+    ) as LibraryStatus[];
   }
 
   for (const key of [
