@@ -73,6 +73,16 @@ export function AuthProvider({
     }
   }, [user]);
 
+  useEffect(() => {
+    if (user?.preferences?.whiteMode) {
+      document.documentElement.setAttribute("data-theme", "light");
+      document.documentElement.style.colorScheme = "light";
+    } else {
+      document.documentElement.setAttribute("data-theme", "dark");
+      document.documentElement.style.colorScheme = "dark";
+    }
+  }, [user?.preferences?.whiteMode]);
+
   return (
     <AuthContext.Provider value={{ user, loading, refreshUser, setUser }}>
       {children}

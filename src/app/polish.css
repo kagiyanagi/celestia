@@ -1823,4 +1823,129 @@ button:not(:disabled),
 }
 
 
+/* ── White Mode (Light Theme) Overrides ────────────────────────────────────── */
+
+html[data-theme="light"] {
+    background: var(--surface-0);
+}
+
+[data-theme="light"] body {
+    background: var(--surface-0);
+    color: var(--text-primary);
+}
+
+[data-theme="light"] {
+    /* Expanded surface scale */
+    --surface-0: #f5f6f8;
+    --surface-1: #eaecef;
+    --surface-2: #ffffff;
+    --surface-3: #f1f3f5;
+    --surface-4: #e5e7eb;
+
+    /* Border scale */
+    --border-dim: rgba(0, 0, 0, 0.04);
+    --border-subtle: rgba(0, 0, 0, 0.08);
+    --border-default: rgba(0, 0, 0, 0.12);
+    --border-strong: rgba(0, 0, 0, 0.2);
+    --border-focus: rgba(0, 0, 0, 0.7);
+
+    /* Text scale */
+    --text-primary: #111111;
+    --text-secondary: rgba(0, 0, 0, 0.7);
+    --text-tertiary: rgba(0, 0, 0, 0.45);
+    --text-dim: rgba(0, 0, 0, 0.28);
+
+    /* Shadows */
+    --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 24px 72px rgba(0, 0, 0, 0.12);
+}
+
+/* Scrolled header */
+[data-theme="light"] .site-header.is-scrolled {
+    background: rgba(245, 246, 248, 0.9);
+    border-bottom-color: var(--border-subtle);
+    box-shadow:
+        0 1px 0 rgba(0, 0, 0, 0.02),
+        var(--shadow-md);
+}
+
+/* Selection highlight */
+[data-theme="light"] ::selection {
+    color: #ffffff;
+    background: #000000;
+}
+
+/* Interactive elements hovering on light surface */
+[data-theme="light"] .metadata-badge.interactive:hover {
+    background: rgba(0, 0, 0, 0.06);
+    border-color: var(--border-default);
+}
+
+[data-theme="light"] .pagination-button:hover {
+    background: rgba(0, 0, 0, 0.06);
+}
+[data-theme="light"] .pagination-button.current {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+/* Scrollbar styling in light mode */
+[data-theme="light"] .search-modal-results,
+[data-theme="light"] .watch-tabs,
+[data-theme="light"] .watch-actions,
+[data-theme="light"] .trending-rail,
+[data-theme="light"] .watchlist-rail,
+[data-theme="light"] .upcoming-rail,
+[data-theme="light"] .home-shelf-row {
+    scrollbar-color: rgba(0, 0, 0, 0.15) transparent;
+}
+
+[data-theme="light"] .search-modal-results::-webkit-scrollbar-thumb,
+[data-theme="light"] .trending-rail::-webkit-scrollbar-thumb,
+[data-theme="light"] .watchlist-rail::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.18);
+}
+
+/* Watch page light mode overrides */
+[data-theme="light"] .watch-action-button,
+[data-theme="light"] .watch-tabs a {
+    color: var(--text-secondary);
+    border-color: var(--border-subtle);
+}
+[data-theme="light"] .watch-action-button:hover,
+[data-theme="light"] .watch-tabs a:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--text-primary);
+}
+[data-theme="light"] .watch-action-button.active,
+[data-theme="light"] .watch-tabs a.active,
+[data-theme="light"] .watch-server-option.active {
+    background: rgba(0, 0, 0, 0.08);
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+}
+[data-theme="light"] .watch-icon-toggle {
+    background: rgba(0, 0, 0, 0.04);
+    color: var(--text-secondary);
+}
+[data-theme="light"] .watch-icon-toggle:hover {
+    background: rgba(0, 0, 0, 0.08);
+    color: var(--text-primary);
+}
+[data-theme="light"] .watch-icon-toggle.active {
+    background: rgba(0, 0, 0, 0.12);
+    color: var(--text-primary);
+}
+[data-theme="light"] .watch-track-button {
+    background: rgba(0, 0, 0, 0.04);
+    color: var(--text-secondary);
+}
+[data-theme="light"] .watch-track-button:hover:not(:disabled) {
+    background: rgba(0, 0, 0, 0.08);
+    color: var(--text-primary);
+}
+
+
+
 

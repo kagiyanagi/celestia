@@ -9134,3 +9134,180 @@ a:active .shelf-card {
     }
 }
 
+
+/* ── White Mode (Light Theme) Overrides ────────────────────────────────────── */
+
+html[data-theme="light"] {
+    color-scheme: light;
+}
+
+[data-theme="light"] {
+    /* Surfaces */
+    --bg: #f5f6f8;
+    --bg-soft: #eaecef;
+    --panel: #ffffff;
+    --panel-2: #f1f3f5;
+
+    /* Borders */
+    --line: rgba(0, 0, 0, 0.08);
+    --line-strong: rgba(0, 0, 0, 0.14);
+
+    /* Text */
+    --text: #111111;
+    --muted: rgba(0, 0, 0, 0.5);
+    --muted-strong: rgba(0, 0, 0, 0.75);
+
+    /* Elevation */
+    --shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+
+    /* Glass */
+    --glass-bg: rgba(255, 255, 255, 0.75);
+}
+
+/* Header & Navigation scrolled state */
+[data-theme="light"] .site-header.is-scrolled {
+    background: rgba(245, 246, 248, 0.82);
+}
+
+/* Header buttons in light mode */
+[data-theme="light"] .header-icon-button,
+[data-theme="light"] .header-avatar {
+    background: rgba(255, 255, 255, 0.7);
+}
+[data-theme="light"] .header-link-button:hover,
+[data-theme="light"] .header-icon-button:hover {
+    background: rgba(255, 255, 255, 0.95);
+    border-color: var(--line-strong);
+}
+
+/* Settings elements */
+[data-theme="light"] .switch {
+    background: rgba(0, 0, 0, 0.12);
+}
+[data-theme="light"] .switch.on {
+    background: #111111;
+}
+[data-theme="light"] .switch.on::after {
+    background: #ffffff;
+}
+
+/* Search Modal overlay & modal */
+[data-theme="light"] .search-overlay {
+    background: rgba(255, 255, 255, 0.4);
+}
+[data-theme="light"] .search-modal {
+    background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(248, 249, 250, 0.95)),
+        rgba(255, 255, 255, 0.95);
+    border-color: var(--line-strong);
+    box-shadow: 0 32px 72px rgba(0, 0, 0, 0.08);
+}
+[data-theme="light"] .search-modal-footer {
+    background: rgba(0, 0, 0, 0.02);
+}
+[data-theme="light"] .search-result-item:hover,
+[data-theme="light"] .search-result-item.is-active {
+    background: rgba(0, 0, 0, 0.04);
+}
+[data-theme="light"] .keybind-icons {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+/* Inputs & selects inside settings/forms */
+[data-theme="light"] .settings-form-column input,
+[data-theme="light"] .settings-form-column textarea {
+    background: var(--panel-2);
+    border-color: var(--line);
+    color: var(--text);
+}
+[data-theme="light"] .settings-form-column input:focus,
+[data-theme="light"] .settings-form-column textarea:focus {
+    border-color: var(--text);
+    background: var(--panel);
+}
+
+[data-theme="light"] .custom-select-button {
+    background: var(--panel-2);
+    border-color: var(--line);
+}
+[data-theme="light"] .custom-select-list {
+    background: var(--panel);
+    border-color: var(--line-strong);
+    box-shadow: var(--shadow);
+}
+[data-theme="light"] .custom-select-option:hover,
+[data-theme="light"] .custom-select-option.is-active {
+    background: var(--panel-2);
+}
+
+/* Keep hero banners & video players dark with white text */
+[data-theme="light"] .celestia-copy,
+[data-theme="light"] .detail-hero-content,
+[data-theme="light"] .watch-topbar,
+[data-theme="light"] .watch-info {
+    color: #ffffff;
+}
+[data-theme="light"] .celestia-copy .celestia-secondary,
+[data-theme="light"] .celestia-copy .celestia-description,
+[data-theme="light"] .detail-hero-content .detail-description,
+[data-theme="light"] .detail-hero-content .detail-hero-meta span,
+[data-theme="light"] .detail-hero-content .native-title,
+[data-theme="light"] .watch-info p,
+[data-theme="light"] .watch-info span {
+    color: rgba(255, 255, 255, 0.7);
+}
+[data-theme="light"] .celestia-copy .celestia-pills span,
+[data-theme="light"] .detail-hero-content .detail-hero-meta span,
+[data-theme="light"] .detail-hero-content .detail-actions a:not(.watch-button) {
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.05);
+}
+[data-theme="light"] .celestia-copy .celestia-watch,
+[data-theme="light"] .detail-hero-content .detail-actions a.watch-button {
+    background: #ffffff;
+    color: #000000;
+}
+
+/* Stream player panels, dialogs & overlays should remain readable */
+[data-theme="light"] .player-panel-overlay {
+    background: rgba(255, 255, 255, 0.4);
+}
+[data-theme="light"] .player-panel {
+    background: #ffffff;
+    box-shadow: 0 32px 72px rgba(0, 0, 0, 0.1);
+}
+[data-theme="light"] .dialog-overlay {
+    background: rgba(0, 0, 0, 0.35);
+}
+[data-theme="light"] .dialog-panel {
+    background: #ffffff;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.1);
+}
+
+/* Muted list items, session list items etc. */
+[data-theme="light"] .profile-muted-row,
+[data-theme="light"] .profile-session-row {
+    background: var(--panel-2);
+}
+[data-theme="light"] .profile-session-current {
+    background: rgba(0, 0, 0, 0.08);
+    color: var(--text);
+}
+
+/* Airing countdown card in light mode */
+[data-theme="light"] .airing-countdown-card {
+    background: var(--panel-2);
+}
+
+/* Dialog containers */
+[data-theme="light"] .save-dialog {
+    background: var(--panel);
+}
+
+/* Episode mini pills */
+[data-theme="light"] .episode-pill-mini {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+

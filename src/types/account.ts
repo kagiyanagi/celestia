@@ -10,6 +10,7 @@ export type LibraryStatus =
 
 export type UserPreferences = {
   titleLanguage: "english" | "romaji" | "native";
+  whiteMode: boolean;
   hideAdultContent: boolean;
   autoplayTrailers: boolean;
   /** When enabled, episode progress and watch history are not recorded. */

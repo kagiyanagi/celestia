@@ -531,6 +531,7 @@ export function ProfilePageShell({
 
           {(
             [
+              ["whiteMode", "White Mode (Experimental)", "Switch to a clean, high-contrast light theme across the application."],
               ["hideAdultContent", "Hide Adult Content", "Hide content intended for mature audiences (18+)."],
               ["autoplayTrailers", "Autoplay Trailers", "Autoplay the trailer (muted) on anime detail pages."],
               ["pauseHistory", "Pause History", "When enabled, episode progress and watch data won't be saved."],
