@@ -32,7 +32,7 @@ export function EpisodeThumbnail({
       src={activeSrc}
       alt={alt}
       fill
-      sizes="240px"
+      sizes="(max-width: 768px) 100vw, 480px"
       onError={() =>
         activeSrc === fallbackSrc ? setFallbackFailed(true) : setFailed(true)
       }
