@@ -1,5 +1,6 @@
-import { PageLoader } from "@/components/page-loader";
+import { ScheduleSkeleton } from "@/components/loading-skeletons";
 
 export default function Loading() {
-  return <PageLoader />;
+  return <ScheduleSkeleton />;
 }
+
