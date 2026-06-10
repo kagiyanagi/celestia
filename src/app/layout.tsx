@@ -6,6 +6,7 @@ import { BannerFallbackProvider } from "@/components/banner-fallback-provider";
 import { DubBadgeProvider } from "@/components/dub-badge-provider";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
+import { ToastProvider } from "@/components/toast-provider";
 import "./globals.css";
 import "./polish.css";
 
@@ -45,15 +46,17 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${paytoneOne.variable} ${manrope.variable}`}>
-        <AuthProvider initialUser={null}>
-          <DubBadgeProvider>
-            <BannerFallbackProvider>
-              <SiteHeader />
-              <main>{children}</main>
-              <SiteFooter />
-            </BannerFallbackProvider>
-          </DubBadgeProvider>
-        </AuthProvider>
+        <ToastProvider>
+          <AuthProvider initialUser={null}>
+            <DubBadgeProvider>
+              <BannerFallbackProvider>
+                <SiteHeader />
+                <main>{children}</main>
+                <SiteFooter />
+              </BannerFallbackProvider>
+            </DubBadgeProvider>
+          </AuthProvider>
+        </ToastProvider>
       </body>
     </html>
   );
