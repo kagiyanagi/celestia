@@ -84,3 +84,129 @@ export async function getTmdbBackdrop(
   }
   return null;
 }
+
+export type TmdbEpisodeStill = {
+  number: number;
+  thumbnail: string | null;
+};
+
+/**
+ * Fetches episode thumbnails from TMDB for a TV show.
+ * Attempts to find and query the Absolute Order episode group first to minimize
+ * round-trips. Falls back to querying season details sequentially/concurrently.
+ */
+export async function getTmdbEpisodeStills(
+  tmdbId: number,
+  options: { type?: string | null } = {},
+): Promise<TmdbEpisodeStill[]> {
+  if (!isTmdbConfigured()) {
+    return [];
+  }
+
+  const isMovie = options.type ? /movie/i.test(options.type) : false;
+  if (isMovie) {
+    // Movies do not have numbered episodes on TMDB
+    return [];
+  }
+
+  try {
+    // 1. Try to find the Absolute Order episode group (type 2)
+    const groupsData = await getTmdbJson<{
+      results?: Array<{
+        id: string;
+        type: number;
+      }>;
+    }>(`/tv/${tmdbId}/episode_groups`);
+
+    const absoluteGroup = groupsData?.results?.find((g) => g.type === 2);
+
+    if (absoluteGroup) {
+      const groupDetails = await getTmdbJson<{
+        groups?: Array<{
+          episodes?: Array<{
+            episode_number: number;
+            still_path: string | null;
+          }>;
+        }>;
+      }>(`/tv/episode_group/${absoluteGroup.id}`);
+
+      const episodes: TmdbEpisodeStill[] = [];
+      if (groupDetails?.groups) {
+        for (const subGroup of groupDetails.groups) {
+          if (subGroup.episodes) {
+            for (const ep of subGroup.episodes) {
+              if (ep.episode_number) {
+                episodes.push({
+                  number: ep.episode_number,
+                  thumbnail: ep.still_path
+                    ? `${TMDB_BACKDROP_BASE}${ep.still_path}`
+                    : null,
+                });
+              }
+            }
+          }
+        }
+      }
+      return episodes;
+    }
+
+    // 2. Fallback: Fetch TV details to get seasons list, then fetch each season
+    const details = await getTmdbJson<{
+      seasons?: Array<{
+        season_number: number;
+        episode_count: number;
+      }>;
+    }>(`/tv/${tmdbId}`);
+
+    if (!details?.seasons) {
+      return [];
+    }
+
+    // Filter out season 0 specials
+    const seasons = details.seasons.filter((s) => s.season_number > 0);
+    const seasonRequests = seasons.map((s) =>
+      getTmdbJson<{
+        season_number: number;
+        episodes?: Array<{
+          episode_number: number;
+          still_path: string | null;
+        }>;
+      }>(`/tv/${tmdbId}/season/${s.season_number}`),
+    );
+
+    const seasonData = await Promise.all(seasonRequests);
+    const episodes: TmdbEpisodeStill[] = [];
+    let accumulatedOffset = 0;
+
+    for (const data of seasonData) {
+      if (!data?.episodes || data.episodes.length === 0) {
+        continue;
+      }
+
+      const firstEp = data.episodes[0];
+      // Detect if episode numbering resets to 1 (relative) or keeps going (absolute)
+      const isRelative = data.season_number > 1 && firstEp.episode_number === 1;
+
+      for (const ep of data.episodes) {
+        const absoluteNumber = isRelative
+          ? accumulatedOffset + ep.episode_number
+          : ep.episode_number;
+
+        episodes.push({
+          number: absoluteNumber,
+          thumbnail: ep.still_path
+            ? `${TMDB_BACKDROP_BASE}${ep.still_path}`
+            : null,
+        });
+      }
+
+      accumulatedOffset += data.episodes.length;
+    }
+
+    return episodes;
+  } catch (error) {
+    console.warn(`Failed to fetch TMDB episode stills for tv show ${tmdbId}`, error);
+    return [];
+  }
+}
+

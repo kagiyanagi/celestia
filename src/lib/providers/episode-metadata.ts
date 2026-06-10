@@ -1,5 +1,6 @@
 import { getAniZipData } from "@/lib/providers/anizip";
 import { getKitsuEpisodeStills, type KitsuEpisode } from "@/lib/providers/kitsu";
+import { getTmdbEpisodeStills } from "@/lib/providers/tmdb";
 import type {
   AnimeStreamingEpisode,
   EpisodeMetadataField,
@@ -78,6 +79,20 @@ const KITSU_SOURCE_SUMMARY: MetadataSourceSummary = {
 const KITSU_EPISODE_SOURCE: EpisodeMetadataSource = {
   provider: "kitsu",
   label: "Kitsu",
+  confidence: "medium",
+  fields: ["thumbnail"],
+};
+
+const TMDB_SOURCE_SUMMARY: MetadataSourceSummary = {
+  provider: "tmdb",
+  label: "TMDB",
+  role: "image_metadata",
+  confidence: "medium",
+};
+
+const TMDB_EPISODE_SOURCE: EpisodeMetadataSource = {
+  provider: "tmdb",
+  label: "TMDB",
   confidence: "medium",
   fields: ["thumbnail"],
 };
@@ -250,6 +265,10 @@ function collectSourceSummaries(
     summaries.push(KITSU_SOURCE_SUMMARY);
   }
 
+  if (providers.has("tmdb")) {
+    summaries.push(TMDB_SOURCE_SUMMARY);
+  }
+
   return summaries;
 }
 
@@ -333,6 +352,31 @@ function fillFromKitsu(
   }
 }
 
+/**
+ * Fills still-less episodes with TMDB thumbnails. Existing stills always win.
+ */
+function fillFromTmdb(
+  episodeMap: Map<number, AnimeStreamingEpisode>,
+  tmdbEpisodes: Array<{ number: number; thumbnail: string | null }>,
+): void {
+  if (!tmdbEpisodes.length) {
+    return;
+  }
+
+  for (const tmdbEpisode of tmdbEpisodes) {
+    if (!tmdbEpisode.thumbnail) continue;
+
+    const existing = episodeMap.get(tmdbEpisode.number);
+    if (!existing || existing.thumbnail) continue;
+
+    episodeMap.set(tmdbEpisode.number, {
+      ...existing,
+      thumbnail: tmdbEpisode.thumbnail,
+      sources: mergeSources(existing.sources, [TMDB_EPISODE_SOURCE]),
+    });
+  }
+}
+
 function mergeIntoMap(
   episodeMap: Map<number, AnimeStreamingEpisode>,
   episodes: AnimeStreamingEpisode[],
@@ -384,6 +428,18 @@ export async function getEpisodeMetadata(
       maxNumber: Math.max(...stillLessNumbers),
     });
     fillFromKitsu(episodeMap, kitsuEpisodes);
+  }
+
+  const stillLessAfterKitsu = Array.from(episodeMap.values())
+    .filter((episode) => !episode.thumbnail)
+    .map((episode) => episode.number);
+  const tmdbId = aniZipData?.mappings.themoviedbId ?? null;
+
+  if (stillLessAfterKitsu.length && tmdbId) {
+    const tmdbEpisodes = await getTmdbEpisodeStills(tmdbId, {
+      type: aniZipData?.mappings.type,
+    });
+    fillFromTmdb(episodeMap, tmdbEpisodes);
   }
 
   const episodes = Array.from(episodeMap.values()).sort(
