@@ -1,5 +1,6 @@
-import { PageLoader } from "@/components/page-loader";
+import { WatchSkeleton } from "@/components/loading-skeletons";
 
 export default function Loading() {
-  return <PageLoader variant="player" />;
+  return <WatchSkeleton />;
 }
+
