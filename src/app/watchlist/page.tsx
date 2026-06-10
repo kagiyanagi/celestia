@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { WatchlistPageClient } from "@/components/watchlist-page-client";
 import { getPrivateUser } from "@/lib/account-store";
@@ -15,13 +16,18 @@ export default async function WatchlistPage({
     redirect("/profile");
   }
 
-  // Pull AniList edits in (freshness-guarded) before the first render.
-  const synced = await syncAniListLibrary(sessionUser.id);
-  const user = synced ?? (await getPrivateUser(sessionUser.id));
+  // Render from the local library immediately; pull AniList edits in
+  // (freshness-guarded) in the background so the page isn't gated on a remote
+  // round-trip. Externally-made edits surface on the next navigation.
+  const user = await getPrivateUser(sessionUser.id);
 
   if (!user) {
     redirect("/profile");
   }
+
+  after(() => {
+    void syncAniListLibrary(sessionUser.id);
+  });
 
   const params = await searchParams;
   const single = (value: string | string[] | undefined) =>

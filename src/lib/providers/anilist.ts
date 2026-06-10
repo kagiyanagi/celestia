@@ -34,6 +34,7 @@ import type {
   AiringItem,
   AnimeDetails,
   AnimeSeason,
+  AnimeStreamingEpisode,
   AnimeSummary,
   CharacterCredit,
   BrowseCollection,
@@ -1395,6 +1396,40 @@ export const getAnimeDetails = cache(async function getAnimeDetails(
   } catch (error) {
     console.error(error);
     return null;
+  }
+});
+
+/**
+ * The merged episode list for one anime (AniList streaming episodes + AniZip and
+ * Kitsu stills) WITHOUT the heavier detail enrichments — no Jikan ratings, no
+ * AnimeSchedule dub lookup (one-id-per-request), no episode flags, no banner
+ * fallback. Powers the episodes API route behind Continue-Watching thumbnail
+ * enrichment, which fires per anime on home mount; routing that through the full
+ * getAnimeDetails pulled in all of the above per call for data it never used.
+ */
+export const getEpisodeList = cache(async function getEpisodeList(
+  id: number,
+): Promise<AnimeStreamingEpisode[]> {
+  try {
+    const data = await fetchAniList<DetailQueryResult>(DETAIL_QUERY, { id }, 900);
+
+    if (!data.Media) return [];
+
+    const anime = transformAnimeDetails(data.Media);
+    const episodeMetadata = await withSoftTimeout(
+      getEpisodeMetadata({
+        anilistId: id,
+        anilistEpisodes: anime.streamingEpisodes || [],
+        expectedEpisodes: anime.episodes ?? anime.airingCount ?? null,
+      }),
+      5_000,
+      { episodes: anime.streamingEpisodes || [], sources: [] },
+    );
+
+    return episodeMetadata.episodes;
+  } catch (error) {
+    console.warn(`Episode list lookup failed for AniList ${id}`, error);
+    return [];
   }
 });
 

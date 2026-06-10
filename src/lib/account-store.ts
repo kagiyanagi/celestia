@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { cache } from "react";
 import { decryptSecret, encryptSecret, isEncryptedSecret } from "@/lib/crypto";
 import { getStore } from "@/lib/db";
 import type {
@@ -17,6 +18,18 @@ import type { AnimeSummary } from "@/types/anime";
 function createId() {
   return randomUUID();
 }
+
+/**
+ * Request-scoped memo of a raw user record by id. React's cache() dedupes
+ * within a single request, so the session lookup (auth.ts), getPrivateUser, and
+ * every updateUserRecord read in one request share ONE database round-trip
+ * instead of each re-fetching the (potentially large) user JSONB. The cached
+ * object is the same reference an in-place mutation writes back, so sequential
+ * mutations in one request accumulate correctly.
+ */
+export const getCachedUserRecord = cache((id: string) =>
+  getStore().getUserById(id),
+);
 
 function sanitizeUser(user: UserRecord): PublicUser {
   return {
@@ -62,7 +75,7 @@ async function updateUserRecord<T>(
   updater: (user: UserRecord) => T | Promise<T>,
 ) {
   const store = getStore();
-  const user = await store.getUserById(userId);
+  const user = await getCachedUserRecord(userId);
 
   if (!user) {
     throw new Error("User not found.");
@@ -104,7 +117,7 @@ export async function getPublicProfile(
 }
 
 export async function getUserById(userId: string) {
-  const user = await getStore().getUserById(userId);
+  const user = await getCachedUserRecord(userId);
   return user ? sanitizeUser(user) : null;
 }
 
@@ -562,7 +575,7 @@ export async function dismissNotifications(userId: string, ids: string[]) {
  */
 export async function getPrivateUser(userId: string) {
   const store = getStore();
-  const user = await store.getUserById(userId);
+  const user = await getCachedUserRecord(userId);
 
   if (!user) {
     return null;

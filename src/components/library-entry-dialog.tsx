@@ -41,47 +41,24 @@ export function LibraryEntryDialog({
   const { user, setUser } = useAuth();
   const { toast } = useToast();
   const [statusOpen, setStatusOpen] = useState(false);
-  const [entry, setEntry] = useState<LibraryEntry | null>(
-    user?.libraryEntries.find((item) => item.animeId === anime.id) || null,
-  );
-  const [loading, setLoading] = useState(true);
+  // The library already lives in the auth context, so seed the form from it
+  // synchronously — opening the dialog is instant with no network round-trip
+  // (the old GET /api/library here also triggered a full AniList sync). Edits
+  // made directly on AniList land in the context via the background sync.
+  const existingEntry =
+    user?.libraryEntries.find((item) => item.animeId === anime.id) || null;
+  const [entry, setEntry] = useState<LibraryEntry | null>(existingEntry);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({
-    status: "watching" as LibraryStatus,
-    score: 0,
-    progress: 0,
-    repeat: 0,
-    notes: "",
-    startedAt: "",
-    completedAt: "",
+    status: existingEntry?.status || ("watching" as LibraryStatus),
+    score: existingEntry?.score || 0,
+    progress: existingEntry?.progress || 0,
+    repeat: existingEntry?.repeat || 0,
+    notes: existingEntry?.notes || "",
+    startedAt: inputDateValue(existingEntry?.startedAt || null),
+    completedAt: inputDateValue(existingEntry?.completedAt || null),
   });
-
-  useEffect(() => {
-    void fetch("/api/library", { cache: "no-store" })
-      .then(async (response) => {
-        if (!response.ok) {
-          throw new Error("Sign in to save to your list.");
-        }
-
-        const payload = (await response.json()) as { entries: LibraryEntry[] };
-        const existing = payload.entries.find((item) => item.animeId === anime.id) || null;
-        setEntry(existing);
-        setForm({
-          status: existing?.status || "watching",
-          score: existing?.score || 0,
-          progress: existing?.progress || 0,
-          repeat: existing?.repeat || 0,
-          notes: existing?.notes || "",
-          startedAt: inputDateValue(existing?.startedAt || null),
-          completedAt: inputDateValue(existing?.completedAt || null),
-        });
-      })
-      .catch((caughtError) => {
-        setError(caughtError instanceof Error ? caughtError.message : "Could not load entry.");
-      })
-      .finally(() => setLoading(false));
-  }, [anime.id]);
 
   useEffect(() => {
     const { overflow } = document.body.style;
@@ -370,7 +347,6 @@ export function LibraryEntryDialog({
             />
           </label>
 
-          {loading ? <p className="dialog-message">Loading your entry...</p> : null}
           {error ? (
             <p className="dialog-message error">
               {error}{" "}

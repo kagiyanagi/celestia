@@ -93,6 +93,12 @@ The discovery pages (`/trending`, `/airing`, `/finished`, `/movies`, `/upcoming`
 ### API routes
 Under `src/app/api/`. They authenticate with `requireSessionUser()`, delegate to a domain store/provider, and return app types — keep route handlers thin and push logic into `src/lib`.
 
+### Page composition (server shell → client island)
+Route pages are thin server components that fetch via providers (e.g. `src/app/page.tsx` calls `getHomeCollections`), then hand the data to a co-located client island for interactivity — the pattern is visible across every top-level route (`home-page-client.tsx`, `watchlist-page-client.tsx`, `history-page-client.tsx`, `*-page-shell.tsx`). The details page is the most elaborate version: `components/AnimeDetailsShell/index.tsx` is the server entry that composes the `Details*.tsx` parts (mix of server and client). Keep new pages on the same split — data fetching in the server route file, interactivity in the island — instead of marking the route itself `"use client"`.
+
+### Global providers
+`src/app/layout.tsx` wraps the tree in `ToastProvider > AuthProvider > DubBadgeProvider > BannerFallbackProvider`, in that order. New global contexts slot into this stack; pick the position based on which other contexts they need to read from.
+
 ## Conventions
 
 Kebab-case file names (`home-hero-carousel.tsx`, `watch/[id]/page.tsx`); the one PascalCase exception is the `AnimeDetailsShell/` component directory. 2-space indent, double quotes, app-owned data shapes in `src/types`. See `AGENTS.md` for the full contributor guide and `docs/ARCHITECTURE.md` for provider strategy and the tracking/sync data model.

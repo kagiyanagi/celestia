@@ -44,10 +44,13 @@ function isValidAnimeSummary(value: unknown): value is AnimeSummary {
 export async function GET() {
   try {
     const sessionUser = await requireSessionUser();
-    // Pull AniList edits back in (freshness-guarded) before reading, so the
-    // list reflects changes made directly on AniList.
-    const synced = await syncAniListLibrary(sessionUser.id);
-    const user = synced ?? (await getPrivateUser(sessionUser.id));
+    const user = await getPrivateUser(sessionUser.id);
+    // Pull AniList edits back in (freshness-guarded) in the background so the
+    // response returns on the fast local read instead of a remote GraphQL
+    // round-trip; the merged result surfaces on the next read.
+    after(() => {
+      void syncAniListLibrary(sessionUser.id);
+    });
     return NextResponse.json({ entries: user?.libraryEntries || [] });
   } catch {
     return NextResponse.json({ entries: [] }, { status: 401 });
