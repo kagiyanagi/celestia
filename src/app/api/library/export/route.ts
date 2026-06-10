@@ -1,5 +1,5 @@
 import { requireSessionUser } from "@/lib/auth";
-import { getPrivateUser } from "@/lib/account-store";
+import { getLibraryEntries, getPrivateUser } from "@/lib/account-store";
 import { buildMalExport } from "@/lib/mal-import";
 
 export async function GET() {
@@ -11,7 +11,8 @@ export async function GET() {
       return new Response("Not found", { status: 404 });
     }
 
-    const xml = buildMalExport(user.libraryEntries, user.username);
+    const entries = await getLibraryEntries(user.id);
+    const xml = buildMalExport(entries, user.username);
 
     return new Response(xml, {
       headers: {

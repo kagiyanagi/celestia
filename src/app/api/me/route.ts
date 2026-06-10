@@ -1,37 +1,17 @@
 import { NextResponse } from "next/server";
 import { clearSession, requireSessionUser } from "@/lib/auth";
-import { deleteAccount, getPrivateUser, updateProfile } from "@/lib/account-store";
+import { deleteAccount, getPublicUser, updateProfile } from "@/lib/account-store";
 
 export async function GET() {
   try {
     const sessionUser = await requireSessionUser();
-    const user = await getPrivateUser(sessionUser.id);
+    const user = await getPublicUser(sessionUser.id);
 
     if (!user) {
       return NextResponse.json({ error: "User not found." }, { status: 404 });
     }
 
-    return NextResponse.json({
-      user: {
-        id: user.id,
-        email: user.email,
-        displayName: user.displayName,
-        username: user.username,
-        pronouns: user.pronouns,
-        about: user.about,
-        avatar: user.avatar,
-        banner: user.banner,
-        joinedAt: user.joinedAt,
-        aniListProfile: user.aniListProfile,
-        preferences: user.preferences,
-        mutedAnimeIds: user.mutedAnimeIds ?? [],
-        favorites: user.favorites ?? [],
-        devices: user.devices,
-        libraryEntries: user.libraryEntries,
-        historyEntries: user.historyEntries,
-        notificationsLastReadAt: user.notificationsLastReadAt ?? null,
-      },
-    });
+    return NextResponse.json({ user });
   } catch {
     return NextResponse.json({ user: null }, { status: 401 });
   }

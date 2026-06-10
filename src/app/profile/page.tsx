@@ -1,7 +1,6 @@
-import { redirect } from "next/navigation";
 import { ProfilePageShell } from "@/components/profile-page-shell";
 import { getSessionUser } from "@/lib/auth";
-import { getPrivateUser } from "@/lib/account-store";
+import { getLibraryEntries } from "@/lib/account-store";
 
 export default async function ProfilePage() {
   const sessionUser = await getSessionUser();
@@ -10,15 +9,7 @@ export default async function ProfilePage() {
     return <ProfilePageShell library={[]} />;
   }
 
-  const user = await getPrivateUser(sessionUser.id);
+  const library = await getLibraryEntries(sessionUser.id);
 
-  if (!user) {
-    redirect("/");
-  }
-
-  return (
-    <ProfilePageShell
-      library={user.libraryEntries}
-    />
-  );
+  return <ProfilePageShell library={library} />;
 }

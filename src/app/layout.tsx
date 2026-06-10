@@ -7,7 +7,7 @@ import { DubBadgeProvider } from "@/components/dub-badge-provider";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
 import { ToastProvider } from "@/components/toast-provider";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionPublicUser } from "@/lib/auth";
 import "./globals.css";
 import "./polish.css";
 
@@ -44,7 +44,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const user = await getSessionUser();
+  const user = await getSessionPublicUser();
   const theme = user?.preferences?.whiteMode ? "light" : "dark";
 
   return (

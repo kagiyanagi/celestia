@@ -2,6 +2,7 @@ import { NextResponse, after } from "next/server";
 import { requireSessionUser } from "@/lib/auth";
 import {
   deleteLibraryEntry,
+  getLibraryEntries,
   getPrivateUser,
   upsertLibraryEntry,
 } from "@/lib/account-store";
@@ -44,14 +45,15 @@ function isValidAnimeSummary(value: unknown): value is AnimeSummary {
 export async function GET() {
   try {
     const sessionUser = await requireSessionUser();
-    const user = await getPrivateUser(sessionUser.id);
     // Pull AniList edits back in (freshness-guarded) in the background so the
     // response returns on the fast local read instead of a remote GraphQL
     // round-trip; the merged result surfaces on the next read.
     after(() => {
       void syncAniListLibrary(sessionUser.id);
     });
-    return NextResponse.json({ entries: user?.libraryEntries || [] });
+    return NextResponse.json({
+      entries: await getLibraryEntries(sessionUser.id),
+    });
   } catch {
     return NextResponse.json({ entries: [] }, { status: 401 });
   }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { getLibraryEntries } from "@/lib/account-store";
 import { getSessionUser } from "@/lib/auth";
 import { getCachedUserNotifications } from "@/lib/notifications";
 
@@ -11,7 +12,8 @@ export async function GET() {
   }
 
   try {
-    const data = await getCachedUserNotifications(user);
+    const library = await getLibraryEntries(user.id);
+    const data = await getCachedUserNotifications(user, library);
     return NextResponse.json(
       { unreadCount: data.unreadCount },
       {

@@ -11,6 +11,7 @@ import { WatchCompletionPrompt } from "@/components/watch-completion-prompt";
 import { WatchEpisodeTabs } from "@/components/watch-episode-tabs";
 import { WatchPlayerPanel } from "@/components/watch-player-panel";
 import { WatchSelectionProvider } from "@/components/watch-selection-context";
+import { getLibraryEntry } from "@/lib/account-store";
 import { getSessionUser, getViewerTitleLanguage } from "@/lib/auth";
 import { getDisplayTitle, getSecondaryTitle } from "@/lib/format";
 import { getAnimeDetails } from "@/lib/providers/anilist";
@@ -408,9 +409,10 @@ export default async function WatchPage({
   // Resume: with no explicit episode, jump to the next unwatched episode from
   // the viewer's tracked progress instead of always starting at episode 1.
   if (ep === undefined) {
-    const trackedProgress =
-      viewer?.libraryEntries.find((entry) => entry.animeId === animeId)
-        ?.progress ?? 0;
+    const trackedEntry = viewer
+      ? await getLibraryEntry(viewer.id, animeId)
+      : null;
+    const trackedProgress = trackedEntry?.progress ?? 0;
     if (trackedProgress > 0) {
       const limit = getReleasedEpisodeLimit(anime);
       const maxEpisode = limit ?? anime.episodes ?? trackedProgress;

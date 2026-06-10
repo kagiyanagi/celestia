@@ -10,6 +10,7 @@ import type {
   LibraryStatus,
   PublicProfileData,
   PublicUser,
+  SessionUser,
   UserPreferences,
   UserRecord,
 } from "@/types/account";
@@ -21,17 +22,44 @@ function createId() {
 
 /**
  * Request-scoped memo of a raw user record by id. React's cache() dedupes
- * within a single request, so the session lookup (auth.ts), getPrivateUser, and
+ * within a single request, so the session lookup (auth.ts), getPublicUser, and
  * every updateUserRecord read in one request share ONE database round-trip
- * instead of each re-fetching the (potentially large) user JSONB. The cached
- * object is the same reference an in-place mutation writes back, so sequential
- * mutations in one request accumulate correctly.
+ * instead of each re-fetching the user row. The cached object is the same
+ * reference an in-place mutation writes back, so sequential mutations in one
+ * request accumulate correctly.
  */
 export const getCachedUserRecord = cache((id: string) =>
   getStore().getUserById(id),
 );
 
-function sanitizeUser(user: UserRecord): PublicUser {
+/**
+ * Request-scoped library/history reads. Library and history live in their own
+ * tables (not on the user row), so they are only fetched when a caller actually
+ * needs them — the hot auth path never transfers them. cache() dedupes repeat
+ * reads within a single request.
+ */
+const getCachedLibrary = cache((id: string) =>
+  getStore().listLibraryEntries(id),
+);
+const getCachedHistory = cache((id: string) =>
+  getStore().listHistoryEntries(id),
+);
+
+export function getLibraryEntries(userId: string): Promise<LibraryEntry[]> {
+  return getCachedLibrary(userId);
+}
+
+export function getHistoryEntries(userId: string): Promise<HistoryEntry[]> {
+  return getCachedHistory(userId);
+}
+
+/** A single library entry by anime id, or null — a scoped single-row read. */
+export function getLibraryEntry(userId: string, animeId: number) {
+  return getStore().getLibraryEntry(userId, animeId);
+}
+
+/** The redacted, library/history-free view returned by session/auth reads. */
+function sanitizeSessionUser(user: UserRecord): SessionUser {
   return {
     id: user.id,
     isGuest: user.isGuest,
@@ -49,12 +77,28 @@ function sanitizeUser(user: UserRecord): PublicUser {
     mutedAnimeIds: user.mutedAnimeIds ?? [],
     favorites: user.favorites ?? [],
     devices: user.devices,
-    libraryEntries: user.libraryEntries,
-    historyEntries: user.historyEntries,
     notificationsLastReadAt: user.notificationsLastReadAt ?? null,
     notificationReadIds: user.notificationReadIds ?? [],
     notificationDismissedIds: user.notificationDismissedIds ?? [],
   };
+}
+
+/** Assembles the full client view from a known user + its tracking data. */
+function toPublicUser(
+  user: UserRecord,
+  libraryEntries: LibraryEntry[],
+  historyEntries: HistoryEntry[],
+): PublicUser {
+  return { ...sanitizeSessionUser(user), libraryEntries, historyEntries };
+}
+
+/** Assembles the full client view, fetching the user's library/history. */
+async function publicUserFrom(user: UserRecord): Promise<PublicUser> {
+  const [libraryEntries, historyEntries] = await Promise.all([
+    getCachedLibrary(user.id),
+    getCachedHistory(user.id),
+  ]);
+  return toPublicUser(user, libraryEntries, historyEntries);
 }
 
 // Cap persisted per-notification state. Notifications leave the 30-day window
@@ -95,10 +139,13 @@ export async function getPublicProfile(
     return null;
   }
 
-  const user = await getStore().getUserByUsername(normalized);
+  const store = getStore();
+  const user = await store.getUserByUsername(normalized);
   if (!user || !user.preferences.publicProfile) {
     return null;
   }
+
+  const libraryEntries = await store.listLibraryEntries(user.id);
 
   return {
     displayName: user.displayName,
@@ -110,15 +157,22 @@ export async function getPublicProfile(
     joinedAt: user.joinedAt,
     aniListUrl: user.aniListProfile?.siteUrl ?? null,
     daysWatched: user.aniListProfile?.daysWatched ?? null,
-    libraryEntries: user.libraryEntries,
+    libraryEntries,
     activity: user.aniListProfile?.activity ?? [],
     favorites: user.favorites ?? [],
   };
 }
 
-export async function getUserById(userId: string) {
+/** Full client view of a user (profile + library + history), or null. */
+export async function getPublicUser(
+  userId: string,
+): Promise<PublicUser | null> {
   const user = await getCachedUserRecord(userId);
-  return user ? sanitizeUser(user) : null;
+  return user ? publicUserFrom(user) : null;
+}
+
+export function getUserById(userId: string) {
+  return getPublicUser(userId);
 }
 
 export async function setAniListConnection(input: {
@@ -127,7 +181,9 @@ export async function setAniListConnection(input: {
   profile: AniListProfile;
   libraryEntries: LibraryEntry[];
 }) {
-  return updateUserRecord(input.userId, (user) => {
+  const store = getStore();
+
+  const user = await updateUserRecord(input.userId, (user) => {
     user.isGuest = false;
     // OAuth tokens are encrypted at rest; see src/lib/crypto.ts.
     user.aniListAccessToken = encryptSecret(input.accessToken);
@@ -138,12 +194,15 @@ export async function setAniListConnection(input: {
     if (!user.about || user.about.trim() === "") {
       user.about = input.profile.about || "";
     }
-    user.libraryEntries = mergeLibraryEntries(
-      user.libraryEntries,
-      input.libraryEntries,
-    );
-    return sanitizeUser(user);
+    return user;
   });
+
+  const existing = await store.listLibraryEntries(input.userId);
+  const merged = mergeLibraryEntries(existing, input.libraryEntries);
+  await store.saveLibraryEntries(input.userId, merged);
+
+  const historyEntries = await store.listHistoryEntries(input.userId);
+  return toPublicUser(user, merged, historyEntries);
 }
 
 export async function updateProfile(
@@ -185,7 +244,7 @@ export async function updateProfile(
     if (profile.about !== undefined) {
       user.about = profile.about.trim();
     }
-    return sanitizeUser(user);
+    return publicUserFrom(user);
   });
 }
 
@@ -198,7 +257,7 @@ export async function updatePreferences(
       ...user.preferences,
       ...preferences,
     };
-    return sanitizeUser(user);
+    return publicUserFrom(user);
   });
 }
 
@@ -206,7 +265,7 @@ const MAX_FAVORITES_PER_KIND = 100;
 
 /**
  * Adds the favourite if absent, removes it when already present (keyed by
- * kind+id). Returns the updated favourites list so callers can confirm state.
+ * kind+id). Returns the updated user so callers can confirm state.
  */
 export async function toggleFavorite(userId: string, item: FavoriteItem) {
   return updateUserRecord(userId, (user) => {
@@ -227,7 +286,7 @@ export async function toggleFavorite(userId: string, item: FavoriteItem) {
       user.favorites = [item, ...current];
     }
 
-    return sanitizeUser(user);
+    return publicUserFrom(user);
   });
 }
 
@@ -244,7 +303,7 @@ export async function setAnimeMuted(
       current.delete(animeId);
     }
     user.mutedAnimeIds = Array.from(current);
-    return sanitizeUser(user);
+    return sanitizeSessionUser(user);
   });
 }
 
@@ -376,34 +435,58 @@ function mergeAniListHistory(
  * Applies a pulled AniList snapshot (library + refreshed profile) to the user,
  * reconciling entries newest-wins, folding activity into history, and stamping
  * the sync time. Caller owns the remote fetch; this is the local write half so
- * it can stay in account-store.
+ * it can stay in account-store. Library writes are diffed so a routine sync
+ * only touches entries that actually changed.
  */
 export async function applyAniListSync(input: {
   userId: string;
   profile: AniListProfile;
   libraryEntries: LibraryEntry[];
 }) {
-  return updateUserRecord(input.userId, (user) => {
+  const store = getStore();
+
+  const user = await updateUserRecord(input.userId, (user) => {
     user.aniListProfile = input.profile;
     user.avatar = input.profile.avatar || user.avatar;
     user.banner = input.profile.banner || user.banner;
     if (!user.about || user.about.trim() === "") {
       user.about = input.profile.about || "";
     }
-    user.libraryEntries = mergeAniListPull(
-      user.libraryEntries,
-      input.libraryEntries,
-    );
-    if (!user.preferences.pauseHistory) {
-      user.historyEntries = mergeAniListHistory(
-        user.historyEntries,
-        input.profile,
-        user.libraryEntries,
-      );
-    }
     user.aniListSyncedAt = new Date().toISOString();
-    return sanitizeUser(user);
+    return user;
   });
+
+  const existingLibrary = await store.listLibraryEntries(input.userId);
+  const mergedLibrary = mergeAniListPull(existingLibrary, input.libraryEntries);
+
+  const existingByAnime = new Map(
+    existingLibrary.map((entry) => [entry.animeId, entry]),
+  );
+  for (const entry of mergedLibrary) {
+    const prev = existingByAnime.get(entry.animeId);
+    if (
+      !prev ||
+      prev.updatedAt !== entry.updatedAt ||
+      prev.status !== entry.status ||
+      prev.progress !== entry.progress ||
+      prev.score !== entry.score ||
+      prev.aniListEntryId !== entry.aniListEntryId
+    ) {
+      await store.saveLibraryEntry(input.userId, entry);
+    }
+  }
+
+  let historyEntries = await store.listHistoryEntries(input.userId);
+  if (!user.preferences.pauseHistory) {
+    historyEntries = mergeAniListHistory(
+      historyEntries,
+      input.profile,
+      mergedLibrary,
+    );
+    await store.replaceHistoryEntries(input.userId, historyEntries);
+  }
+
+  return toPublicUser(user, mergedLibrary, historyEntries);
 }
 
 export async function upsertLibraryEntry(input: {
@@ -418,35 +501,27 @@ export async function upsertLibraryEntry(input: {
   completedAt: string | null;
   aniListEntryId?: number | null;
 }) {
-  return updateUserRecord(input.userId, (user) => {
-    const now = new Date().toISOString();
-    const current = user.libraryEntries.find(
-      (entry) => entry.animeId === input.anime.id,
-    );
-    const nextEntry: LibraryEntry = {
-      id: current?.id || createId(),
-      animeId: input.anime.id,
-      anime: input.anime,
-      status: input.status,
-      score: input.score,
-      progress: input.progress,
-      repeat: input.repeat,
-      notes: input.notes,
-      startedAt: input.startedAt,
-      completedAt: input.completedAt,
-      updatedAt: now,
-      addedAt: current?.addedAt || now,
-      aniListEntryId: input.aniListEntryId ?? current?.aniListEntryId ?? null,
-    };
+  const store = getStore();
+  const now = new Date().toISOString();
+  const current = await store.getLibraryEntry(input.userId, input.anime.id);
+  const nextEntry: LibraryEntry = {
+    id: current?.id || createId(),
+    animeId: input.anime.id,
+    anime: input.anime,
+    status: input.status,
+    score: input.score,
+    progress: input.progress,
+    repeat: input.repeat,
+    notes: input.notes,
+    startedAt: input.startedAt,
+    completedAt: input.completedAt,
+    updatedAt: now,
+    addedAt: current?.addedAt || now,
+    aniListEntryId: input.aniListEntryId ?? current?.aniListEntryId ?? null,
+  };
 
-    user.libraryEntries = [
-      nextEntry,
-      ...user.libraryEntries.filter(
-        (entry) => entry.animeId !== input.anime.id,
-      ),
-    ];
-    return nextEntry;
-  });
+  await store.saveLibraryEntry(input.userId, nextEntry);
+  return nextEntry;
 }
 
 /**
@@ -458,21 +533,15 @@ export async function importLibraryEntries(
   userId: string,
   entries: LibraryEntry[],
 ) {
-  return updateUserRecord(userId, (user) => {
-    user.libraryEntries = mergeLibraryEntries(user.libraryEntries, entries);
-    return user.libraryEntries.length;
-  });
+  const store = getStore();
+  const existing = await store.listLibraryEntries(userId);
+  const merged = mergeLibraryEntries(existing, entries);
+  await store.saveLibraryEntries(userId, merged);
+  return merged.length;
 }
 
 export async function deleteLibraryEntry(userId: string, animeId: number) {
-  return updateUserRecord(userId, (user) => {
-    const removed =
-      user.libraryEntries.find((entry) => entry.animeId === animeId) || null;
-    user.libraryEntries = user.libraryEntries.filter(
-      (entry) => entry.animeId !== animeId,
-    );
-    return removed;
-  });
+  return getStore().removeLibraryEntry(userId, animeId);
 }
 
 export async function recordHistory(input: {
@@ -484,58 +553,46 @@ export async function recordHistory(input: {
   durationLabel: string | null;
   progressPercent: number;
 }) {
-  return updateUserRecord(input.userId, (user) => {
-    const now = new Date().toISOString();
-    const existing = user.historyEntries.find(
-      (entry) =>
-        entry.animeId === input.anime.id && entry.episode === input.episode,
-    );
-    const nextEntry: HistoryEntry = {
-      id: createId(),
-      animeId: input.anime.id,
-      anime: input.anime,
-      episode: input.episode,
-      episodeTitle: input.episodeTitle,
-      episodeImage: input.episodeImage || existing?.episodeImage || null,
-      durationLabel: input.durationLabel,
-      watchedAt: now,
-      // Progress only moves forward — a quick revisit must not wipe it.
-      progressPercent: Math.max(
-        input.progressPercent,
-        existing?.progressPercent ?? 0,
-      ),
-    };
+  const store = getStore();
+  const now = new Date().toISOString();
+  const existing = await store.getHistoryEntry(
+    input.userId,
+    input.anime.id,
+    input.episode,
+  );
+  const nextEntry: HistoryEntry = {
+    id: existing?.id || createId(),
+    animeId: input.anime.id,
+    anime: input.anime,
+    episode: input.episode,
+    episodeTitle: input.episodeTitle,
+    episodeImage: input.episodeImage || existing?.episodeImage || null,
+    durationLabel: input.durationLabel,
+    watchedAt: now,
+    // Progress only moves forward — a quick revisit must not wipe it.
+    progressPercent: Math.max(
+      input.progressPercent,
+      existing?.progressPercent ?? 0,
+    ),
+  };
 
-    user.historyEntries = [
-      nextEntry,
-      ...user.historyEntries.filter(
-        (entry) =>
-          !(
-            entry.animeId === input.anime.id && entry.episode === input.episode
-          ),
-      ),
-    ].slice(0, 120);
-
-    return nextEntry;
-  });
+  await store.saveHistoryEntry(input.userId, nextEntry);
+  return nextEntry;
 }
 
 export async function deleteHistoryEntry(userId: string, entryId: string) {
-  return updateUserRecord(userId, (user) => {
-    const removed =
-      user.historyEntries.find((entry) => entry.id === entryId) || null;
-    user.historyEntries = user.historyEntries.filter(
-      (entry) => entry.id !== entryId,
-    );
-    return removed;
-  });
+  return getStore().removeHistoryEntry(userId, entryId);
 }
 
 export async function clearHistory(userId: string) {
-  return updateUserRecord(userId, (user) => {
-    user.historyEntries = [];
-    return sanitizeUser(user);
-  });
+  const store = getStore();
+  await store.clearHistoryEntries(userId);
+
+  const user = await getCachedUserRecord(userId);
+  if (!user) {
+    throw new Error("User not found.");
+  }
+  return toPublicUser(user, await getCachedLibrary(userId), []);
 }
 
 export async function deleteAccount(userId: string) {
@@ -545,7 +602,8 @@ export async function deleteAccount(userId: string) {
 /**
  * Marks notifications read. With no ids, marks everything read via a single
  * timestamp; with ids, records just those (so "tick one read" persists without
- * touching the rest).
+ * touching the rest). Returns the slim user — callers use it for confirmation
+ * only and must not fold it into client state wholesale (it has no library).
  */
 export async function markNotificationsRead(userId: string, ids?: string[]) {
   return updateUserRecord(userId, (user) => {
@@ -554,7 +612,7 @@ export async function markNotificationsRead(userId: string, ids?: string[]) {
     } else {
       user.notificationsLastReadAt = new Date().toISOString();
     }
-    return sanitizeUser(user);
+    return sanitizeSessionUser(user);
   });
 }
 
@@ -565,13 +623,15 @@ export async function dismissNotifications(userId: string, ids: string[]) {
       user.notificationDismissedIds,
       ids,
     );
-    return sanitizeUser(user);
+    return sanitizeSessionUser(user);
   });
 }
 
 /**
  * Returns the full user record with the AniList token decrypted for use.
- * Legacy plaintext tokens are re-encrypted in storage on first read.
+ * Library and history are NOT included — fetch them with getLibraryEntries /
+ * getHistoryEntries when needed. Legacy plaintext tokens are re-encrypted in
+ * storage on first read.
  */
 export async function getPrivateUser(userId: string) {
   const store = getStore();
@@ -592,19 +652,4 @@ export async function getPrivateUser(userId: string) {
     ...user,
     aniListAccessToken: decryptSecret(user.aniListAccessToken),
   };
-}
-
-export async function refreshAniListProfile(
-  userId: string,
-  profile: AniListProfile,
-) {
-  return updateUserRecord(userId, (user) => {
-    user.aniListProfile = profile;
-    user.avatar = profile.avatar || user.avatar;
-    user.banner = profile.banner || user.banner;
-    if (!user.about || user.about.trim() === "") {
-      user.about = profile.about || "";
-    }
-    return sanitizeUser(user);
-  });
 }

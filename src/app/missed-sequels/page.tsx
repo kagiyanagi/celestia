@@ -3,7 +3,7 @@ import { after } from "next/server";
 import { redirect } from "next/navigation";
 
 import { MissedSequelsPageClient } from "@/components/missed-sequels-page-client";
-import { getPrivateUser } from "@/lib/account-store";
+import { getLibraryEntries } from "@/lib/account-store";
 import { syncAniListLibrary } from "@/lib/anilist-sync";
 import { getSessionUser, getViewerIncludesAdult } from "@/lib/auth";
 import { getMissedSequels } from "@/lib/providers/anilist";
@@ -23,18 +23,14 @@ export default async function MissedSequelsPage() {
   // Compute from the local library immediately; pull AniList edits in
   // (freshness-guarded) in the background rather than gating render on a remote
   // round-trip. A newly-completed show surfaces its sequels on the next visit.
-  const user = await getPrivateUser(sessionUser.id);
-
-  if (!user) {
-    redirect("/profile");
-  }
+  const library = await getLibraryEntries(sessionUser.id);
 
   after(() => {
     void syncAniListLibrary(sessionUser.id);
   });
 
   const includeAdult = await getViewerIncludesAdult();
-  const items = await getMissedSequels(user.libraryEntries, includeAdult);
+  const items = await getMissedSequels(library, includeAdult);
 
   return <MissedSequelsPageClient initialItems={items} />;
 }

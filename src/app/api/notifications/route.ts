@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   dismissNotifications,
+  getLibraryEntries,
   markNotificationsRead,
   setAnimeMuted,
 } from "@/lib/account-store";
@@ -19,7 +20,8 @@ export async function GET() {
   }
 
   try {
-    const data = await getCachedUserNotifications(user);
+    const library = await getLibraryEntries(user.id);
+    const data = await getCachedUserNotifications(user, library);
     return NextResponse.json(data);
   } catch (error) {
     console.error("Notifications fetch failed", error);

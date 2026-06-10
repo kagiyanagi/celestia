@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { HistoryPageClient } from "@/components/history-page-client";
-import { getPrivateUser } from "@/lib/account-store";
+import { getHistoryEntries } from "@/lib/account-store";
 import { getSessionUser } from "@/lib/auth";
 
 export default async function HistoryPage() {
@@ -10,16 +10,12 @@ export default async function HistoryPage() {
     redirect("/profile");
   }
 
-  const user = await getPrivateUser(sessionUser.id);
-
-  if (!user) {
-    redirect("/profile");
-  }
+  const entries = await getHistoryEntries(sessionUser.id);
 
   return (
     <HistoryPageClient
-      entries={user.historyEntries}
-      pauseHistory={user.preferences.pauseHistory}
+      entries={entries}
+      pauseHistory={sessionUser.preferences.pauseHistory}
     />
   );
 }

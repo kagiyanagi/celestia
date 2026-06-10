@@ -1,9 +1,11 @@
 import { NextResponse, after } from "next/server";
 import { syncAniListLibrary } from "@/lib/anilist-sync";
-import { getSessionUser } from "@/lib/auth";
+import { getSessionPublicUser } from "@/lib/auth";
 
 export async function GET() {
-  const user = await getSessionUser();
+  // The client folds this straight into its auth context, so it needs the full
+  // user (library + history), not the slim session view.
+  const user = await getSessionPublicUser();
 
   if (!user) {
     return NextResponse.json({ user: null });

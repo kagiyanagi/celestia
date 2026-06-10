@@ -128,8 +128,6 @@ export type UserRecord = {
   /** Favourited anime, characters, and voice actors. */
   favorites?: FavoriteItem[];
   devices: DeviceSession[];
-  libraryEntries: LibraryEntry[];
-  historyEntries: HistoryEntry[];
   /** ISO timestamp the user last marked all notifications as read. */
   notificationsLastReadAt?: string | null;
   /** Notification ids individually marked read (read state is otherwise derived). */
@@ -156,16 +154,36 @@ export type StreamMappingRecord = {
   verifiedAt: string;
 };
 
+/** A library entry as stored in the file DB, tagged with its owner. */
+export type StoredLibraryEntry = LibraryEntry & { userId: string };
+/** A history entry as stored in the file DB, tagged with its owner. */
+export type StoredHistoryEntry = HistoryEntry & { userId: string };
+
 export type AppDatabase = {
   users: UserRecord[];
   sessions: SessionRecord[];
   streamMappings?: StreamMappingRecord[];
+  libraryEntries?: StoredLibraryEntry[];
+  historyEntries?: StoredHistoryEntry[];
 };
 
-export type PublicUser = Omit<
-  UserRecord,
-  "passwordHash" | "aniListAccessToken"
->;
+/**
+ * The slim, stored view of a user: profile, preferences, auth, and derived
+ * state — but NOT the library or watch history, which live in their own tables
+ * and are read on demand. Session/auth reads return this, so the hot path never
+ * transfers the (potentially large) tracking data.
+ */
+export type SessionUser = Omit<UserRecord, "passwordHash" | "aniListAccessToken">;
+
+/**
+ * The full client-facing view: a SessionUser with the user's library and watch
+ * history assembled in. Returned by the session bootstrap and the mutation
+ * endpoints whose responses the client folds straight into its auth context.
+ */
+export type PublicUser = SessionUser & {
+  libraryEntries: LibraryEntry[];
+  historyEntries: HistoryEntry[];
+};
 
 /** Read-only view of a user shown at /u/[username] when publicProfile is on. */
 export type PublicProfileData = {

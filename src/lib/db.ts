@@ -4,13 +4,21 @@ import postgres, { type Sql } from "postgres";
 import { assertEnv, env } from "@/lib/env";
 import type {
   AppDatabase,
+  HistoryEntry,
+  LibraryEntry,
   SessionRecord,
+  StoredHistoryEntry,
+  StoredLibraryEntry,
   StreamMappingRecord,
   UserRecord,
 } from "@/types/account";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_PATH = path.join(DATA_DIR, "app-db.json");
+
+// Watch history is bounded to the most recent N entries per user, enforced on
+// every write so a single row can never grow without limit.
+const HISTORY_LIMIT = 120;
 
 export class UniqueConstraintError extends Error {
   field: "email" | "username";
@@ -49,6 +57,35 @@ export type Store = {
   ): Promise<StreamMappingRecord | null>;
   upsertStreamMapping(record: StreamMappingRecord): Promise<void>;
   deleteStreamMapping(anilistId: number, providerId: string): Promise<void>;
+
+  /* Library entries — one row per (user, anime), read/written in isolation so
+   * a tracking change never touches the user record or other entries. */
+  listLibraryEntries(userId: string): Promise<LibraryEntry[]>;
+  getLibraryEntry(
+    userId: string,
+    animeId: number,
+  ): Promise<LibraryEntry | null>;
+  saveLibraryEntry(userId: string, entry: LibraryEntry): Promise<void>;
+  saveLibraryEntries(userId: string, entries: LibraryEntry[]): Promise<void>;
+  removeLibraryEntry(
+    userId: string,
+    animeId: number,
+  ): Promise<LibraryEntry | null>;
+
+  /* Watch history — one row per (user, anime, episode), capped per user. */
+  listHistoryEntries(userId: string): Promise<HistoryEntry[]>;
+  getHistoryEntry(
+    userId: string,
+    animeId: number,
+    episode: number,
+  ): Promise<HistoryEntry | null>;
+  saveHistoryEntry(userId: string, entry: HistoryEntry): Promise<void>;
+  replaceHistoryEntries(userId: string, entries: HistoryEntry[]): Promise<void>;
+  removeHistoryEntry(
+    userId: string,
+    entryId: string,
+  ): Promise<HistoryEntry | null>;
+  clearHistoryEntries(userId: string): Promise<void>;
 
   /**
    * Removes guest accounts (and their sessions) that have been inactive
@@ -164,6 +201,71 @@ async function migrateLegacyBlob(sql: Sql) {
   }
 }
 
+/**
+ * One-time migration off the inline blob model: any user whose payload still
+ * embeds libraryEntries/historyEntries has them moved into the dedicated tables
+ * and stripped from the payload. Idempotent — once stripped, the guard query
+ * matches nothing, so this is a no-op on every subsequent boot.
+ */
+async function migrateEmbeddedEntries(sql: Sql) {
+  const rows = await sql<{ id: string; payload: unknown }[]>`
+    select id, payload from users
+    where jsonb_exists(payload, 'libraryEntries')
+       or jsonb_exists(payload, 'historyEntries')
+    limit 1000
+  `;
+
+  for (const row of rows) {
+    const payload = row.payload as {
+      libraryEntries?: LibraryEntry[];
+      historyEntries?: HistoryEntry[];
+    };
+    const library = Array.isArray(payload.libraryEntries)
+      ? payload.libraryEntries
+      : [];
+    const history = Array.isArray(payload.historyEntries)
+      ? payload.historyEntries
+      : [];
+
+    for (const entry of library) {
+      await sql`
+        insert into library_entries (user_id, anime_id, payload, updated_at)
+        values (
+          ${row.id},
+          ${entry.animeId},
+          ${sql.json(entry as never)},
+          ${entry.updatedAt || new Date().toISOString()}
+        )
+        on conflict (user_id, anime_id) do nothing
+      `;
+    }
+
+    for (const entry of history) {
+      await sql`
+        insert into history_entries (user_id, anime_id, episode, payload, watched_at)
+        values (
+          ${row.id},
+          ${entry.animeId},
+          ${entry.episode},
+          ${sql.json(entry as never)},
+          ${entry.watchedAt || new Date().toISOString()}
+        )
+        on conflict (user_id, anime_id, episode) do nothing
+      `;
+    }
+
+    await sql`
+      update users
+      set payload = payload - 'libraryEntries' - 'historyEntries'
+      where id = ${row.id}
+    `;
+  }
+
+  if (rows.length > 0) {
+    console.log(`Migrated embedded library/history for ${rows.length} user(s).`);
+  }
+}
+
 async function ensureSchema(sql: Sql): Promise<void> {
   if (!schemaReady) {
     schemaReady = (async () => {
@@ -202,8 +304,36 @@ async function ensureSchema(sql: Sql): Promise<void> {
           primary key (anilist_id, provider_id)
         )
       `;
+      await sql`
+        create table if not exists library_entries (
+          user_id text not null references users(id) on delete cascade,
+          anime_id integer not null,
+          payload jsonb not null,
+          updated_at timestamptz not null default now(),
+          primary key (user_id, anime_id)
+        )
+      `;
+      await sql`
+        create index if not exists library_entries_user_idx
+          on library_entries(user_id, updated_at desc)
+      `;
+      await sql`
+        create table if not exists history_entries (
+          user_id text not null references users(id) on delete cascade,
+          anime_id integer not null,
+          episode integer not null,
+          payload jsonb not null,
+          watched_at timestamptz not null default now(),
+          primary key (user_id, anime_id, episode)
+        )
+      `;
+      await sql`
+        create index if not exists history_entries_user_idx
+          on history_entries(user_id, watched_at desc)
+      `;
 
       await migrateLegacyBlob(sql);
+      await migrateEmbeddedEntries(sql);
     })().catch((error) => {
       schemaReady = null;
       throw error;
@@ -393,6 +523,163 @@ function createPostgresStore(sql: Sql): Store {
       `;
     },
 
+    async listLibraryEntries(userId) {
+      await ensureSchema(sql);
+      const rows = await sql<{ payload: unknown }[]>`
+        select payload from library_entries
+        where user_id = ${userId}
+        order by updated_at desc
+      `;
+      return rows.map((row) => row.payload as LibraryEntry);
+    },
+
+    async getLibraryEntry(userId, animeId) {
+      await ensureSchema(sql);
+      const rows = await sql<{ payload: unknown }[]>`
+        select payload from library_entries
+        where user_id = ${userId} and anime_id = ${animeId}
+        limit 1
+      `;
+      return rows[0] ? (rows[0].payload as LibraryEntry) : null;
+    },
+
+    async saveLibraryEntry(userId, entry) {
+      await ensureSchema(sql);
+      await sql`
+        insert into library_entries (user_id, anime_id, payload, updated_at)
+        values (
+          ${userId},
+          ${entry.animeId},
+          ${sql.json(entry as never)},
+          ${entry.updatedAt || new Date().toISOString()}
+        )
+        on conflict (user_id, anime_id) do update set
+          payload = excluded.payload,
+          updated_at = excluded.updated_at
+      `;
+    },
+
+    async saveLibraryEntries(userId, entries) {
+      if (entries.length === 0) {
+        return;
+      }
+      await ensureSchema(sql);
+      await sql.begin(async (tx) => {
+        for (const entry of entries) {
+          await tx`
+            insert into library_entries (user_id, anime_id, payload, updated_at)
+            values (
+              ${userId},
+              ${entry.animeId},
+              ${sql.json(entry as never)},
+              ${entry.updatedAt || new Date().toISOString()}
+            )
+            on conflict (user_id, anime_id) do update set
+              payload = excluded.payload,
+              updated_at = excluded.updated_at
+          `;
+        }
+      });
+    },
+
+    async removeLibraryEntry(userId, animeId) {
+      await ensureSchema(sql);
+      const rows = await sql<{ payload: unknown }[]>`
+        delete from library_entries
+        where user_id = ${userId} and anime_id = ${animeId}
+        returning payload
+      `;
+      return rows[0] ? (rows[0].payload as LibraryEntry) : null;
+    },
+
+    async listHistoryEntries(userId) {
+      await ensureSchema(sql);
+      const rows = await sql<{ payload: unknown }[]>`
+        select payload from history_entries
+        where user_id = ${userId}
+        order by watched_at desc
+        limit ${HISTORY_LIMIT}
+      `;
+      return rows.map((row) => row.payload as HistoryEntry);
+    },
+
+    async getHistoryEntry(userId, animeId, episode) {
+      await ensureSchema(sql);
+      const rows = await sql<{ payload: unknown }[]>`
+        select payload from history_entries
+        where user_id = ${userId}
+          and anime_id = ${animeId}
+          and episode = ${episode}
+        limit 1
+      `;
+      return rows[0] ? (rows[0].payload as HistoryEntry) : null;
+    },
+
+    async replaceHistoryEntries(userId, entries) {
+      await ensureSchema(sql);
+      await sql.begin(async (tx) => {
+        await tx`delete from history_entries where user_id = ${userId}`;
+        for (const entry of entries.slice(0, HISTORY_LIMIT)) {
+          await tx`
+            insert into history_entries (user_id, anime_id, episode, payload, watched_at)
+            values (
+              ${userId},
+              ${entry.animeId},
+              ${entry.episode},
+              ${sql.json(entry as never)},
+              ${entry.watchedAt || new Date().toISOString()}
+            )
+            on conflict (user_id, anime_id, episode) do update set
+              payload = excluded.payload,
+              watched_at = excluded.watched_at
+          `;
+        }
+      });
+    },
+
+    async saveHistoryEntry(userId, entry) {
+      await ensureSchema(sql);
+      await sql`
+        insert into history_entries (user_id, anime_id, episode, payload, watched_at)
+        values (
+          ${userId},
+          ${entry.animeId},
+          ${entry.episode},
+          ${sql.json(entry as never)},
+          ${entry.watchedAt || new Date().toISOString()}
+        )
+        on conflict (user_id, anime_id, episode) do update set
+          payload = excluded.payload,
+          watched_at = excluded.watched_at
+      `;
+      // Keep only the most recent HISTORY_LIMIT entries for this user.
+      await sql`
+        delete from history_entries
+        where user_id = ${userId}
+          and (anime_id, episode) not in (
+            select anime_id, episode from history_entries
+            where user_id = ${userId}
+            order by watched_at desc
+            limit ${HISTORY_LIMIT}
+          )
+      `;
+    },
+
+    async removeHistoryEntry(userId, entryId) {
+      await ensureSchema(sql);
+      const rows = await sql<{ payload: unknown }[]>`
+        delete from history_entries
+        where user_id = ${userId} and payload->>'id' = ${entryId}
+        returning payload
+      `;
+      return rows[0] ? (rows[0].payload as HistoryEntry) : null;
+    },
+
+    async clearHistoryEntries(userId) {
+      await ensureSchema(sql);
+      await sql`delete from history_entries where user_id = ${userId}`;
+    },
+
     async cleanupGuests(cutoffIso) {
       await ensureSchema(sql);
       const removed = await sql<{ id: string }[]>`
@@ -418,7 +705,20 @@ function createPostgresStore(sql: Sql): Store {
 let writeQueue = Promise.resolve();
 
 function createEmptyDb(): AppDatabase {
-  return { users: [], sessions: [], streamMappings: [] };
+  return {
+    users: [],
+    sessions: [],
+    streamMappings: [],
+    libraryEntries: [],
+    historyEntries: [],
+  };
+}
+
+/** Drops the owner tag so a stored row reads back as its public shape. */
+function stripOwner<T extends { userId: string }>(row: T): Omit<T, "userId"> {
+  const copy = { ...row } as Partial<T>;
+  delete copy.userId;
+  return copy as Omit<T, "userId">;
 }
 
 function normalizeDb(value: unknown): AppDatabase {
@@ -427,13 +727,65 @@ function normalizeDb(value: unknown): AppDatabase {
   }
 
   const candidate = value as Partial<AppDatabase>;
+  const users = Array.isArray(candidate.users) ? candidate.users : [];
+  const libraryEntries: StoredLibraryEntry[] = Array.isArray(
+    candidate.libraryEntries,
+  )
+    ? candidate.libraryEntries
+    : [];
+  const historyEntries: StoredHistoryEntry[] = Array.isArray(
+    candidate.historyEntries,
+  )
+    ? candidate.historyEntries
+    : [];
+
+  // Hoist any library/history still embedded on a user (legacy blob model)
+  // into the top-level collections, then drop them from the user object so the
+  // file store converges on the normalized shape after the first write. Set-keyed
+  // dedup keeps this O(n) even for a large legacy file.
+  const libKeys = new Set(
+    libraryEntries.map((row) => `${row.userId}:${row.animeId}`),
+  );
+  const historyKeys = new Set(
+    historyEntries.map(
+      (row) => `${row.userId}:${row.animeId}:${row.episode}`,
+    ),
+  );
+  for (const user of users) {
+    const legacy = user as UserRecord & {
+      libraryEntries?: LibraryEntry[];
+      historyEntries?: HistoryEntry[];
+    };
+    if (Array.isArray(legacy.libraryEntries)) {
+      for (const entry of legacy.libraryEntries) {
+        const key = `${user.id}:${entry.animeId}`;
+        if (!libKeys.has(key)) {
+          libKeys.add(key);
+          libraryEntries.push({ ...entry, userId: user.id });
+        }
+      }
+      delete legacy.libraryEntries;
+    }
+    if (Array.isArray(legacy.historyEntries)) {
+      for (const entry of legacy.historyEntries) {
+        const key = `${user.id}:${entry.animeId}:${entry.episode}`;
+        if (!historyKeys.has(key)) {
+          historyKeys.add(key);
+          historyEntries.push({ ...entry, userId: user.id });
+        }
+      }
+      delete legacy.historyEntries;
+    }
+  }
 
   return {
-    users: Array.isArray(candidate.users) ? candidate.users : [],
+    users,
     sessions: Array.isArray(candidate.sessions) ? candidate.sessions : [],
     streamMappings: Array.isArray(candidate.streamMappings)
       ? candidate.streamMappings
       : [],
+    libraryEntries,
+    historyEntries,
   };
 }
 
@@ -587,6 +939,140 @@ function createFileStore(): Store {
           (mapping) =>
             mapping.anilistId !== anilistId ||
             mapping.providerId !== providerId,
+        );
+      });
+    },
+
+    async listLibraryEntries(userId) {
+      const db = await readFileDb();
+      return (db.libraryEntries || [])
+        .filter((row) => row.userId === userId)
+        .sort(
+          (a, b) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+        )
+        .map(stripOwner);
+    },
+
+    async getLibraryEntry(userId, animeId) {
+      const db = await readFileDb();
+      const existing = (db.libraryEntries || []).find(
+        (row) => row.userId === userId && row.animeId === animeId,
+      );
+      return existing ? stripOwner(existing) : null;
+    },
+
+    async saveLibraryEntry(userId, entry) {
+      await mutateFileDb((db) => {
+        db.libraryEntries = [
+          ...(db.libraryEntries || []).filter(
+            (row) => !(row.userId === userId && row.animeId === entry.animeId),
+          ),
+          { ...entry, userId },
+        ];
+      });
+    },
+
+    async saveLibraryEntries(userId, entries) {
+      if (entries.length === 0) {
+        return;
+      }
+      await mutateFileDb((db) => {
+        const incoming = new Set(entries.map((entry) => entry.animeId));
+        const others = (db.libraryEntries || []).filter(
+          (row) => !(row.userId === userId && incoming.has(row.animeId)),
+        );
+        db.libraryEntries = [
+          ...others,
+          ...entries.map((entry) => ({ ...entry, userId })),
+        ];
+      });
+    },
+
+    async removeLibraryEntry(userId, animeId) {
+      return mutateFileDb((db) => {
+        const existing = (db.libraryEntries || []).find(
+          (row) => row.userId === userId && row.animeId === animeId,
+        );
+        db.libraryEntries = (db.libraryEntries || []).filter(
+          (row) => !(row.userId === userId && row.animeId === animeId),
+        );
+        return existing ? stripOwner(existing) : null;
+      });
+    },
+
+    async listHistoryEntries(userId) {
+      const db = await readFileDb();
+      return (db.historyEntries || [])
+        .filter((row) => row.userId === userId)
+        .sort(
+          (a, b) =>
+            new Date(b.watchedAt).getTime() - new Date(a.watchedAt).getTime(),
+        )
+        .slice(0, HISTORY_LIMIT)
+        .map(stripOwner);
+    },
+
+    async getHistoryEntry(userId, animeId, episode) {
+      const db = await readFileDb();
+      const existing = (db.historyEntries || []).find(
+        (row) =>
+          row.userId === userId &&
+          row.animeId === animeId &&
+          row.episode === episode,
+      );
+      return existing ? stripOwner(existing) : null;
+    },
+
+    async replaceHistoryEntries(userId, entries) {
+      await mutateFileDb((db) => {
+        const notMine = (db.historyEntries || []).filter(
+          (row) => row.userId !== userId,
+        );
+        const mine = entries
+          .slice(0, HISTORY_LIMIT)
+          .map((entry) => ({ ...entry, userId }));
+        db.historyEntries = [...notMine, ...mine];
+      });
+    },
+
+    async saveHistoryEntry(userId, entry) {
+      await mutateFileDb((db) => {
+        const all = db.historyEntries || [];
+        const notMine = all.filter((row) => row.userId !== userId);
+        const mine = [
+          { ...entry, userId },
+          ...all.filter(
+            (row) =>
+              row.userId === userId &&
+              !(row.animeId === entry.animeId && row.episode === entry.episode),
+          ),
+        ]
+          .sort(
+            (a, b) =>
+              new Date(b.watchedAt).getTime() - new Date(a.watchedAt).getTime(),
+          )
+          .slice(0, HISTORY_LIMIT);
+        db.historyEntries = [...notMine, ...mine];
+      });
+    },
+
+    async removeHistoryEntry(userId, entryId) {
+      return mutateFileDb((db) => {
+        const existing = (db.historyEntries || []).find(
+          (row) => row.userId === userId && row.id === entryId,
+        );
+        db.historyEntries = (db.historyEntries || []).filter(
+          (row) => !(row.userId === userId && row.id === entryId),
+        );
+        return existing ? stripOwner(existing) : null;
+      });
+    },
+
+    async clearHistoryEntries(userId) {
+      await mutateFileDb((db) => {
+        db.historyEntries = (db.historyEntries || []).filter(
+          (row) => row.userId !== userId,
         );
       });
     },

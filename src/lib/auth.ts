@@ -1,12 +1,17 @@
 import { cookies, headers } from "next/headers";
 import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { cache } from "react";
-import { getCachedUserRecord } from "@/lib/account-store";
+import {
+  getCachedUserRecord,
+  getHistoryEntries,
+  getLibraryEntries,
+} from "@/lib/account-store";
 import { getStore } from "@/lib/db";
 import type {
   DeviceSession,
   PublicUser,
   SessionRecord,
+  SessionUser,
   UserPreferences,
   UserRecord,
 } from "@/types/account";
@@ -89,7 +94,8 @@ function parseUserAgent(
   };
 }
 
-function redactUser(user: UserRecord): PublicUser {
+/** The slim, library/history-free session view. */
+function redactUser(user: UserRecord): SessionUser {
   return {
     id: user.id,
     isGuest: user.isGuest,
@@ -102,16 +108,29 @@ function redactUser(user: UserRecord): PublicUser {
     banner: user.banner,
     joinedAt: user.joinedAt,
     aniListProfile: user.aniListProfile,
+    aniListSyncedAt: user.aniListSyncedAt ?? null,
     preferences: user.preferences,
     mutedAnimeIds: user.mutedAnimeIds ?? [],
     favorites: user.favorites ?? [],
     devices: user.devices,
-    libraryEntries: user.libraryEntries,
-    historyEntries: user.historyEntries,
     notificationsLastReadAt: user.notificationsLastReadAt ?? null,
     notificationReadIds: user.notificationReadIds ?? [],
     notificationDismissedIds: user.notificationDismissedIds ?? [],
   };
+}
+
+/** A brand-new account has no tracking data yet — assemble it cheaply. */
+function emptyPublicUser(user: UserRecord): PublicUser {
+  return { ...redactUser(user), libraryEntries: [], historyEntries: [] };
+}
+
+/** Assembles the full client view, loading the user's library and history. */
+async function toPublicUser(user: UserRecord): Promise<PublicUser> {
+  const [libraryEntries, historyEntries] = await Promise.all([
+    getLibraryEntries(user.id),
+    getHistoryEntries(user.id),
+  ]);
+  return { ...redactUser(user), libraryEntries, historyEntries };
 }
 
 export function getDefaultProfileAssets() {
@@ -141,8 +160,6 @@ export async function createGuestUser() {
     aniListProfile: null,
     preferences: defaultPreferences(),
     devices: [],
-    libraryEntries: [],
-    historyEntries: [],
   };
 
   await getStore().insertUser(user);
@@ -196,13 +213,11 @@ export async function createUser(input: {
     aniListProfile: null,
     preferences: defaultPreferences(),
     devices: [],
-    libraryEntries: [],
-    historyEntries: [],
   };
 
   await getStore().insertUser(user);
 
-  return redactUser(user);
+  return emptyPublicUser(user);
 }
 
 export async function authenticateUser(email: string, password: string) {
@@ -216,7 +231,7 @@ export async function authenticateUser(email: string, password: string) {
     throw new Error("Invalid email or password.");
   }
 
-  return redactUser(user);
+  return toPublicUser(user);
 }
 
 async function registerDevice(userId: string, sessionId: string, now: string) {
@@ -294,11 +309,16 @@ export async function initGuestSession() {
   const cookieStore = await cookies();
   const sessionId = cookieStore.get(SESSION_COOKIE)?.value;
 
-  if (sessionId) return getSessionUser();
+  if (sessionId) {
+    const existing = await getSessionPublicUser();
+    if (existing) {
+      return existing;
+    }
+  }
 
   const guest = await createGuestUser();
   await createSession(guest.id);
-  return redactUser(guest);
+  return emptyPublicUser(guest);
 }
 
 export async function clearSession() {
@@ -364,7 +384,7 @@ export async function revokeOtherDevices() {
     .map((device) => ({ ...device, current: true }));
   await store.updateUser(user);
 
-  return redactUser(user);
+  return toPublicUser(user);
 }
 
 /** Ends a single other session and removes it from the device list. */
@@ -379,7 +399,7 @@ export async function revokeDevice(deviceId: string) {
   user.devices = user.devices.filter((device) => device.id !== deviceId);
   await store.updateUser(user);
 
-  return redactUser(user);
+  return toPublicUser(user);
 }
 
 async function readSessionUser() {
@@ -415,7 +435,32 @@ async function readSessionUser() {
   return redactUser(user);
 }
 
+/**
+ * The signed-in user WITHOUT library/history — the hot path. Every route that
+ * only needs identity/preferences uses this, so the bulky tracking data is
+ * never transferred on a typical request.
+ */
 export const getSessionUser = cache(readSessionUser);
+
+/**
+ * The signed-in user WITH library/history assembled in — for the client
+ * bootstrap (root layout, /api/auth/session) and anywhere the full PublicUser
+ * is folded into client state. Pays for two extra scoped reads, so reserve it
+ * for those bootstrap paths rather than ordinary auth gating.
+ */
+export const getSessionPublicUser = cache(
+  async (): Promise<PublicUser | null> => {
+    const user = await getSessionUser();
+    if (!user) {
+      return null;
+    }
+    const [libraryEntries, historyEntries] = await Promise.all([
+      getLibraryEntries(user.id),
+      getHistoryEntries(user.id),
+    ]);
+    return { ...user, libraryEntries, historyEntries };
+  },
+);
 
 export async function requireSessionUser() {
   const user = await getSessionUser();

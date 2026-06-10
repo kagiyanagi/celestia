@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { getLibraryEntries } from "@/lib/account-store";
 import { getSessionUser, getViewerIncludesAdult } from "@/lib/auth";
 import { getMissedSequels } from "@/lib/providers/anilist";
 
@@ -10,7 +11,7 @@ export async function GET() {
     return NextResponse.json({ items: [] });
   }
 
-  const library = user.libraryEntries ?? [];
+  const library = await getLibraryEntries(user.id);
   const includeAdult = await getViewerIncludesAdult();
 
   const items = await getMissedSequels(library, includeAdult);
