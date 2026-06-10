@@ -1,10 +1,18 @@
 import { headers } from "next/headers";
 
 /**
- * In-memory sliding-window rate limiter. Per serverless instance, which
- * makes it a floor rather than a guarantee — still enough to stop naive
- * brute force. Swap the backing map for Redis when horizontal accuracy
- * matters.
+ * In-memory sliding-window rate limiter.
+ *
+ * Each serverless instance maintains its own map, so the limit is enforced
+ * per-instance rather than globally across the fleet. This is intentional:
+ * it stops naive brute-force without requiring an external store. If
+ * horizontal accuracy matters (e.g. high-traffic auth), swap the Map for a
+ * Redis-backed sliding-window counter.
+ *
+ * The window is fixed (not truly sliding): the first request in a window
+ * starts the timer, and the counter resets atomically when that timer
+ * expires. This is simpler than a true sliding log and sufficient for the
+ * abuse-prevention use case.
  */
 
 type WindowState = {

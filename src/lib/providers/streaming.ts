@@ -152,9 +152,25 @@ function getRejectionThreshold(expectedEps: number): number {
 
 /**
  * Scores how well a provider search result lines up with the catalog entry.
- * Returns null when the episode counts disagree so badly that this is almost
- * certainly a different entry (wrong season, whole-franchise listing) — a
- * wrong stream is worse than no stream.
+ *
+ * Scoring works on two axes:
+ *   - Candidate index: the first title variant tried scores higher; later
+ *     variants are penalized because they are less likely to be the right match.
+ *   - Provider priority: lower-priority providers (higher `priority` values)
+ *     are slightly penalized so a well-matched primary server beats a
+ *     well-matched backup.
+ *
+ * Episode count comparison:
+ *   - Exact match: large bonus (+50). This is the happy path.
+ *   - Off by ≤2: small bonus (+20), accommodates providers that count specials
+ *     differently from AniList.
+ *   - Off beyond the rejection threshold: return null — this is almost
+ *     certainly a different entry (wrong season, whole-franchise listing).
+ *     A wrong stream is considered worse than no stream.
+ *   - Anything else: heavy penalty (-80), keeps it from winning over a
+ *     count-verified match on another server.
+ *
+ * Returns null when the episode counts are irreconcilable.
  */
 function calculateAlignmentScore(
   expectedEps: number | null,
@@ -237,6 +253,22 @@ function toTitleCase(title: string): string {
     .replace(/\bIv\b/g, "IV");
 }
 
+/**
+ * Builds the list of title variants to probe against the streaming provider.
+ *
+ * Providers typically index anime by their own display title, which may differ
+ * from AniList's canonical title in several predictable ways: format suffixes
+ * ("(TV)", "(OVA)"), season number style ("Season 2" vs "S2" vs just "2"),
+ * ordinal seasons ("2nd Season"), Part variants, colon-separated subtitles,
+ * article stripping ("The", "A"), and CJK-to-alphanumeric normalization.
+ *
+ * Each variant costs one provider request, so the list is capped at 16.
+ * The strongest candidate (the original AniList title) is always tried first
+ * so the common exact-match case only costs one request.
+ *
+ * Blank candidates (possible when a CJK-only title normalizes to "") are
+ * dropped before the cap is applied — an empty string would 404 immediately.
+ */
 function getTitleCandidates(title: string | string[]): string[] {
   const titles = Array.isArray(title) ? title : [title];
 
