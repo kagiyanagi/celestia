@@ -1,7 +1,7 @@
 import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { WatchlistPageClient } from "@/components/watchlist-page-client";
-import { getPrivateUser } from "@/lib/account-store";
+import { getLibraryEntries } from "@/lib/account-store";
 import { syncAniListLibrary } from "@/lib/anilist-sync";
 import { getSessionUser } from "@/lib/auth";
 
@@ -19,11 +19,7 @@ export default async function WatchlistPage({
   // Render from the local library immediately; pull AniList edits in
   // (freshness-guarded) in the background so the page isn't gated on a remote
   // round-trip. Externally-made edits surface on the next navigation.
-  const user = await getPrivateUser(sessionUser.id);
-
-  if (!user) {
-    redirect("/profile");
-  }
+  const entries = await getLibraryEntries(sessionUser.id);
 
   after(() => {
     void syncAniListLibrary(sessionUser.id);
@@ -35,7 +31,7 @@ export default async function WatchlistPage({
 
   return (
     <WatchlistPageClient
-      entries={user.libraryEntries}
+      entries={entries}
       initialView={{
         tab: single(params.tab),
         sort: single(params.sort),

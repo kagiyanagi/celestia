@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { getLibraryEntries } from "@/lib/account-store";
 import { getSessionUser, getViewerIncludesAdult } from "@/lib/auth";
 import { getRecommendationsFromSeeds } from "@/lib/providers/anilist";
 
@@ -14,7 +15,7 @@ export async function GET() {
     return NextResponse.json({ items: [] });
   }
 
-  const library = user.libraryEntries ?? [];
+  const library = await getLibraryEntries(user.id);
   const seedIds = library
     .filter((entry) => SEED_STATUSES.includes(entry.status))
     .sort((a, b) => (b.score || 0) - (a.score || 0))

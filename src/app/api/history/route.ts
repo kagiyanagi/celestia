@@ -2,6 +2,8 @@ import { NextResponse, after } from "next/server";
 import {
   clearHistory,
   deleteHistoryEntry,
+  getHistoryEntries,
+  getLibraryEntry,
   getPrivateUser,
   recordHistory,
   upsertLibraryEntry,
@@ -32,8 +34,9 @@ function clampEpisode(value: unknown, max: number | null | undefined) {
 export async function GET() {
   try {
     const sessionUser = await requireSessionUser();
-    const user = await getPrivateUser(sessionUser.id);
-    return NextResponse.json({ entries: user?.historyEntries || [] });
+    return NextResponse.json({
+      entries: await getHistoryEntries(sessionUser.id),
+    });
   } catch {
     return NextResponse.json({ entries: [] }, { status: 401 });
   }
@@ -99,9 +102,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ entry: historyEntry, syncWarning: null });
     }
 
-    const currentLibraryEntry =
-      user.libraryEntries.find((entry) => entry.animeId === body.anime.id) ||
-      null;
+    const currentLibraryEntry = await getLibraryEntry(user.id, body.anime.id);
     const nextStatus =
       body.anime.episodes && episode >= body.anime.episodes
         ? "completed"

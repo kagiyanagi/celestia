@@ -6,7 +6,7 @@ import {
 } from "@/lib/providers/anilist";
 import { getRecentDubDrops } from "@/lib/providers/anime-schedule";
 import { getAnimeNews } from "@/lib/providers/jikan";
-import type { LibraryStatus, PublicUser } from "@/types/account";
+import type { LibraryEntry, LibraryStatus, SessionUser } from "@/types/account";
 import type { AnimeNotification, AnimeSummary, AnimeNewsArticle } from "@/types/anime";
 
 // How far back a release still counts as "new".
@@ -47,8 +47,11 @@ function trackedSince(entry: { addedAt?: string | null; updatedAt: string }) {
   return Number.isFinite(epoch) ? epoch : 0;
 }
 
-function getNotificationCacheKey(user: PublicUser): string {
-  const libraryVersion = (user.libraryEntries || [])
+function getNotificationCacheKey(
+  user: SessionUser,
+  library: LibraryEntry[],
+): string {
+  const libraryVersion = library
     .map((entry) => `${entry.animeId}:${entry.status}:${entry.updatedAt}`)
     .join(",");
 
@@ -86,10 +89,11 @@ export function clearUserNotificationCache(userId: string) {
  * report as aired appear.
  */
 export async function getUserNotifications(
-  user: PublicUser,
+  user: SessionUser,
+  library: LibraryEntry[],
 ): Promise<NotificationPayload> {
   const mutedIds = new Set(user.mutedAnimeIds ?? []);
-  const tracked = (user.libraryEntries || []).filter(
+  const tracked = library.filter(
     (entry) =>
       NOTIFY_STATUSES.has(entry.status) && !mutedIds.has(entry.animeId),
   );
@@ -97,7 +101,7 @@ export async function getUserNotifications(
   const newsStatuses = new Set<LibraryStatus>(
     user.preferences.notifyNewsStatuses ?? ["watching", "planning"]
   );
-  const newsTracked = (user.libraryEntries || [])
+  const newsTracked = library
     .filter(
       (entry) =>
         newsStatuses.has(entry.status) &&
@@ -126,10 +130,10 @@ export async function getUserNotifications(
 
   const limited = tracked.slice(0, MAX_TRACKED);
   const ids = limited.map((entry) => entry.animeId);
-  const allAnimeById = new Map((user.libraryEntries || []).map((entry) => [entry.animeId, entry.anime]));
+  const allAnimeById = new Map(library.map((entry) => [entry.animeId, entry.anime]));
   // Per-anime cutoff: a drop only counts once the show is on the user's list.
   const trackedSinceById = new Map(
-    (user.libraryEntries || []).map((entry) => [entry.animeId, trackedSince(entry)]),
+    library.map((entry) => [entry.animeId, trackedSince(entry)]),
   );
 
   const [subDrops, dubDrops, upcoming] = await Promise.all([
@@ -323,16 +327,17 @@ function groupNotifications(
 }
 
 export async function getCachedUserNotifications(
-  user: PublicUser,
+  user: SessionUser,
+  library: LibraryEntry[],
 ): Promise<NotificationPayload> {
-  const key = getNotificationCacheKey(user);
+  const key = getNotificationCacheKey(user, library);
   const cached = notificationCache.get(key);
 
   if (cached && cached.expiresAt > Date.now()) {
     return cached.payload;
   }
 
-  const payload = await getUserNotifications(user);
+  const payload = await getUserNotifications(user, library);
   notificationCache.set(key, {
     payload,
     expiresAt: Date.now() + NOTIFICATION_CACHE_TTL_MS,
