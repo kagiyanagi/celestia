@@ -19,13 +19,13 @@ export async function GET(request: Request) {
     const code = searchParams.get("code");
     const state = searchParams.get("state");
     const cookieStore = await cookies();
-    const expectedState = cookieStore.get("celestia_anilist_state")?.value;
+    const expectedState = cookieStore.get("mirucast_anilist_state")?.value;
 
     if (!code || !state || state !== expectedState) {
       throw new Error("Invalid AniList callback state.");
     }
 
-    cookieStore.delete("celestia_anilist_state");
+    cookieStore.delete("mirucast_anilist_state");
 
     const accessToken = await exchangeAniListCode(code);
     const profile = await getAniListViewerProfile(accessToken);

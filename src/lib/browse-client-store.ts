@@ -14,10 +14,10 @@ export type FilterPreset = {
 
 const PRESET_LIMIT = 12;
 const RECENT_LIMIT = 8;
-const RECENT_KEY = "celestia:browse:recent";
+const RECENT_KEY = "mirucast:browse:recent";
 
 function presetKey(section: BrowseSectionKey): string {
-  return `celestia:browse:presets:${section}`;
+  return `mirucast:browse:presets:${section}`;
 }
 
 function isBrowser(): boolean {

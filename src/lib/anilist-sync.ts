@@ -11,7 +11,7 @@ import type { PublicUser } from "@/types/account";
 const SYNC_STALE_MS = 60_000;
 
 /**
- * Pulls the user's AniList library back into Celestia so edits made directly on
+ * Pulls the user's AniList library back into MiruCast so edits made directly on
  * AniList (status, progress, score, newly added/removed-from-the-tracker shows)
  * surface here. Best-effort: returns the updated user on a successful pull, or
  * null when there's nothing to do (no AniList link, recently synced, or the

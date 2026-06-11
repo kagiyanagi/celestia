@@ -1,12 +1,12 @@
-# Celestia
+# MiruCast
 
-Celestia is an anime watching and tracking application built on the Next.js App Router. It treats **AniList as the source of truth** for metadata and library sync, and **streaming as interchangeable infrastructure** — you bring your own playback provider, and the rest of the app keeps working if it goes down.
+MiruCast is an anime watching and tracking application built on the Next.js App Router. It treats **AniList as the source of truth** for metadata and library sync, and **streaming as interchangeable infrastructure** — you bring your own playback provider, and the rest of the app keeps working if it goes down.
 
-> **No streaming source is bundled.** Celestia is a metadata, tracking, and discovery app. Video playback is entirely bring-your-own: configure your own provider API through the `STREAMING_PROVIDER_*` environment variables. No endpoint is included, referenced, or enabled by default. The maintainers do not host, provide, proxy, or endorse any streaming source.
+> **No streaming source is bundled.** MiruCast is a metadata, tracking, and discovery app. Video playback is entirely bring-your-own: configure your own provider API through the `STREAMING_PROVIDER_*` environment variables. No endpoint is included, referenced, or enabled by default. The maintainers do not host, provide, proxy, or endorse any streaming source.
 
 ## Why It Exists
 
-Most anime trackers are either pure trackers (no watching) or pure streaming sites (no tracking). Celestia aims to close the gap: a personal watching dashboard where your library, watch history, AniList sync, and episode browsing all live in one place — with streaming remaining optional and pluggable.
+Most anime trackers are either pure trackers (no watching) or pure streaming sites (no tracking). MiruCast aims to close the gap: a personal watching dashboard where your library, watch history, AniList sync, and episode browsing all live in one place — with streaming remaining optional and pluggable.
 
 ## Stack
 
@@ -67,7 +67,7 @@ Copy `.env.example` to `.env.local`. Required variables are marked.
 
 ## Architecture Overview
 
-Celestia is built around a strict **provider boundary**: external APIs are never called from pages or UI components. Every integration lives in `src/lib/providers/` and returns app-owned types from `src/types/`. UI components depend only on those normalized shapes.
+MiruCast is built around a strict **provider boundary**: external APIs are never called from pages or UI components. Every integration lives in `src/lib/providers/` and returns app-owned types from `src/types/`. UI components depend only on those normalized shapes.
 
 Storage is **dual-mode**: a Postgres store (`DATABASE_URL` set) for production, and a local JSON file store for development — both implement the same `Store` interface from `src/lib/db.ts`.
 
@@ -132,7 +132,7 @@ data/
 
 ## Deployment
 
-Celestia deploys to **Vercel** (serverless) or **Railway** (long-lived Node):
+MiruCast deploys to **Vercel** (serverless) or **Railway** (long-lived Node):
 
 ```bash
 pnpm build   # Build the production bundle

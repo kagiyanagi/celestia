@@ -17,7 +17,7 @@ export async function GET() {
     return new Response(xml, {
       headers: {
         "Content-Type": "application/xml; charset=utf-8",
-        "Content-Disposition": 'attachment; filename="celestia-anime-list.xml"',
+        "Content-Disposition": 'attachment; filename="mirucast-anime-list.xml"',
       },
     });
   } catch {

@@ -73,7 +73,7 @@ export function AnimeCard({
             className="poster-image"
           />
         ) : (
-          <span className="poster-fallback">Celestia</span>
+          <span className="poster-fallback">MiruCast</span>
         )}
         <LibraryStatusChip animeId={anime.id} />
         <CardQuickAdd anime={anime} />

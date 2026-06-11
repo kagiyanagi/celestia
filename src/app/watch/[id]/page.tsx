@@ -452,7 +452,7 @@ export default async function WatchPage({
   // Honor the remembered server (set by the panel on switch) when the URL
   // carries no explicit server.
   const preferredServer =
-    server ?? (await cookies()).get("celestia_server")?.value;
+    server ?? (await cookies()).get("mirucast_server")?.value;
   const activeProviderId =
     getActiveStreamingProviderId(preferredServer) ||
     providerOptions[0]?.id ||

@@ -40,7 +40,7 @@ type BrowsePageShellProps = {
   showSectionTitle?: boolean;
 };
 
-const VIEW_KEY = "celestia:browse:view";
+const VIEW_KEY = "mirucast:browse:view";
 
 // Curated quick-pick genres; only those AniList actually offers are shown.
 const PILL_GENRES = [

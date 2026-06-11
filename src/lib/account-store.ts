@@ -371,7 +371,7 @@ function mergeAniListPull(current: LibraryEntry[], incoming: LibraryEntry[]) {
 
 /**
  * Folds AniList list-activity ("watched episode N") into local watch history so
- * episodes marked watched on AniList surface in Celestia. A native Celestia
+ * episodes marked watched on AniList surface in MiruCast. A native MiruCast
  * watch for the same anime+episode always wins (it carries the real still/title
  * and an actual local watch), so this only fills gaps. AniList exposes no
  * per-episode still or title, so those stay empty and the card falls back to

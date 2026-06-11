@@ -156,7 +156,7 @@ const SAMPLE_COMMENTS: {
 }[] = [
   {
     id: 1,
-    author: "celestia",
+    author: "mirucast",
     when: "2 hours ago",
     body: "Comments aren't live yet — this is a preview of how the thread will look once they ship.",
   },

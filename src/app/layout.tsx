@@ -28,11 +28,11 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   title: {
-    default: "Celestia - Watch Anime",
-    template: "%s | Celestia",
+    default: "MiruCast - Watch Anime",
+    template: "%s | MiruCast",
   },
   description:
-    "Watch anime, discover new seasons, and keep track of every episode with Celestia.",
+    "Watch anime, discover new seasons, and keep track of every episode with MiruCast.",
   metadataBase: new URL("http://localhost:3000"),
   icons: {
     icon: "/icon.svg",

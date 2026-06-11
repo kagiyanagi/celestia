@@ -62,7 +62,7 @@ export function AuthPanel() {
         ) : (
           <div className="user-badge">Signed In</div>
         )}
-        <h2>{user?.isGuest ? "Welcome to Celestia" : "Account Settings"}</h2>
+        <h2>{user?.isGuest ? "Welcome to MiruCast" : "Account Settings"}</h2>
         <p>
           {user?.isGuest
             ? "Your progress is being saved locally. Connect AniList to sync across devices."

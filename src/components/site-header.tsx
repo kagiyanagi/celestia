@@ -66,7 +66,7 @@ export function SiteHeader() {
     }
 
     let cancelled = false;
-    const cacheKey = `celestia:notifications:count:${userId}`;
+    const cacheKey = `mirucast:notifications:count:${userId}`;
     const refresh = (force = false) => {
       if (!force) {
         try {
@@ -129,8 +129,8 @@ export function SiteHeader() {
                 <ArrowLeft size={18} aria-hidden />
               </button>
             ) : null}
-            <Link className="brand-mark" href="/" aria-label="Celestia home">
-              CELESTIA
+            <Link className="brand-mark" href="/" aria-label="MiruCast home">
+              MIRUCAST
             </Link>
           </div>
 

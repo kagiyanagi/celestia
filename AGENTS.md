@@ -4,7 +4,7 @@ This file is the contributor guide for both AI agents and human developers. It c
 
 ## Project
 
-**Celestia** is an anime watching and tracking site built on Next.js 15 (App Router), React 19, and TypeScript in strict mode. AniList is the primary metadata and library-sync source. Streaming is routed through a swappable provider adapter and is deliberately treated as non-core, replaceable infrastructure.
+**MiruCast** is an anime watching and tracking site built on Next.js 15 (App Router), React 19, and TypeScript in strict mode. AniList is the primary metadata and library-sync source. Streaming is routed through a swappable provider adapter and is deliberately treated as non-core, replaceable infrastructure.
 
 The production bar before any change: `pnpm lint` + `pnpm typecheck` + `pnpm build` — all green.
 

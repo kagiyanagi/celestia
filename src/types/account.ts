@@ -120,7 +120,7 @@ export type UserRecord = {
   joinedAt: string;
   aniListAccessToken: string | null;
   aniListProfile: AniListProfile | null;
-  /** ISO timestamp of the last AniList → Celestia library pull; gates re-sync frequency. */
+  /** ISO timestamp of the last AniList → MiruCast library pull; gates re-sync frequency. */
   aniListSyncedAt?: string | null;
   preferences: UserPreferences;
   /** Anime ids the user has muted; no notifications are produced for them. */

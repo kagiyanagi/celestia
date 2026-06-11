@@ -1,10 +1,10 @@
 # CLAUDE.md
 
-This file is the deep technical reference for the Celestia codebase. It covers architecture, every provider, all conventions, streaming rules, auth and session flow, and storage modes. Read this before making changes to `src/lib/`, `src/app/api/`, or the type system.
+This file is the deep technical reference for the MiruCast codebase. It covers architecture, every provider, all conventions, streaming rules, auth and session flow, and storage modes. Read this before making changes to `src/lib/`, `src/app/api/`, or the type system.
 
 ## Project
 
-Celestia is an anime watching and tracking site built on Next.js 15 (App Router), React 19, and TypeScript strict mode. AniList is the primary metadata and tracking source. Streaming is routed through a swappable provider adapter and is treated as **replaceable, non-core infrastructure** — the rest of the app must stay fully functional if streaming goes down.
+MiruCast is an anime watching and tracking site built on Next.js 15 (App Router), React 19, and TypeScript strict mode. AniList is the primary metadata and tracking source. Streaming is routed through a swappable provider adapter and is treated as **replaceable, non-core infrastructure** — the rest of the app must stay fully functional if streaming goes down.
 
 ## Commands
 
@@ -144,7 +144,7 @@ A `LibraryEntry` carries: status (`planning` / `watching` / `on_hold` / `dropped
 
 - **Push (write-through):** editing the library (`/api/library`) or recording an episode (`/api/history`) also calls `saveAniListLibraryEntry` when the user has a linked token. The returned AniList list-entry id is persisted as `aniListEntryId` so later writes target the exact remote row instead of creating duplicates.
 - **Pull (read-back):** `syncAniListLibrary` (`anilist-sync.ts`) fetches the viewer's AniList library and profile then merges via `applyAniListSync`. Gated by `aniListSyncedAt` with a 60-second TTL (`{ force: true }` bypasses it). A failed pull is swallowed — sync must never break a page.
-- **Conflict resolution:** newest-`updatedAt`-wins, where AniList's real edit time drives it (`mergeAniListPull`). Local-only entries (never on AniList) are preserved; removals on AniList are not mirrored. AniList watch activity is merged into Celestia history (`mergeAniListHistory`), skipped entirely when `preferences.pauseHistory` is set.
+- **Conflict resolution:** newest-`updatedAt`-wins, where AniList's real edit time drives it (`mergeAniListPull`). Local-only entries (never on AniList) are preserved; removals on AniList are not mirrored. AniList watch activity is merged into MiruCast history (`mergeAniListHistory`), skipped entirely when `preferences.pauseHistory` is set.
 
 **List import:** `mal-import.ts` parses MyAnimeList and AniList XML export formats into MAL-id-keyed entries. `/api/library/import` resolves those ids to AniList summaries and bulk-loads them through `importLibraryEntries` (size/entry-count guarded, malformed rows skipped). Import reuses the same newest-wins merge as sync, so it never clobbers newer local edits.
 
@@ -152,14 +152,14 @@ A `LibraryEntry` carries: status (`planning` / `watching` / `on_hold` / `dropped
 
 ## Auth & Sessions
 
-`src/lib/auth.ts` owns cookie sessions (`celestia_session`), scrypt password hashing, guest accounts, and device tracking.
+`src/lib/auth.ts` owns cookie sessions (`mirucast_session`), scrypt password hashing, guest accounts, and device tracking.
 
 - `requireSessionUser()` / `getSessionUser()` gate API routes and return a **redacted, slim `SessionUser`** — no library, no history, never the raw `UserRecord` secrets.
 - `getSessionPublicUser()` assembles the full `PublicUser` (slim user + library + history) for the client bootstrap.
 - Session IDs are regenerated on privilege escalation (e.g. AniList OAuth link).
 - Stored OAuth tokens are encrypted at rest by `src/lib/crypto.ts` (AES-256-GCM keyed off `APP_SECRET`; self-describing `enc:v1:` prefix; dev falls back to a machine-local secret).
 
-**AniList OAuth flow:** `/api/anilist/connect` (sets the `celestia_anilist_state` cookie, requires a session) → AniList authorize → `/api/anilist/callback` verifies state and exchanges the code. Token encrypted at rest, session regenerated on link.
+**AniList OAuth flow:** `/api/anilist/connect` (sets the `mirucast_anilist_state` cookie, requires a session) → AniList authorize → `/api/anilist/callback` verifies state and exchanges the code. Token encrypted at rest, session regenerated on link.
 
 ---
 
