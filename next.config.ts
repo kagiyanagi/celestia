@@ -22,6 +22,10 @@ const nextConfig: NextConfig = {
     ];
   },
   images: {
+    // All image sources are third-party CDNs (AniList, Kitsu, TVDB, TMDB, MAL)
+    // that already serve resized, cached images, so we skip Vercel's optimizer
+    // entirely. next/image still gives us lazy-loading, priority, and CLS.
+    unoptimized: true,
     qualities: [75, 90],
     remotePatterns: [
       { protocol: "https", hostname: "s4.anilist.co" },
