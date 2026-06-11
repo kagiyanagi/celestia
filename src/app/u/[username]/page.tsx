@@ -37,9 +37,9 @@ export async function generateMetadata({
   }
 
   return {
-    title: `${profile.displayName} (@${profile.username}) · Celestia`,
+    title: `${profile.displayName} (@${profile.username}) · MiruCast`,
     description:
-      profile.about || `${profile.displayName}'s anime profile on Celestia.`,
+      profile.about || `${profile.displayName}'s anime profile on MiruCast.`,
     openGraph: {
       images: profile.banner
         ? [profile.banner]

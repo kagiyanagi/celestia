@@ -11,7 +11,7 @@ type MissedSequelsPageClientProps = {
   initialItems: AnimeSummary[];
 };
 
-const VIEW_KEY = "celestia:browse:view";
+const VIEW_KEY = "mirucast:browse:view";
 
 export function MissedSequelsPageClient({ initialItems }: MissedSequelsPageClientProps) {
   const [view, setView] = useState<BrowseView>("grid");

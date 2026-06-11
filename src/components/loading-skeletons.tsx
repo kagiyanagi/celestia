@@ -12,21 +12,21 @@ export function HomeSkeleton() {
   return (
     <div className="home-skeleton-wrapper" aria-label="Loading homepage">
       {/* Hero Slide Skeleton */}
-      <div className="celestia-hero" style={{ height: "70vh", minHeight: "540px" }}>
+      <div className="mirucast-hero" style={{ height: "70vh", minHeight: "540px" }}>
         <div className="skeleton" style={{ width: "100%", height: "100%" }} />
-        <div className="celestia-hero-shade" />
-        <div className="celestia-copy" style={{ zIndex: 10 }}>
-          <div className="celestia-copy-main" style={{ width: "100%" }}>
+        <div className="mirucast-hero-shade" />
+        <div className="mirucast-copy" style={{ zIndex: 10 }}>
+          <div className="mirucast-copy-main" style={{ width: "100%" }}>
             <div className="skeleton-text" style={{ width: "60%", height: "3.2rem", marginBottom: "16px" }} />
             <div className="skeleton-text" style={{ width: "40%", height: "1.1rem", marginBottom: "8px" }} />
             <div className="skeleton-text" style={{ width: "80%", height: "0.9rem", marginBottom: "8px" }} />
             <div className="skeleton-text" style={{ width: "70%", height: "0.9rem", marginBottom: "24px" }} />
-            <div className="celestia-pills" style={{ marginBottom: "20px" }}>
+            <div className="mirucast-pills" style={{ marginBottom: "20px" }}>
               {repeat(4, (i) => (
                 <div key={i} className="skeleton" style={{ width: "70px", height: "30px", borderRadius: "999px" }} />
               ))}
             </div>
-            <div className="celestia-actions">
+            <div className="mirucast-actions">
               <div className="skeleton" style={{ width: "140px", height: "46px", borderRadius: "999px" }} />
               <div className="skeleton" style={{ width: "46px", height: "46px", borderRadius: "999px" }} />
             </div>

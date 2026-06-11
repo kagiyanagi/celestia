@@ -13,7 +13,7 @@ export async function GET() {
     await requireSessionUser();
     const state = createState();
     const cookieStore = await cookies();
-    cookieStore.set("celestia_anilist_state", state, {
+    cookieStore.set("mirucast_anilist_state", state, {
       httpOnly: true,
       sameSite: "lax",
       path: "/",

@@ -22,7 +22,7 @@ type LocalTrackerProps = {
 const DEBOUNCE_MS = 500;
 
 export function LocalTracker({ animeId, totalEpisodes }: LocalTrackerProps) {
-  const storageKey = `celestia:track:${animeId}`;
+  const storageKey = `mirucast:track:${animeId}`;
   const { toast } = useToast();
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Track the initial state so we don't toast on first hydration

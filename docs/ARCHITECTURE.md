@@ -1,8 +1,8 @@
-# Celestia Architecture
+# MiruCast Architecture
 
 ## Overview
 
-Celestia is built around a strict **provider boundary**: no external API is ever called from a page or UI component. All integrations live in `src/lib/providers/` and return app-owned types from `src/types/`. This makes the UI resilient — a provider failure degrades gracefully without crashing unrelated pages.
+MiruCast is built around a strict **provider boundary**: no external API is ever called from a page or UI component. All integrations live in `src/lib/providers/` and return app-owned types from `src/types/`. This makes the UI resilient — a provider failure degrades gracefully without crashing unrelated pages.
 
 ---
 
@@ -60,7 +60,7 @@ Tracking data is never stored on the user row. The hot `getSessionUser()` auth p
 ## Auth & Sessions
 
 `src/lib/auth.ts` owns:
-- Cookie sessions (`celestia_session`)
+- Cookie sessions (`mirucast_session`)
 - scrypt password hashing
 - Guest account creation
 - Device tracking
@@ -84,7 +84,7 @@ Library and history live in their own normalized tables, not on the user row. Ev
 **Merge semantics:**
 - `mergeLibraryEntries` — incoming always wins. Used for initial AniList connect and XML imports.
 - `mergeAniListPull` — newest-`updatedAt`-wins. Used for routine sync pulls.
-- `mergeAniListHistory` — AniList activity is re-derived from the current feed each sync (old `anilist-` prefixed entries replaced). Native Celestia watches (UUID ids) are always kept.
+- `mergeAniListHistory` — AniList activity is re-derived from the current feed each sync (old `anilist-` prefixed entries replaced). Native MiruCast watches (UUID ids) are always kept.
 
 ---
 

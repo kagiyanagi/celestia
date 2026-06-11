@@ -10,7 +10,7 @@ export function SiteFooter() {
         </blockquote>
         <div className="site-footer-meta">
           <Link className="brand-mark site-footer-brand" href="/">
-            CELESTIA
+            MIRUCAST
           </Link>
           <span className="site-footer-note">
             Watch &amp; track anime. Metadata via AniList.

@@ -42,7 +42,7 @@ type KitsuEpisodesResponse = {
 const KITSU_HEADERS = {
   Accept: "application/vnd.api+json",
   // Kitsu rejects requests without a User-Agent (403).
-  "User-Agent": "celestia/1.0 (+https://github.com/celestia)",
+  "User-Agent": "mirucast/1.0 (+https://github.com/mirucast)",
 };
 
 function pickThumbnail(thumbnail: KitsuThumbnail | null | undefined): string | null {

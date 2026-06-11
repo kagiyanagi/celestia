@@ -51,7 +51,7 @@ export function DetailsHero({
                 sizes="300px"
               />
             ) : (
-              <div className="poster-placeholder">CELESTIA</div>
+              <div className="poster-placeholder">MIRUCAST</div>
             )}
           </div>
           <div className="hero-actions-row">

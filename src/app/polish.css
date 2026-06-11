@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────────────────────
-   Celestia Design Layer — monochrome, professional
+   MiruCast Design Layer — monochrome, professional
    Overrides globals.css where needed; does NOT duplicate base layout rules.
    ───────────────────────────────────────────────────────────────────────── */
 
@@ -150,7 +150,7 @@ body {
 
 /* ── Buttons — unified white-on-black primary ───────────────────────────── */
 
-.celestia-watch,
+.mirucast-watch,
 .watch-button,
 .wide-watch-link,
 .hero-watch-btn,
@@ -166,7 +166,7 @@ body {
         transform 120ms ease;
 }
 
-.celestia-watch:hover,
+.mirucast-watch:hover,
 .watch-button:hover,
 .wide-watch-link:hover,
 .hero-watch-btn:hover,
@@ -180,7 +180,7 @@ body {
 .detail-actions a,
 .episode-nav a,
 .search-box button,
-.celestia-more,
+.mirucast-more,
 .hero-icon-btn,
 .sidebar-plus-btn {
     background: rgba(255, 255, 255, 0.06);
@@ -194,7 +194,7 @@ body {
 .detail-actions a:hover,
 .episode-nav a:hover,
 .search-box button:hover,
-.celestia-more:hover,
+.mirucast-more:hover,
 .hero-icon-btn:hover,
 .sidebar-plus-btn:hover {
     background: rgba(255, 255, 255, 0.1);
@@ -203,12 +203,12 @@ body {
 
 /* ── Carousel dots ──────────────────────────────────────────────────────── */
 
-.celestia-dots button {
+.mirucast-dots button {
     background: rgba(255, 255, 255, 0.18);
     border-color: transparent;
 }
 
-.celestia-dots button.active {
+.mirucast-dots button.active {
     background: #ffffff;
 }
 
@@ -956,21 +956,21 @@ body.watch-theater-active .watch-player-frame {
         padding-top: 92px;
     }
 
-    .celestia-hero-inner {
+    .mirucast-hero-inner {
         aspect-ratio: 3 / 4;
         max-height: 82vh;
         min-height: 570px;
     }
 
-    .celestia-hero-cover {
+    .mirucast-hero-cover {
         display: block;
     }
 
-    .celestia-hero-backdrop {
+    .mirucast-hero-backdrop {
         display: none;
     }
 
-    .celestia-hero-shade {
+    .mirucast-hero-shade {
         background:
             linear-gradient(
                 to bottom,
@@ -987,7 +987,7 @@ body.watch-theater-active .watch-player-frame {
             );
     }
 
-    .celestia-copy {
+    .mirucast-copy {
         flex-direction: column;
         align-items: center;
         justify-content: flex-end;
@@ -996,17 +996,17 @@ body.watch-theater-active .watch-player-frame {
         gap: 8px;
     }
 
-    .celestia-dots {
+    .mirucast-dots {
         bottom: 16px;
     }
 
-    .celestia-copy-main {
+    .mirucast-copy-main {
         max-width: 100%;
         justify-items: center;
         gap: 10px;
     }
 
-    .celestia-copy-main h1 {
+    .mirucast-copy-main h1 {
         display: -webkit-box;
         -webkit-box-orient: vertical;
         -webkit-line-clamp: 2;
@@ -1015,7 +1015,7 @@ body.watch-theater-active .watch-player-frame {
         line-height: 1.12;
     }
 
-    .celestia-description {
+    .mirucast-description {
         display: -webkit-box;
         -webkit-box-orient: vertical;
         -webkit-line-clamp: 2;
@@ -1025,24 +1025,24 @@ body.watch-theater-active .watch-player-frame {
         line-height: 1.5;
     }
 
-    .celestia-pills {
+    .mirucast-pills {
         justify-content: center;
         gap: 6px;
     }
 
-    .celestia-pills span {
+    .mirucast-pills span {
         padding: 4px 10px;
         font-size: 0.75rem;
     }
 
-    .celestia-actions {
+    .mirucast-actions {
         width: 100%;
         justify-content: center;
         gap: 8px;
         margin-top: 8px;
     }
 
-    .celestia-watch {
+    .mirucast-watch {
         min-height: 44px;
         padding: 0 18px;
         font-size: 0.9rem;
@@ -1082,8 +1082,8 @@ button:not(:disabled),
 .hero-watch-btn,
 .hero-icon-btn,
 .hero-db-btn,
-.celestia-watch,
-.celestia-more,
+.mirucast-watch,
+.mirucast-more,
 .primary-action,
 .secondary-action,
 .watch-action-button,
@@ -1119,8 +1119,8 @@ button:not(:disabled),
     .hero-watch-btn,
     .hero-icon-btn,
     .hero-db-btn,
-    .celestia-watch,
-    .celestia-more,
+    .mirucast-watch,
+    .mirucast-more,
     .primary-action,
     .secondary-action,
     .watch-action-button,

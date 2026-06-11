@@ -755,7 +755,7 @@ function WatchlistGridCard({
             className="poster-image"
           />
         ) : (
-          <span className="poster-fallback">Celestia</span>
+          <span className="poster-fallback">MiruCast</span>
         )}
         <LibraryStatusChip status={entry.status} />
 

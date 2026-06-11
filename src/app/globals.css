@@ -521,7 +521,7 @@ main {
     gap: 8px;
 }
 
-.celestia-hero {
+.mirucast-hero {
     position: relative;
     overflow: hidden;
     background: #090909;
@@ -532,7 +532,7 @@ main {
     margin-bottom: 32px;
 }
 
-.celestia-hero-inner {
+.mirucast-hero-inner {
     position: relative;
     width: 100%;
     aspect-ratio: 21 / 9;
@@ -541,25 +541,25 @@ main {
     overflow: hidden;
 }
 
-.celestia-hero-track {
+.mirucast-hero-track {
     display: flex;
     height: 100%;
     transition: transform 700ms var(--ease-spring);
 }
 
-.celestia-slide {
+.mirucast-slide {
     position: relative;
     flex: 0 0 100%;
     width: 100%;
     height: 100%;
 }
 
-.celestia-hero-backdrop {
+.mirucast-hero-backdrop {
     object-fit: cover;
     object-position: center 20%;
 }
 
-.celestia-hero-cover {
+.mirucast-hero-cover {
     display: none;
     object-fit: cover;
     object-position: center top;
@@ -585,7 +585,7 @@ main {
     filter: blur(20px) saturate(0.95) brightness(0.6);
 }
 
-.celestia-hero-shade {
+.mirucast-hero-shade {
     position: absolute;
     inset: 0;
     background:
@@ -638,7 +638,7 @@ main {
     background-size: 160px 160px;
 }
 
-.celestia-copy {
+.mirucast-copy {
     position: absolute;
     inset: 0;
     z-index: 2;
@@ -655,13 +655,13 @@ main {
     align-items: flex-end;
 }
 
-.celestia-copy-main {
+.mirucast-copy-main {
     display: grid;
     gap: 12px;
     max-width: 580px;
 }
 
-.celestia-copy-main h1,
+.mirucast-copy-main h1,
 .detail-copy h1 {
     max-width: 16ch;
     font-family:
@@ -686,7 +686,7 @@ main {
     color: transparent;
 }
 
-.celestia-secondary,
+.mirucast-secondary,
 .native-title,
 .watch-info p,
 .search-hero p,
@@ -702,7 +702,7 @@ main {
     line-height: 1.65;
 }
 
-.celestia-description {
+.mirucast-description {
     max-width: 58ch;
     color: var(--muted-strong);
     line-height: 1.7;
@@ -713,7 +713,7 @@ main {
     overflow: hidden;
 }
 
-.celestia-pills,
+.mirucast-pills,
 .detail-hero-meta,
 .detail-actions,
 .episode-nav,
@@ -724,7 +724,7 @@ main {
     gap: 10px;
 }
 
-.celestia-pills span,
+.mirucast-pills span,
 .detail-hero-meta span,
 .upcoming-tags span,
 .tag-cloud span,
@@ -746,14 +746,14 @@ main {
     padding: 4px 12px;
 }
 
-.celestia-pills span,
+.mirucast-pills span,
 .detail-hero-meta span,
 .upcoming-tags span,
 .tag-cloud span {
     padding: 8px 12px;
 }
 
-.celestia-actions,
+.mirucast-actions,
 .detail-actions,
 .watch-topbar,
 .watch-info,
@@ -765,7 +765,7 @@ main {
     gap: 12px;
 }
 
-.celestia-watch,
+.mirucast-watch,
 .watch-button,
 .wide-watch-link,
 .detail-actions a,
@@ -785,7 +785,7 @@ main {
     cursor: pointer;
 }
 
-.celestia-more {
+.mirucast-more {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -796,7 +796,7 @@ main {
     background: rgba(255, 255, 255, 0.06);
 }
 
-.celestia-dots {
+.mirucast-dots {
     position: absolute;
     left: 0;
     right: 0;
@@ -807,7 +807,7 @@ main {
     gap: 10px;
 }
 
-.celestia-dots button {
+.mirucast-dots button {
     border: 1px solid var(--line);
     cursor: pointer;
     width: 42px;
@@ -816,11 +816,11 @@ main {
     background: rgba(255, 255, 255, 0.22);
 }
 
-.celestia-dots button.active {
+.mirucast-dots button.active {
     background: #ffffff;
 }
 
-.celestia-hero-arrow {
+.mirucast-hero-arrow {
     position: absolute;
     top: 50%;
     transform: translateY(-50%);
@@ -841,7 +841,7 @@ main {
         background 160ms ease;
 }
 
-.celestia-hero-kicker {
+.mirucast-hero-kicker {
     display: inline-flex;
     align-items: center;
     width: fit-content;
@@ -857,25 +857,25 @@ main {
     text-transform: uppercase;
 }
 
-.celestia-hero-arrow.prev {
+.mirucast-hero-arrow.prev {
     right: 70px;
 }
 
-.celestia-hero-arrow.next {
+.mirucast-hero-arrow.next {
     right: 18px;
 }
 
-.celestia-hero:hover .celestia-hero-arrow,
-.celestia-hero-arrow:focus-visible {
+.mirucast-hero:hover .mirucast-hero-arrow,
+.mirucast-hero-arrow:focus-visible {
     opacity: 1;
 }
 
-.celestia-hero-arrow:hover {
+.mirucast-hero-arrow:hover {
     background: rgba(0, 0, 0, 0.7);
 }
 
 @media (hover: none) {
-    .celestia-hero-arrow {
+    .mirucast-hero-arrow {
         opacity: 1;
     }
 }
@@ -2504,7 +2504,7 @@ b.schedule-tracked-tag.is-watched {
     transform: none !important;
 }
 
-.celestia-watch.disabled {
+.mirucast-watch.disabled {
     background: rgba(255, 255, 255, 0.1);
     color: rgba(255, 255, 255, 0.4);
     cursor: not-allowed;
@@ -3702,26 +3702,26 @@ b.schedule-tracked-tag.is-watched {
         bottom: 10px;
     }
 
-    .celestia-hero-inner,
-    .celestia-slide {
+    .mirucast-hero-inner,
+    .mirucast-slide {
         min-height: 460px;
         aspect-ratio: 4 / 5;
     }
 
-    .celestia-copy {
+    .mirucast-copy {
         width: 100%;
         min-height: auto;
         padding: 40px 20px 64px;
         gap: 16px;
     }
 
-    .celestia-copy h1,
+    .mirucast-copy h1,
     .detail-copy h1 {
         max-width: 100%;
         font-size: clamp(2.4rem, 12vw, 3.6rem);
     }
 
-    .celestia-dots {
+    .mirucast-dots {
         right: 20px;
         bottom: 24px;
         left: 20px;
@@ -8018,7 +8018,7 @@ main {
     animation-delay: 200ms;
 }
 
-.celestia-hero,
+.mirucast-hero,
 .search-hero {
     animation: fade-in 700ms var(--ease-spring) both;
 }
@@ -8079,7 +8079,7 @@ a:active .shelf-card {
         height: 36px;
     }
 
-    .celestia-hero {
+    .mirucast-hero {
         margin-top: -84px;
         margin-bottom: 24px;
     }
@@ -8092,12 +8092,12 @@ a:active .shelf-card {
         padding-top: 10rem;
     }
 
-    .celestia-hero-inner {
+    .mirucast-hero-inner {
         aspect-ratio: 4 / 5;
         min-height: 540px;
     }
 
-    .celestia-copy {
+    .mirucast-copy {
         flex-direction: column;
         align-items: center;
         justify-content: flex-end;
@@ -8105,47 +8105,47 @@ a:active .shelf-card {
         padding: 40px 20px 60px;
     }
 
-    .celestia-copy-main {
+    .mirucast-copy-main {
         max-width: 100%;
         gap: 8px;
         justify-items: center;
     }
 
-    .celestia-copy-main h1 {
+    .mirucast-copy-main h1 {
         font-size: 2.4rem;
         line-height: 1.1;
     }
 
-    .celestia-description {
+    .mirucast-description {
         display: none; /* Hide long descriptions on small mobile */
     }
 
-    .celestia-pills {
+    .mirucast-pills {
         justify-content: center;
         gap: 6px;
     }
 
-    .celestia-pills span {
+    .mirucast-pills span {
         padding: 4px 10px;
         font-size: 0.75rem;
     }
 
-    .celestia-actions {
+    .mirucast-actions {
         width: 100%;
         justify-content: center;
         margin-top: 16px;
     }
 
-    .celestia-watch {
+    .mirucast-watch {
         flex: 1;
         max-width: 200px;
     }
 
-    .celestia-dots {
+    .mirucast-dots {
         bottom: 16px;
     }
 
-    .celestia-dots button {
+    .mirucast-dots button {
         width: 32px;
     }
 }
@@ -9241,14 +9241,14 @@ html[data-theme="light"] {
 }
 
 /* Keep hero banners & video players dark with white text */
-[data-theme="light"] .celestia-copy,
+[data-theme="light"] .mirucast-copy,
 [data-theme="light"] .detail-hero-content,
 [data-theme="light"] .watch-topbar,
 [data-theme="light"] .watch-info {
     color: #ffffff;
 }
-[data-theme="light"] .celestia-copy .celestia-secondary,
-[data-theme="light"] .celestia-copy .celestia-description,
+[data-theme="light"] .mirucast-copy .mirucast-secondary,
+[data-theme="light"] .mirucast-copy .mirucast-description,
 [data-theme="light"] .detail-hero-content .detail-description,
 [data-theme="light"] .detail-hero-content .detail-hero-meta span,
 [data-theme="light"] .detail-hero-content .native-title,
@@ -9256,14 +9256,14 @@ html[data-theme="light"] {
 [data-theme="light"] .watch-info span {
     color: rgba(255, 255, 255, 0.7);
 }
-[data-theme="light"] .celestia-copy .celestia-pills span,
+[data-theme="light"] .mirucast-copy .mirucast-pills span,
 [data-theme="light"] .detail-hero-content .detail-hero-meta span,
 [data-theme="light"] .detail-hero-content .detail-actions a:not(.watch-button) {
     color: #ffffff;
     border-color: rgba(255, 255, 255, 0.15);
     background: rgba(255, 255, 255, 0.05);
 }
-[data-theme="light"] .celestia-copy .celestia-watch,
+[data-theme="light"] .mirucast-copy .mirucast-watch,
 [data-theme="light"] .detail-hero-content .detail-actions a.watch-button {
     background: #ffffff;
     color: #000000;

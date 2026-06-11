@@ -167,7 +167,7 @@ export function WatchPlayerPanel({
         // Remember the chosen server so the next visit defaults to it (read by
         // the page as a fallback when the URL carries no explicit server).
         if (resolved.server) {
-          document.cookie = `celestia_server=${resolved.server}; path=/; max-age=31536000; samesite=lax`;
+          document.cookie = `mirucast_server=${resolved.server}; path=/; max-age=31536000; samesite=lax`;
         }
 
         // Keep the URL shareable/refresh-safe without triggering a navigation

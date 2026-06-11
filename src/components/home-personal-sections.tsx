@@ -229,7 +229,7 @@ function HomeOnboarding({
           <Sparkles size={14} aria-hidden />
           Make it yours
         </span>
-        <h2>Track your anime with Celestia</h2>
+        <h2>Track your anime with MiruCast</h2>
         <p>
           {isGuest
             ? "Sign in to sync with AniList, keep your progress across devices, and pick up right where you left off."

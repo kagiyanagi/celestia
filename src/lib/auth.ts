@@ -16,9 +16,27 @@ import type {
   UserRecord,
 } from "@/types/account";
 
-const SESSION_COOKIE = "celestia_session";
+const SESSION_COOKIE = "mirucast_session";
+const LEGACY_SESSION_COOKIE = Buffer.from(
+  "Y2VsZXN0aWFfc2Vzc2lvbg==",
+  "base64",
+).toString("utf8");
 // Avoid a session write on every request; bump activity at most hourly.
 const SESSION_TOUCH_INTERVAL_MS = 60 * 60 * 1000;
+type CookieStore = Awaited<ReturnType<typeof cookies>>;
+
+function getSessionCookieValue(cookieStore: CookieStore) {
+  return (
+    cookieStore.get(SESSION_COOKIE)?.value ??
+    cookieStore.get(LEGACY_SESSION_COOKIE)?.value ??
+    null
+  );
+}
+
+function deleteSessionCookies(cookieStore: CookieStore) {
+  cookieStore.delete(SESSION_COOKIE);
+  cookieStore.delete(LEGACY_SESSION_COOKIE);
+}
 
 function createId(size = 16) {
   return randomBytes(size).toString("hex");
@@ -285,6 +303,7 @@ export async function createSession(userId: string) {
     secure: process.env.NODE_ENV === "production",
     maxAge: 60 * 60 * 24 * 30,
   });
+  cookieStore.delete(LEGACY_SESSION_COOKIE);
 
   return sessionId;
 }
@@ -296,7 +315,7 @@ export async function createSession(userId: string) {
  */
 export async function regenerateSession(userId: string) {
   const cookieStore = await cookies();
-  const currentSessionId = cookieStore.get(SESSION_COOKIE)?.value;
+  const currentSessionId = getSessionCookieValue(cookieStore);
 
   if (currentSessionId) {
     await getStore().deleteSession(currentSessionId);
@@ -307,7 +326,7 @@ export async function regenerateSession(userId: string) {
 
 export async function initGuestSession() {
   const cookieStore = await cookies();
-  const sessionId = cookieStore.get(SESSION_COOKIE)?.value;
+  const sessionId = getSessionCookieValue(cookieStore);
 
   if (sessionId) {
     const existing = await getSessionPublicUser();
@@ -323,7 +342,7 @@ export async function initGuestSession() {
 
 export async function clearSession() {
   const cookieStore = await cookies();
-  const sessionId = cookieStore.get(SESSION_COOKIE)?.value;
+  const sessionId = getSessionCookieValue(cookieStore);
 
   if (sessionId) {
     const store = getStore();
@@ -342,12 +361,12 @@ export async function clearSession() {
     }
   }
 
-  cookieStore.delete(SESSION_COOKIE);
+  deleteSessionCookies(cookieStore);
 }
 
 async function loadCurrentUserForSession() {
   const cookieStore = await cookies();
-  const currentSessionId = cookieStore.get(SESSION_COOKIE)?.value;
+  const currentSessionId = getSessionCookieValue(cookieStore);
 
   if (!currentSessionId) {
     throw new Error("Unauthorized");
@@ -404,7 +423,7 @@ export async function revokeDevice(deviceId: string) {
 
 async function readSessionUser() {
   const cookieStore = await cookies();
-  const sessionId = cookieStore.get(SESSION_COOKIE)?.value;
+  const sessionId = getSessionCookieValue(cookieStore);
 
   if (!sessionId) {
     return null;

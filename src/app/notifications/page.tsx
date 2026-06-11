@@ -5,7 +5,7 @@ import { getSessionUser } from "@/lib/auth";
 import { getUserNotifications } from "@/lib/notifications";
 
 export const metadata: Metadata = {
-  title: "Notifications • Celestia",
+  title: "Notifications • MiruCast",
 };
 
 export default async function NotificationsPage() {

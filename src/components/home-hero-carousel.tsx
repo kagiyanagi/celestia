@@ -193,7 +193,7 @@ export function HomeHeroCarousel({
 
   return (
     <section
-      className="celestia-hero"
+      className="mirucast-hero"
       role="region"
       aria-roledescription="carousel"
       aria-label="Featured anime"
@@ -210,9 +210,9 @@ export function HomeHeroCarousel({
       onTouchEnd={handleTouchEnd}
       style={{ cursor: isDragging ? "grabbing" : "grab" }}
     >
-      <div className="celestia-hero-inner">
+      <div className="mirucast-hero-inner">
         <div
-          className="celestia-hero-track"
+          className="mirucast-hero-track"
           style={{
             transform: `translateX(calc(-${activeIndex * 100}% + ${dragOffset}px))`,
             transition:
@@ -228,7 +228,7 @@ export function HomeHeroCarousel({
 
             return (
               <article
-                className="celestia-slide"
+                className="mirucast-slide"
                 key={item.id}
                 style={
                   {
@@ -244,7 +244,7 @@ export function HomeHeroCarousel({
                     priority={index === 0}
                     quality={90}
                     sizes="100vw"
-                    className="celestia-hero-backdrop"
+                    className="mirucast-hero-backdrop"
                     draggable={false}
                   />
                 ) : null}
@@ -256,22 +256,22 @@ export function HomeHeroCarousel({
                     priority={index === 0}
                     quality={90}
                     sizes="(max-width: 480px) 100vw, 1px"
-                    className="celestia-hero-cover"
+                    className="mirucast-hero-cover"
                     draggable={false}
                   />
                 ) : null}
-                <div className="celestia-hero-shade" />
-                <div className="celestia-copy">
-                  <div className="celestia-copy-main">
+                <div className="mirucast-hero-shade" />
+                <div className="mirucast-copy">
+                  <div className="mirucast-copy-main">
                     <Link
                       href={`/anime/${item.id}`}
-                      className="celestia-hero-title-link"
+                      className="mirucast-hero-title-link"
                       onClick={handleLinkClick}
                     >
                       <h1>{title}</h1>
                     </Link>
-                    <p className="celestia-description">{synopsis}</p>
-                    <div className="celestia-pills">
+                    <p className="mirucast-description">{synopsis}</p>
+                    <div className="mirucast-pills">
                       <span>{item.format || "Anime"}</span>
                       {typeof item.averageScore === "number" ? (
                         <span>
@@ -294,12 +294,12 @@ export function HomeHeroCarousel({
                     </div>
                   </div>
 
-                  <div className="celestia-actions">
+                  <div className="mirucast-actions">
                     {item.status === "NOT_YET_RELEASED" ? (
-                      <div className="celestia-watch disabled">Coming Soon</div>
+                      <div className="mirucast-watch disabled">Coming Soon</div>
                     ) : (
                       <Link
-                        className="celestia-watch"
+                        className="mirucast-watch"
                         href={`/watch/${item.id}?ep=1`}
                         onClick={handleLinkClick}
                       >
@@ -314,7 +314,7 @@ export function HomeHeroCarousel({
           })}
         </div>
 
-        <div className="celestia-dots" aria-label="Featured airing anime">
+        <div className="mirucast-dots" aria-label="Featured airing anime">
           {heroItems.map((item, index) => (
             <button
               aria-label={`Show ${getDisplayTitle(item.title, titleLanguage)}`}
