@@ -2016,6 +2016,220 @@ html[data-theme="light"] {
     color: var(--text-primary);
 }
 
+/* ── 404 / Not Found ─────────────────────────────────────────────────────── */
+
+.notfound-stage {
+    position: relative;
+    min-height: calc(100vh - 80px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    overflow: hidden;
+    isolation: isolate;
+}
+
+/* Animated TV-static field */
+.notfound-noise {
+    position: absolute;
+    inset: -50%;
+    z-index: -2;
+    opacity: 0.04;
+    background-image: radial-gradient(
+        var(--text) 0.5px,
+        transparent 0.5px
+    );
+    background-size: 4px 4px;
+    animation: notfound-noise-drift 0.4s steps(4) infinite;
+}
+
+.notfound-scanlines {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.04) 0px,
+        rgba(255, 255, 255, 0.04) 1px,
+        transparent 2px,
+        transparent 4px
+    );
+    mask-image: radial-gradient(circle at center, black 30%, transparent 80%);
+}
+
+.notfound-content {
+    position: relative;
+    max-width: 640px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.notfound-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted-strong);
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.notfound-glitch {
+    position: relative;
+    margin: 28px 0 8px;
+    font-weight: 800;
+    font-size: clamp(6rem, 26vw, 14rem);
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+    color: var(--text);
+    -webkit-text-stroke: 1px var(--line-strong);
+}
+
+.notfound-glitch::before,
+.notfound-glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    inset: 0;
+    color: var(--text);
+    opacity: 0.75;
+    mix-blend-mode: screen;
+}
+
+.notfound-glitch::before {
+    animation: notfound-glitch-x 2.6s infinite steps(2);
+    clip-path: inset(0 0 55% 0);
+}
+
+.notfound-glitch::after {
+    animation: notfound-glitch-y 3.4s infinite steps(2);
+    clip-path: inset(55% 0 0 0);
+}
+
+.notfound-title {
+    margin: 8px 0 12px;
+    font-size: clamp(1.5rem, 4vw, 2.1rem);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.notfound-copy {
+    margin: 0 0 32px;
+    max-width: 440px;
+    color: var(--muted);
+    line-height: 1.6;
+}
+
+.notfound-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    justify-content: center;
+}
+
+.notfound-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 20px;
+    border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--muted-strong);
+    font-weight: 600;
+    font-size: 0.92rem;
+    transition: transform 0.18s ease, background 0.18s ease, color 0.18s ease,
+        border-color 0.18s ease;
+}
+
+.notfound-btn:hover {
+    color: var(--text);
+    border-color: var(--text);
+    transform: translateY(-2px);
+}
+
+.notfound-btn-primary {
+    background: var(--text);
+    color: var(--bg);
+    border-color: var(--text);
+}
+
+.notfound-btn-primary:hover {
+    color: var(--bg);
+    opacity: 0.9;
+}
+
+.notfound-egg {
+    margin: 28px 0 0;
+    font-size: 0.78rem;
+    color: var(--muted);
+    opacity: 0.55;
+    font-style: italic;
+    cursor: help;
+    transition: opacity 0.18s ease;
+}
+
+.notfound-egg:hover {
+    opacity: 0.9;
+}
+
+@keyframes notfound-noise-drift {
+    0% {
+        transform: translate(0, 0);
+    }
+    100% {
+        transform: translate(4px, 4px);
+    }
+}
+
+@keyframes notfound-glitch-x {
+    0%,
+    92%,
+    100% {
+        transform: translate(0, 0);
+    }
+    94% {
+        transform: translate(-4px, 1px);
+    }
+    96% {
+        transform: translate(3px, -2px);
+    }
+    98% {
+        transform: translate(-2px, 2px);
+    }
+}
+
+@keyframes notfound-glitch-y {
+    0%,
+    90%,
+    100% {
+        transform: translate(0, 0);
+    }
+    93% {
+        transform: translate(3px, -1px);
+    }
+    95% {
+        transform: translate(-3px, 2px);
+    }
+    97% {
+        transform: translate(2px, -2px);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .notfound-noise,
+    .notfound-glitch::before,
+    .notfound-glitch::after {
+        animation: none;
+    }
+}
+
 
 
 
