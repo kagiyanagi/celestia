@@ -1979,6 +1979,7 @@ type RelationsQueryResult = {
 export async function getMissedSequels(
   libraryEntries: LibraryEntry[],
   includeAdult = false,
+  maxCompleted = 80,
 ): Promise<AnimeSummary[]> {
   const completed = libraryEntries.filter((entry) => entry.status === "completed");
 
@@ -1988,7 +1989,8 @@ export async function getMissedSequels(
     return timeB - timeA;
   });
 
-  const targetCompleted = sortedCompleted.slice(0, 80);
+  const targetCompleted =
+    maxCompleted === Infinity ? sortedCompleted : sortedCompleted.slice(0, maxCompleted);
   if (targetCompleted.length === 0) {
     return [];
   }

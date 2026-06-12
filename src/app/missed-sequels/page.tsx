@@ -30,7 +30,7 @@ export default async function MissedSequelsPage() {
   });
 
   const includeAdult = await getViewerIncludesAdult();
-  const items = await getMissedSequels(library, includeAdult);
+  const items = await getMissedSequels(library, includeAdult, Infinity);
 
   return <MissedSequelsPageClient initialItems={items} />;
 }
