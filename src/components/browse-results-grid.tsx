@@ -161,6 +161,17 @@ export function BrowseResultsGrid({
   const isLibraryView =
     filters.list === "in" || isLibraryStatusFilter(filters.list);
 
+  // Deduplicate input items by anime ID to avoid React key collisions during infinite scrolls
+  const uniqueItems = useMemo(() => {
+    const seen = new Set<number>();
+    return items.filter((item) => {
+      if (!item || typeof item.id !== "number") return false;
+      if (seen.has(item.id)) return false;
+      seen.add(item.id);
+      return true;
+    });
+  }, [items]);
+
   let base: AnimeSummary[];
   let note: string | null = null;
 
@@ -169,19 +180,27 @@ export function BrowseResultsGrid({
     const matched = selectedEntries
       .map((entry) => entry.anime)
       .filter((anime) => matchesFilters(anime, filters));
-    base = sortLibraryItems(matched, filters.sort, filters.sortOrder);
+    // Deduplicate library matches by anime ID just in case
+    const seen = new Set<number>();
+    const uniqueMatched = matched.filter((anime) => {
+      if (!anime || typeof anime.id !== "number") return false;
+      if (seen.has(anime.id)) return false;
+      seen.add(anime.id);
+      return true;
+    });
+    base = sortLibraryItems(uniqueMatched, filters.sort, filters.sortOrder);
     const listLabel =
       filters.list === "in"
         ? "saved"
         : getListFilterLabel(filters.list).toLowerCase();
     note = `Showing ${base.length} of your ${selectedEntries.length} ${listLabel} titles.`;
   } else if (filters.list === "out") {
-    base = items.filter((anime) => !libraryIds.has(anime.id));
-    if (base.length !== items.length) {
-      note = `Showing ${base.length} of ${items.length} titles on this page not yet on your list.`;
+    base = uniqueItems.filter((anime) => !libraryIds.has(anime.id));
+    if (base.length !== uniqueItems.length) {
+      note = `Showing ${base.length} of ${uniqueItems.length} titles on this page not yet on your list.`;
     }
   } else {
-    base = items;
+    base = uniqueItems;
   }
 
   const dubbedOnly = filters.dubbed === "1";
