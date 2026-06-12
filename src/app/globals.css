@@ -8712,12 +8712,30 @@ a:active .shelf-card {
     margin-top: 0.35rem;
 }
 
-.watchlist-card-progress.overlay {
-    position: absolute;
-    left: 0.75rem;
-    right: 0.75rem;
-    bottom: 0.6rem;
-    margin: 0;
+.watchlist-watched {
+    margin-top: 0.4rem;
+}
+
+.watchlist-watched-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--muted-strong);
+}
+
+.watchlist-watched-aside {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-weight: 600;
+    color: var(--muted);
+}
+
+.watchlist-watched-aside.is-done {
+    color: var(--text);
 }
 
 .watchlist-card-progress > span {

@@ -811,8 +811,6 @@ function WatchlistGridCard({
             </button>
           </span>
         )}
-
-        <ProgressMetaOverlay entry={entry} />
       </span>
 
       <span className="anime-card-body">
@@ -854,24 +852,50 @@ function WatchlistGridCard({
             withTitle
           />
         </span>
+        <WatchedProgress entry={entry} />
         <NextAiringPill entry={entry} />
       </span>
     </div>
   );
 }
 
-// The poster-overlaid progress bar + label (grid view).
-function ProgressMetaOverlay({ entry }: { entry: LibraryEntry }) {
-  if (entry.progress <= 0) return null;
-  const ceiling = episodeCeiling(entry);
+// Watched / total episode line + fill bar (grid view body). Total is the
+// planned full run from AniList; "?" when AniList doesn't report it, in which
+// case there is no whole to draw a bar (or count episodes left) against. When
+// the total is known the track always renders, so untouched entries read as an
+// empty bar rather than a blank gap.
+function WatchedProgress({ entry }: { entry: LibraryEntry }) {
+  const total = entry.anime.episodes ?? null;
   const pct =
-    ceiling && ceiling > 0
-      ? Math.min(100, Math.round((entry.progress / ceiling) * 100))
+    total && total > 0
+      ? Math.min(100, Math.round((entry.progress / total) * 100))
       : 0;
-  if (!pct) return null;
+  const aside =
+    total && total > 0
+      ? entry.progress >= total
+        ? "done"
+        : `${total - entry.progress} left`
+      : null;
   return (
-    <span className="watchlist-card-progress overlay" aria-hidden>
-      <span style={{ width: `${pct}%` }} />
+    <span className="watchlist-watched">
+      <span className="watchlist-watched-label">
+        <span>
+          {entry.progress} / {total ?? "?"}
+        </span>
+        {aside === "done" ? (
+          <span className="watchlist-watched-aside is-done">
+            <Check size={11} aria-hidden />
+            done
+          </span>
+        ) : aside ? (
+          <span className="watchlist-watched-aside">{aside}</span>
+        ) : null}
+      </span>
+      {total && total > 0 ? (
+        <span className="watchlist-card-progress" aria-hidden>
+          <span style={{ width: `${pct}%` }} />
+        </span>
+      ) : null}
     </span>
   );
 }
