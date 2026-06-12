@@ -131,7 +131,7 @@ export function WatchControls({
     const next = serverOptions.find((option) => !option.active);
     if (next) {
       onSelectServer(next.id);
-      onShareResult?.("Thanks — trying another server");
+      onShareResult?.("Thanks - trying another server");
     } else {
       onShareResult?.("No other server is available right now");
     }

@@ -215,7 +215,7 @@ export function HistoryPageClient({
       {paused ? (
         <div className="history-pause-banner" role="status">
           <span>
-            History is paused — new episodes you watch aren&apos;t being
+            History is paused - new episodes you watch aren&apos;t being
             recorded.
           </span>
           <button type="button" onClick={resumeHistory}>

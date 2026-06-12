@@ -327,8 +327,8 @@ function isKitsuAligned(
 
 /**
  * Fills still-less episodes with Kitsu thumbnails. Existing stills (TVDB via
- * ani.zip, or AniList's streaming thumbnails) always win — Kitsu only fills
- * gaps — and the thumbnail is attributed to Kitsu for source transparency.
+ * ani.zip, or AniList's streaming thumbnails) always win - Kitsu only fills
+ * gaps - and the thumbnail is attributed to Kitsu for source transparency.
  */
 function fillFromKitsu(
   episodeMap: Map<number, AnimeStreamingEpisode>,
@@ -413,7 +413,7 @@ export async function getEpisodeMetadata(
   // AniList episode number and therefore season-correct. Kitsu fills the gaps
   // they leave (long-running shows like One Piece have TVDB stills for only
   // the first cour): it is reached via ani.zip's per-entry `kitsu_id`, so its
-  // numbering aligns with this exact catalog entry — unlike TMDB, which models
+  // numbering aligns with this exact catalog entry - unlike TMDB, which models
   // a franchise as one show with absolute numbering and would stamp an earlier
   // season's images onto later seasons. Alignment is still verified before any
   // Kitsu still is trusted, and Kitsu only fills genuinely empty slots. We

@@ -132,7 +132,7 @@ export function ProfileStatsSection({
           <div className="kpi-content">
             <span className="kpi-label">Days Watched</span>
             <strong className="kpi-value">
-              {daysWatched != null ? daysWatched.toFixed(1) : "—"}
+              {daysWatched != null ? daysWatched.toFixed(1) : "-"}
             </strong>
           </div>
         </div>
@@ -144,7 +144,7 @@ export function ProfileStatsSection({
           <div className="kpi-content">
             <span className="kpi-label">Mean Score</span>
             <strong className="kpi-value">
-              {stats.meanScore != null ? scoreLabel(stats.meanScore) : "—"}
+              {stats.meanScore != null ? scoreLabel(stats.meanScore) : "-"}
             </strong>
             {stats.scoredCount > 0 && (
               <span className="kpi-subtext">{stats.scoredCount} rated</span>

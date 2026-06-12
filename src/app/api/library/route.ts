@@ -99,7 +99,7 @@ export async function POST(request: Request) {
       completedAt: body.completedAt,
     });
 
-    // AniList is a best-effort mirror — sync it after the response is sent so
+    // AniList is a best-effort mirror - sync it after the response is sent so
     // the client unblocks on the (fast) local write instead of a remote
     // GraphQL round-trip. after() keeps the work alive on serverless too.
     if (user.aniListAccessToken) {

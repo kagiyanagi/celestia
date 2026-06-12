@@ -35,7 +35,7 @@ export const getCachedUserRecord = cache((id: string) =>
 /**
  * Request-scoped library/history reads. Library and history live in their own
  * tables (not on the user row), so they are only fetched when a caller actually
- * needs them — the hot auth path never transfers them. cache() dedupes repeat
+ * needs them - the hot auth path never transfers them. cache() dedupes repeat
  * reads within a single request.
  */
 const getCachedLibrary = cache((id: string) =>
@@ -53,7 +53,7 @@ export function getHistoryEntries(userId: string): Promise<HistoryEntry[]> {
   return getCachedHistory(userId);
 }
 
-/** A single library entry by anime id, or null — a scoped single-row read. */
+/** A single library entry by anime id, or null - a scoped single-row read. */
 export function getLibraryEntry(userId: string, animeId: number) {
   return getStore().getLibraryEntry(userId, animeId);
 }
@@ -102,7 +102,7 @@ async function publicUserFrom(user: UserRecord): Promise<PublicUser> {
 }
 
 // Cap persisted per-notification state. Notifications leave the 30-day window
-// on their own, so old ids can never reappear — this is just a runaway guard.
+// on their own, so old ids can never reappear - this is just a runaway guard.
 const MAX_NOTIFICATION_STATE = 500;
 
 function appendBoundedIds(current: string[] | undefined, ids: string[]) {
@@ -333,7 +333,7 @@ function mergeLibraryEntries(
 
 /**
  * Reconciles a fresh AniList pull into the local library with newest-wins
- * semantics. Unlike mergeLibraryEntries (incoming always wins — used for the
+ * semantics. Unlike mergeLibraryEntries (incoming always wins - used for the
  * initial connect and XML import), this compares updatedAt so a local edit that
  * hasn't pushed yet is not clobbered by an older AniList entry. Local-only
  * entries (never on AniList) are preserved; removals on AniList are not mirrored
@@ -380,7 +380,7 @@ function mergeAniListPull(current: LibraryEntry[], incoming: LibraryEntry[]) {
  * AniList-derived entries (id prefixed `anilist-`) are fully re-derived from the
  * current activity feed each sync rather than accreted: the prior ones are
  * dropped and rebuilt. This keeps them in step with AniList and self-heals any
- * stale data — notably entries left by an earlier unscoped pull that mistook
+ * stale data - notably entries left by an earlier unscoped pull that mistook
  * AniList's global feed for the viewer's. Native watches (UUID ids) are kept.
  */
 function mergeAniListHistory(
@@ -569,7 +569,7 @@ export async function recordHistory(input: {
     episodeImage: input.episodeImage || existing?.episodeImage || null,
     durationLabel: input.durationLabel,
     watchedAt: now,
-    // Progress only moves forward — a quick revisit must not wipe it.
+    // Progress only moves forward - a quick revisit must not wipe it.
     progressPercent: Math.max(
       input.progressPercent,
       existing?.progressPercent ?? 0,
@@ -602,7 +602,7 @@ export async function deleteAccount(userId: string) {
 /**
  * Marks notifications read. With no ids, marks everything read via a single
  * timestamp; with ids, records just those (so "tick one read" persists without
- * touching the rest). Returns the slim user — callers use it for confirmation
+ * touching the rest). Returns the slim user - callers use it for confirmation
  * only and must not fold it into client state wholesale (it has no library).
  */
 export async function markNotificationsRead(userId: string, ids?: string[]) {
@@ -629,7 +629,7 @@ export async function dismissNotifications(userId: string, ids: string[]) {
 
 /**
  * Returns the full user record with the AniList token decrypted for use.
- * Library and history are NOT included — fetch them with getLibraryEntries /
+ * Library and history are NOT included - fetch them with getLibraryEntries /
  * getHistoryEntries when needed. Legacy plaintext tokens are re-encrypted in
  * storage on first read.
  */

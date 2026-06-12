@@ -2,7 +2,7 @@ import type { LibraryEntry, LibraryStatus } from "@/types/account";
 
 /**
  * A single parsed row from a MAL/AniList XML export. AniList exports in the
- * MyAnimeList XML format, so one parser covers both — every entry carries a
+ * MyAnimeList XML format, so one parser covers both - every entry carries a
  * MAL id (`series_animedb_id`), which we later resolve to an AniList id.
  */
 export type ParsedMalEntry = {
@@ -88,7 +88,7 @@ function cdata(value: string): string {
 }
 
 /**
- * Serializes a library into the MyAnimeList XML export format — the inverse of
+ * Serializes a library into the MyAnimeList XML export format - the inverse of
  * `parseMalExport`, so an exported file re-imports cleanly. Only entries with a
  * MAL id are included (the format is keyed by `series_animedb_id`).
  */
@@ -137,7 +137,7 @@ export function buildMalExport(
 
 /**
  * Parses a MyAnimeList / AniList XML export into normalized entries. Tolerant
- * of malformed rows — an entry missing a usable MAL id is skipped rather than
+ * of malformed rows - an entry missing a usable MAL id is skipped rather than
  * throwing, so one bad row never fails the whole import.
  */
 export function parseMalExport(xml: string): ParsedMalEntry[] {

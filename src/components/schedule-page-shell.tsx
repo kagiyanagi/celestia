@@ -213,7 +213,7 @@ export function SchedulePageShell({
   const timelineGroups = getTimelineGroups(displayItems);
   const spotlightItems = displayItems.slice(0, 3);
   // The chronologically-first not-yet-aired episode of the selected day is the
-  // "next up" — sorted order is guaranteed upstream, so the first match wins.
+  // "next up" - sorted order is guaranteed upstream, so the first match wins.
   const nextUpItem = displayItems.find((item) => !hasAired(item)) ?? null;
   const nextUpKey = nextUpItem ? entryKey(nextUpItem) : null;
   const rangeButtons = [

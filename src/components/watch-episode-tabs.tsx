@@ -158,7 +158,7 @@ const SAMPLE_COMMENTS: {
     id: 1,
     author: "mirucast",
     when: "2 hours ago",
-    body: "Comments aren't live yet — this is a preview of how the thread will look once they ship.",
+    body: "Comments aren't live yet - this is a preview of how the thread will look once they ship.",
   },
 ];
 
@@ -167,7 +167,7 @@ function WatchComments() {
     <div className="watch-ep-comments">
       <div className="watch-ep-comments-note">
         <MessageSquare size={16} aria-hidden />
-        Comments are coming soon — this is a preview and isn&apos;t live yet.
+        Comments are coming soon - this is a preview and isn&apos;t live yet.
       </div>
 
       <ul className="watch-ep-comment-list">

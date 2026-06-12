@@ -30,14 +30,6 @@ type NotificationCacheEntry = {
 
 const notificationCache = new Map<string, NotificationCacheEntry>();
 
-// Statuses worth notifying about — exclude dropped/completed shows.
-const NOTIFY_STATUSES = new Set<LibraryStatus>([
-  "watching",
-  "rewatching",
-  "planning",
-  "on_hold",
-]);
-
 /** Epoch seconds a tracked entry started counting for notifications. */
 function trackedSince(entry: { addedAt?: string | null; updatedAt: string }) {
   // Pre-existing entries have no addedAt; updatedAt is the best approximation
@@ -85,7 +77,7 @@ export function clearUserNotificationCache(userId: string) {
  * the recent window. Only episodes that aired after the anime was added to the
  * list count, so tracking a show never backfills its whole recent history. Read
  * state combines notificationsLastReadAt (mark-all) with per-id reads, and
- * dismissed ids are hidden. Nothing is fabricated — only episodes the providers
+ * dismissed ids are hidden. Nothing is fabricated - only episodes the providers
  * report as aired appear.
  */
 export async function getUserNotifications(
@@ -93,9 +85,10 @@ export async function getUserNotifications(
   library: LibraryEntry[],
 ): Promise<NotificationPayload> {
   const mutedIds = new Set(user.mutedAnimeIds ?? []);
+  // Episode, dub, and "airing soon" alerts only cover shows the user is
+  // actively watching - not planning/on-hold/rewatching/completed/dropped.
   const tracked = library.filter(
-    (entry) =>
-      NOTIFY_STATUSES.has(entry.status) && !mutedIds.has(entry.animeId),
+    (entry) => entry.status === "watching" && !mutedIds.has(entry.animeId),
   );
 
   const newsStatuses = new Set<LibraryStatus>(
@@ -275,7 +268,7 @@ export async function getUserNotifications(
 
 /**
  * Collapses multiple drops of the same show + type (e.g. a binge release of
- * episodes 5–7) into one notice with an episode range, so a single catch-up
+ * episodes 5-7) into one notice with an episode range, so a single catch-up
  * doesn't bury the rest of the list. The id stays deterministic
  * (`animeId:type:min-max`) so read/dismiss survive a re-group; a group is read
  * only when every member is, and carries the most recent airedAt.
@@ -308,7 +301,7 @@ function groupNotifications(
     const minEpisode = Math.min(...episodes);
     const maxEpisode = Math.max(...episodes);
     const first = bucket[0];
-    // Synthetic id is what read/dismiss target, so honor it here too —
+    // Synthetic id is what read/dismiss target, so honor it here too -
     // otherwise acting on a group wouldn't stick once it's re-grouped.
     const groupId = `${first.animeId}:${first.type}:${minEpisode}-${maxEpisode}`;
     if (dismissedIds.has(groupId)) {

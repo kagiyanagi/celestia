@@ -164,7 +164,7 @@ function getRejectionThreshold(expectedEps: number): number {
  *   - Exact match: large bonus (+50). This is the happy path.
  *   - Off by ≤2: small bonus (+20), accommodates providers that count specials
  *     differently from AniList.
- *   - Off beyond the rejection threshold: return null — this is almost
+ *   - Off beyond the rejection threshold: return null - this is almost
  *     certainly a different entry (wrong season, whole-franchise listing).
  *     A wrong stream is considered worse than no stream.
  *   - Anything else: heavy penalty (-80), keeps it from winning over a
@@ -267,7 +267,7 @@ function toTitleCase(title: string): string {
  * so the common exact-match case only costs one request.
  *
  * Blank candidates (possible when a CJK-only title normalizes to "") are
- * dropped before the cap is applied — an empty string would 404 immediately.
+ * dropped before the cap is applied - an empty string would 404 immediately.
  */
 function getTitleCandidates(title: string | string[]): string[] {
   const titles = Array.isArray(title) ? title : [title];
@@ -349,7 +349,7 @@ function getTitleCandidates(title: string | string[]): string[] {
 
   // Each candidate costs one provider request, so cap the probe list.
   // Original titles come first, so the most likely matches are kept. Drop
-  // blanks — a CJK-only title can normalize to "" and would otherwise probe
+  // blanks - a CJK-only title can normalize to "" and would otherwise probe
   // the provider with an empty query (a guaranteed 404).
   return Array.from(new Set(candidates))
     .filter((candidate) => candidate.trim().length > 0)
@@ -385,7 +385,7 @@ async function findProviderAvailability(input: {
   expectedEpisodes: number | null;
   anilistId?: number | null;
 }): Promise<StreamAvailability | null> {
-  // AniList-id-keyed embed providers resolve deterministically from the id —
+  // AniList-id-keyed embed providers resolve deterministically from the id -
   // no title guessing, no episode-count verification, no mapping to persist.
   // Without an id there is nothing to key on.
   if (input.provider.keysByAnilistId) {
@@ -461,7 +461,7 @@ async function findProviderAvailability(input: {
     results.sort((a, b) => (b.score || 0) - (a.score || 0))[0] || null;
 
   // A wrong stream is worse than no stream. When we know the expected episode
-  // count, only serve a count-verified match (the same bar we persist at) — a
+  // count, only serve a count-verified match (the same bar we persist at) - a
   // title-guessed candidate whose count merely "isn't bad enough to reject" is
   // refused. Without an expected count we can't verify, so the best-scored
   // candidate stands.

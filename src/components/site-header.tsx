@@ -8,7 +8,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 
-// The search modal is interaction-only — keep its code out of the every-page
+// The search modal is interaction-only - keep its code out of the every-page
 // baseline bundle and load it on first open. It renders null while closed, so
 // deferring its mount is behaviorally identical.
 const SearchModal = dynamic(() =>

@@ -219,7 +219,7 @@ function buildEpisodeList(input: {
     : 0;
   // Pad up to the catalog total only for finished shows, whose full episode set
   // genuinely exists. For hiatus/cancelled/unknown shows, never synthesize past
-  // the episodes we actually have — that would invent never-aired episodes.
+  // the episodes we actually have - that would invent never-aired episodes.
   const totalEpisodes =
     input.releasedEpisodeLimit ??
     (input.trustFullCount
@@ -308,7 +308,7 @@ type PlayerSectionProps = {
   episodeImage: string | null;
   durationLabel: string | null;
   totalEpisodes: number;
-  // Source-resolution inputs — awaited inside this boundary so a slow provider
+  // Source-resolution inputs - awaited inside this boundary so a slow provider
   // never blocks the surrounding shell (episode list, related, recommendations).
   canRequestSource: boolean;
   streamLookupTitle: string[];
@@ -333,7 +333,7 @@ function PlayerSkeleton() {
 }
 
 // Resolves the embed inside a Suspense boundary. The page no longer awaits the
-// stream provider before first paint — the shell streams immediately and the
+// stream provider before first paint - the shell streams immediately and the
 // player swaps in when the (often slow, replaceable) provider responds.
 async function PlayerSection({
   canRequestSource,
@@ -360,7 +360,7 @@ async function PlayerSection({
     <WatchPlayerPanel
       {...panel}
       // The player only needs the current embed; drop the provider's full
-      // episode list (huge for mega-shows) — the browser owns navigation.
+      // episode list (huge for mega-shows) - the browser owns navigation.
       initialSource={source ? { ...source, episodes: [] } : null}
     />
   );

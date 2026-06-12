@@ -78,7 +78,7 @@ export function ProfilePageShell({
     [libraryEntries],
   );
 
-  // A guest IS a user (auto-created session), so this must also catch guests —
+  // A guest IS a user (auto-created session), so this must also catch guests -
   // otherwise the AuthPanel (which hosts the AniList connect + login/signup) is
   // unreachable and every "Sign in" CTA just loops back to the guest profile.
   if (!user || user.isGuest) {
@@ -389,7 +389,7 @@ export function ProfilePageShell({
                   }
                 />
                 <small>
-                  3–30 characters: letters, numbers, underscores, or hyphens.
+                  3-30 characters: letters, numbers, underscores, or hyphens.
                 </small>
               </label>
               <label>
@@ -593,9 +593,9 @@ export function ProfilePageShell({
 
           {(
             [
-              ["notifyEpisodes", "New Episode Alerts", "Notify when a new subbed episode airs for a tracked show."],
-              ["notifyDubs", "New Dub Alerts", "Notify when a new English dub episode drops."],
-              ["notifyUpcoming", "Airing Soon Reminders", "Remind you shortly before a tracked show's next episode airs."],
+              ["notifyEpisodes", "New Episode Alerts", "Notify when a new subbed episode airs for a show you're watching."],
+              ["notifyDubs", "New Dub Alerts", "Notify when a new English dub episode drops for a show you're watching."],
+              ["notifyUpcoming", "Airing Soon Reminders", "Remind you shortly before the next episode airs for a show you're watching."],
             ] as const
           ).map(([key, label, description]) => {
             // Older records lack these fields; treat undefined as enabled.

@@ -4,7 +4,7 @@ import { getLibraryEntries } from "@/lib/account-store";
 import { getSessionUser, getViewerIncludesAdult } from "@/lib/auth";
 import { getRecommendationsFromSeeds } from "@/lib/providers/anilist";
 
-// Statuses that signal genuine taste — planning entries are intent, not a
+// Statuses that signal genuine taste - planning entries are intent, not a
 // watched signal, so they don't seed recommendations.
 const SEED_STATUSES = ["completed", "watching", "rewatching"];
 

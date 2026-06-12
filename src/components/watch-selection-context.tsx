@@ -11,7 +11,7 @@ import type { ReactNode } from "react";
 import type { StreamAudioType } from "@/types/streaming";
 
 /**
- * The dynamic part of a watch URL — which server, audio track, and provider
+ * The dynamic part of a watch URL - which server, audio track, and provider
  * anime id are active. The player panel updates it when the viewer switches
  * server/audio in place; the episode browser and episode nav read it so their
  * links stay in sync with what's actually playing.

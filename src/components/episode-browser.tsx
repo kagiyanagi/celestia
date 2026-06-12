@@ -118,7 +118,7 @@ export function EpisodeBrowser({
   const fillerPercent =
     episodes.length > 0 ? Math.round((fillerCount / episodes.length) * 100) : 0;
 
-  // First episode the viewer hasn't started yet, in release order — drives the
+  // First episode the viewer hasn't started yet, in release order - drives the
   // "jump to next unwatched" shortcut. Null when everything's been watched.
   const nextUnwatched =
     episodes.find((ep) => !progressByEpisode.has(ep.number))?.number ?? null;

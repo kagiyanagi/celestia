@@ -38,7 +38,7 @@ export async function GET(request: Request) {
       libraryEntries,
     });
 
-    // Privilege escalation (account now holds an OAuth token) — rotate the
+    // Privilege escalation (account now holds an OAuth token) - rotate the
     // session ID so the pre-connect token can't be replayed.
     await regenerateSession(user.id);
 

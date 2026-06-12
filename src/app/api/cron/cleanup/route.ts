@@ -7,7 +7,7 @@ const GUEST_MAX_AGE_DAYS = 14;
 
 /**
  * Maintenance endpoint, intended for a scheduled job (e.g. Vercel cron).
- * When CRON_SECRET is set, requests must carry it as a bearer token —
+ * When CRON_SECRET is set, requests must carry it as a bearer token -
  * Vercel cron does this automatically.
  */
 export async function GET(request: Request) {

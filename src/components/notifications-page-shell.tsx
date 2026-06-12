@@ -83,7 +83,7 @@ export function NotificationsPageShell({
   async function markAllRead() {
     if (marking || unreadCount === 0) return;
     setMarking(true);
-    // Optimistic — the server write is a single timestamp.
+    // Optimistic - the server write is a single timestamp.
     setNotifications((prev) =>
       prev.map((notification) => ({ ...notification, read: true })),
     );
@@ -222,7 +222,7 @@ export function NotificationsPageShell({
                     ) : (
                       <>
                         {notification.episodeTo
-                          ? `Episodes ${notification.episode}–${notification.episodeTo}`
+                          ? `Episodes ${notification.episode}-${notification.episodeTo}`
                           : `Episode ${notification.episode}`}{" "}
                         •{" "}
                         {notification.type === "upcoming"

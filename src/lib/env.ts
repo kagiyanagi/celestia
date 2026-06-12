@@ -69,7 +69,7 @@ export function getEnvIssues(): EnvIssue[] {
       name: "DATABASE_URL",
       severity: "warning",
       message:
-        "DATABASE_URL is not set. Falling back to file storage, which DOES NOT PERSIST on serverless hosts — user accounts will be lost.",
+        "DATABASE_URL is not set. Falling back to file storage, which DOES NOT PERSIST on serverless hosts - user accounts will be lost.",
     });
   }
 

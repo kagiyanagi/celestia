@@ -3,7 +3,7 @@
  *
  * The full episode list ships in the page payload (it compresses to a few KB
  * even for 1000+ episode shows), so search/sort/pagination all run client-side
- * for instant filtering — no per-page server round trip.
+ * for instant filtering - no per-page server round trip.
  */
 
 export const EPISODES_PER_PAGE = 47;

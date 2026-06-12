@@ -126,7 +126,7 @@ export function BrowsePageShell({
   }
 
   // Adult-inclusive results are personalized per viewer, so they can't be part
-  // of the cached server render — refetch them client-side.
+  // of the cached server render - refetch them client-side.
   useEffect(() => {
     if (!includeAdult) {
       return;

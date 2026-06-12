@@ -195,14 +195,14 @@ export function BrowseResultsGrid({
   let visible = base;
   if (dubbedOnly) {
     visible = base.filter((anime) => (dubCounts.get(anime.id) ?? 0) > 0);
-    note = `Dubbed only — ${visible.length} of ${base.length} on this page (dub data loads as you browse).`;
+    note = `Dubbed only - ${visible.length} of ${base.length} on this page (dub data loads as you browse).`;
   }
 
   if (!visible.length) {
     return (
       <div className="empty-panel">
         {dubbedOnly
-          ? "No dubbed titles found on this page yet — try the next page."
+          ? "No dubbed titles found on this page yet - try the next page."
           : isLibraryView
             ? "Nothing in this list matches these filters."
             : filters.list === "out"

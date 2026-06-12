@@ -42,7 +42,7 @@ export function LibraryEntryDialog({
   const { toast } = useToast();
   const [statusOpen, setStatusOpen] = useState(false);
   // The library already lives in the auth context, so seed the form from it
-  // synchronously — opening the dialog is instant with no network round-trip
+  // synchronously - opening the dialog is instant with no network round-trip
   // (the old GET /api/library here also triggered a full AniList sync). Edits
   // made directly on AniList land in the context via the background sync.
   const existingEntry =

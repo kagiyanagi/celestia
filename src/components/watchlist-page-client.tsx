@@ -447,7 +447,7 @@ export function WatchlistPageClient({
                 Mean{" "}
                 {stats.meanScore != null
                   ? scoreLabel(stats.meanScore)
-                  : "—"}
+                  : "-"}
               </span>
             </p>
           </div>
@@ -953,7 +953,7 @@ function WatchlistRow({
 
       <span className="watchlist-row-score" title="Your score">
         <Star size={13} aria-hidden />
-        {entry.score > 0 ? scoreLabel(entry.score) : "—"}
+        {entry.score > 0 ? scoreLabel(entry.score) : "-"}
       </span>
 
       {!selectMode ? (

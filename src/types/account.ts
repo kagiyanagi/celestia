@@ -17,11 +17,11 @@ export type UserPreferences = {
   pauseHistory: boolean;
   /** Default audio track for playback. */
   defaultAudio: "sub" | "dub";
-  /** Notify when a new subbed episode airs for a tracked show. */
+  /** Notify when a new subbed episode airs for a show the user is watching. */
   notifyEpisodes: boolean;
-  /** Notify when a new dubbed episode drops for a tracked show. */
+  /** Notify when a new dubbed episode drops for a show the user is watching. */
   notifyDubs: boolean;
-  /** Notify shortly before a tracked show's next episode airs. */
+  /** Notify shortly before the next episode airs for a show the user is watching. */
   notifyUpcoming: boolean;
   /** Library statuses for which news notifications should be sent. */
   notifyNewsStatuses?: LibraryStatus[];
@@ -169,7 +169,7 @@ export type AppDatabase = {
 
 /**
  * The slim, stored view of a user: profile, preferences, auth, and derived
- * state — but NOT the library or watch history, which live in their own tables
+ * state - but NOT the library or watch history, which live in their own tables
  * and are read on demand. Session/auth reads return this, so the hot path never
  * transfers the (potentially large) tracking data.
  */

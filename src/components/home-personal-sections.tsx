@@ -11,7 +11,7 @@ import { getDisplayTitle } from "@/lib/format";
 import { getResumeEpisode } from "@/lib/resume";
 import { buildWatchHref } from "@/lib/watch-href";
 
-/** Latest entry per anime — history is stored newest-first. */
+/** Latest entry per anime - history is stored newest-first. */
 function dedupeByAnime(entries: HistoryEntry[]): HistoryEntry[] {
   const seen = new Set<number>();
 
@@ -102,7 +102,7 @@ export function HomePersonalSections({
     return null;
   }
 
-  // A fresh account (or guest) has nothing to surface yet — point them at the
+  // A fresh account (or guest) has nothing to surface yet - point them at the
   // tracking features instead of rendering an empty space.
   if (!history.length && !watchlist.length) {
     return (

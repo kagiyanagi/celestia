@@ -60,7 +60,7 @@ export default async function AnimePage({
 
   // The watch page resolves the stream source itself on first render, so the
   // details page no longer blocks on a streaming title-guess probe just to
-  // prefill the href — that previously cost up to 4s of TTFB. Link straight to
+  // prefill the href - that previously cost up to 4s of TTFB. Link straight to
   // episode 1 and let the watch page (and its in-place switcher) resolve.
   const watchHref = buildWatchHref({ animeId: anime.id, episode: 1 });
 

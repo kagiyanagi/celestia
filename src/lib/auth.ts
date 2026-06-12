@@ -137,7 +137,7 @@ function redactUser(user: UserRecord): SessionUser {
   };
 }
 
-/** A brand-new account has no tracking data yet — assemble it cheaply. */
+/** A brand-new account has no tracking data yet - assemble it cheaply. */
 function emptyPublicUser(user: UserRecord): PublicUser {
   return { ...redactUser(user), libraryEntries: [], historyEntries: [] };
 }
@@ -455,14 +455,14 @@ async function readSessionUser() {
 }
 
 /**
- * The signed-in user WITHOUT library/history — the hot path. Every route that
+ * The signed-in user WITHOUT library/history - the hot path. Every route that
  * only needs identity/preferences uses this, so the bulky tracking data is
  * never transferred on a typical request.
  */
 export const getSessionUser = cache(readSessionUser);
 
 /**
- * The signed-in user WITH library/history assembled in — for the client
+ * The signed-in user WITH library/history assembled in - for the client
  * bootstrap (root layout, /api/auth/session) and anywhere the full PublicUser
  * is folded into client state. Pays for two extra scoped reads, so reserve it
  * for those bootstrap paths rather than ordinary auth gating.

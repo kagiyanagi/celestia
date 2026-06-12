@@ -9,7 +9,7 @@ export type CustomSelectOption = {
 };
 
 /**
- * Styled replacement for native <select> — trigger button plus an absolute
+ * Styled replacement for native <select> - trigger button plus an absolute
  * listbox, closed by a transparent fixed scrim or Escape.
  */
 export function CustomSelect({

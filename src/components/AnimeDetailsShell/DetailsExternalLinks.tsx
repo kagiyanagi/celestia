@@ -8,7 +8,7 @@ interface DetailsExternalLinksProps {
 export function DetailsExternalLinks({ links }: DetailsExternalLinksProps) {
   const streaming = links.filter((link) => link.type === "STREAMING");
   // Everything that isn't a streaming platform (official sites, socials, info)
-  // collapses into one "Links" row — the streaming row is the one users want.
+  // collapses into one "Links" row - the streaming row is the one users want.
   const other = links.filter((link) => link.type !== "STREAMING");
 
   if (streaming.length === 0 && other.length === 0) {

@@ -18,7 +18,7 @@ const paytoneOne = Paytone_One({
 });
 
 // Self-hosted via next/font (was a render-blocking Google Fonts @import in
-// globals.css). Manrope is a variable font, so the full 400–800 range loads
+// globals.css). Manrope is a variable font, so the full 400-800 range loads
 // from one optimized, preloaded file.
 const manrope = Manrope({
   subsets: ["latin"],

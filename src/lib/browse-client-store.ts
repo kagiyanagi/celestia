@@ -43,7 +43,7 @@ function writeJson(key: string, value: unknown): void {
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
   } catch {
-    // Quota or privacy-mode failures are non-fatal — the feature just no-ops.
+    // Quota or privacy-mode failures are non-fatal - the feature just no-ops.
   }
 }
 
