@@ -17,11 +17,11 @@ export type UserPreferences = {
   pauseHistory: boolean;
   /** Default audio track for playback. */
   defaultAudio: "sub" | "dub";
-  /** Notify when a new subbed episode airs for a tracked show. */
+  /** Notify when a new subbed episode airs for a show the user is watching. */
   notifyEpisodes: boolean;
-  /** Notify when a new dubbed episode drops for a tracked show. */
+  /** Notify when a new dubbed episode drops for a show the user is watching. */
   notifyDubs: boolean;
-  /** Notify shortly before a tracked show's next episode airs. */
+  /** Notify shortly before the next episode airs for a show the user is watching. */
   notifyUpcoming: boolean;
   /** Library statuses for which news notifications should be sent. */
   notifyNewsStatuses?: LibraryStatus[];
