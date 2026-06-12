@@ -3,6 +3,7 @@ export type TabKey =
   | "characters"
   | "episodes"
   | "news"
+  | "discussion"
   | "franchise"
   | "similar";
 
@@ -11,6 +12,7 @@ export const TAB_KEYS: TabKey[] = [
   "characters",
   "episodes",
   "news",
+  "discussion",
   "franchise",
   "similar",
 ];

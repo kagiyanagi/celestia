@@ -19,12 +19,11 @@ import {
 import { LibraryStatusChip } from "@/components/library-status-chip";
 import { formatIsoDate, formatIsoDateTime } from "@/lib/format";
 import type { AnimeSummary } from "@/types/anime";
+import { AnimeCommunityComments } from "@/components/anime-community-comments";
 
 type WatchTabKey = "overview" | "episodes" | "comments";
 
-// Comments are a designed-but-not-wired feature; keep the markup in tree but
-// off the live UI until a real, moderated backend exists.
-const COMMENTS_ENABLED = false;
+const COMMENTS_ENABLED = true;
 
 /** The current episode's own metadata, surfaced in the Overview tab. */
 export type WatchEpisodeOverview = {
@@ -147,45 +146,22 @@ function EpisodeOverview({
   );
 }
 
-// Placeholder thread retained for when comments ship; gated off by default.
-const SAMPLE_COMMENTS: {
-  id: number;
-  author: string;
-  when: string;
-  body: string;
-}[] = [
-  {
-    id: 1,
-    author: "mirucast",
-    when: "2 hours ago",
-    body: "Comments aren't live yet — this is a preview of how the thread will look once they ship.",
-  },
-];
-
-function WatchComments() {
+function WatchComments({
+  aniListId,
+  malId,
+  episodeNumber,
+}: {
+  aniListId: number;
+  malId?: number | null;
+  episodeNumber: number;
+}) {
   return (
     <div className="watch-ep-comments">
-      <div className="watch-ep-comments-note">
-        <MessageSquare size={16} aria-hidden />
-        Comments are coming soon — this is a preview and isn&apos;t live yet.
-      </div>
-
-      <ul className="watch-ep-comment-list">
-        {SAMPLE_COMMENTS.map((comment) => (
-          <li key={comment.id} className="watch-ep-comment">
-            <div className="watch-ep-comment-avatar" aria-hidden>
-              {comment.author.charAt(0).toUpperCase()}
-            </div>
-            <div className="watch-ep-comment-body">
-              <div className="watch-ep-comment-meta">
-                <strong>{comment.author}</strong>
-                <span>{comment.when}</span>
-              </div>
-              <p>{comment.body}</p>
-            </div>
-          </li>
-        ))}
-      </ul>
+      <AnimeCommunityComments
+        aniListId={aniListId}
+        malId={malId}
+        episodeNumber={episodeNumber}
+      />
     </div>
   );
 }
@@ -232,7 +208,13 @@ export function WatchEpisodeTabs({
           trackingAnime={trackingAnime}
         />
       ) : null}
-      {tab === "comments" && COMMENTS_ENABLED ? <WatchComments /> : null}
+      {tab === "comments" && COMMENTS_ENABLED ? (
+        <WatchComments
+          aniListId={trackingAnime.id}
+          malId={trackingAnime.idMal}
+          episodeNumber={activeEpisode}
+        />
+      ) : null}
     </div>
   );
 }

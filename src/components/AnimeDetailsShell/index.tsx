@@ -36,6 +36,13 @@ const DetailsSimilar = dynamic(
   () => import("./DetailsSimilar").then((module) => module.DetailsSimilar),
   { loading: TabLoading },
 );
+const AnimeCommunityComments = dynamic(
+  () =>
+    import("@/components/anime-community-comments").then(
+      (module) => module.AnimeCommunityComments,
+    ),
+  { ssr: false, loading: TabLoading },
+);
 
 interface AnimeDetailsShellProps {
   anime: AnimeDetails;
@@ -114,6 +121,13 @@ export function AnimeDetailsShell({
 
           {activeTab === "news" && (
             <DetailsNews key={anime.id} animeId={anime.id} />
+          )}
+
+          {activeTab === "discussion" && (
+            <AnimeCommunityComments
+              aniListId={anime.id}
+              malId={anime.idMal || anime.malStats?.malId}
+            />
           )}
 
           {activeTab === "franchise" && (
