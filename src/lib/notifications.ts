@@ -30,14 +30,6 @@ type NotificationCacheEntry = {
 
 const notificationCache = new Map<string, NotificationCacheEntry>();
 
-// Statuses worth notifying about — exclude dropped/completed shows.
-const NOTIFY_STATUSES = new Set<LibraryStatus>([
-  "watching",
-  "rewatching",
-  "planning",
-  "on_hold",
-]);
-
 /** Epoch seconds a tracked entry started counting for notifications. */
 function trackedSince(entry: { addedAt?: string | null; updatedAt: string }) {
   // Pre-existing entries have no addedAt; updatedAt is the best approximation
@@ -93,9 +85,10 @@ export async function getUserNotifications(
   library: LibraryEntry[],
 ): Promise<NotificationPayload> {
   const mutedIds = new Set(user.mutedAnimeIds ?? []);
+  // Episode, dub, and "airing soon" alerts only cover shows the user is
+  // actively watching — not planning/on-hold/rewatching/completed/dropped.
   const tracked = library.filter(
-    (entry) =>
-      NOTIFY_STATUSES.has(entry.status) && !mutedIds.has(entry.animeId),
+    (entry) => entry.status === "watching" && !mutedIds.has(entry.animeId),
   );
 
   const newsStatuses = new Set<LibraryStatus>(
