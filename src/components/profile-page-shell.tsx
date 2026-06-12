@@ -593,9 +593,9 @@ export function ProfilePageShell({
 
           {(
             [
-              ["notifyEpisodes", "New Episode Alerts", "Notify when a new subbed episode airs for a tracked show."],
-              ["notifyDubs", "New Dub Alerts", "Notify when a new English dub episode drops."],
-              ["notifyUpcoming", "Airing Soon Reminders", "Remind you shortly before a tracked show's next episode airs."],
+              ["notifyEpisodes", "New Episode Alerts", "Notify when a new subbed episode airs for a show you're watching."],
+              ["notifyDubs", "New Dub Alerts", "Notify when a new English dub episode drops for a show you're watching."],
+              ["notifyUpcoming", "Airing Soon Reminders", "Remind you shortly before the next episode airs for a show you're watching."],
             ] as const
           ).map(([key, label, description]) => {
             // Older records lack these fields; treat undefined as enabled.
