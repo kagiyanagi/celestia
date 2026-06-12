@@ -1392,6 +1392,76 @@ button:not(:disabled),
     overflow: hidden;
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--border-dim);
+    max-width: 100%;
+}
+
+.skeleton-text {
+    max-width: 100%;
+}
+
+/* ── Responsive skeleton layout helpers ──────────────────────────────────── */
+/* Skeletons render layout via inline styles, which beat class media queries.
+   These helpers carry no inline grid/flex so they can collapse on small screens. */
+
+.sk-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+.sk-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+}
+
+.sk-details-content {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 40px;
+}
+
+.sk-details-hero {
+    display: flex;
+    gap: 32px;
+}
+
+.sk-details-poster {
+    width: 210px;
+    height: 310px;
+    flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+    .sk-details-content {
+        grid-template-columns: 1fr;
+        gap: 24px;
+    }
+}
+
+@media (max-width: 768px) {
+    .sk-grid-3 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .sk-details-hero {
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .sk-details-poster {
+        width: 140px;
+        height: 206px;
+    }
+}
+
+@media (max-width: 540px) {
+    .sk-grid-2,
+    .sk-grid-3 {
+        grid-template-columns: 1fr;
+    }
 }
 
 .skeleton::after {

@@ -139,9 +139,9 @@ export function DetailsSkeleton() {
       <div className="detail-hero" style={{ height: "420px", position: "relative", background: "#050505" }}>
         <div className="skeleton" style={{ width: "100%", height: "100%" }} />
         <div className="detail-scrim" />
-        <div className="detail-hero-content" style={{ position: "absolute", bottom: "32px", left: "0", right: "0", zIndex: 10, display: "flex", gap: "32px" }}>
+        <div className="detail-hero-content sk-details-hero" style={{ position: "absolute", bottom: "32px", left: "0", right: "0", zIndex: 10 }}>
           {/* Poster Image */}
-          <div className="skeleton" style={{ width: "210px", height: "310px", borderRadius: "16px", flexShrink: 0, boxShadow: "0 20px 40px rgba(0,0,0,0.8)" }} />
+          <div className="skeleton sk-details-poster" style={{ borderRadius: "16px", boxShadow: "0 20px 40px rgba(0,0,0,0.8)" }} />
           {/* Text details */}
           <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-end", paddingBottom: "12px" }}>
             <div className="skeleton-text" style={{ width: "75%", height: "3rem", marginBottom: "16px" }} />
@@ -169,7 +169,7 @@ export function DetailsSkeleton() {
         </div>
 
         {/* Columns: Left sidebar and Right details */}
-        <div className="detail-content" style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: "40px" }}>
+        <div className="detail-content sk-details-content">
           {/* Sidebar */}
           <div style={{ display: "grid", gap: "20px", alignContent: "start" }}>
             {repeat(4, (i) => (
@@ -204,7 +204,7 @@ export function DetailsSkeleton() {
             {/* Characters */}
             <div>
               <div className="skeleton-text" style={{ width: "140px", height: "20px", marginBottom: "16px" }} />
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "16px" }}>
+              <div className="sk-grid-2">
                 {repeat(4, (i) => (
                   <div key={i} className="skeleton" style={{ height: "80px", borderRadius: "12px" }} />
                 ))}
@@ -285,7 +285,7 @@ export function ScheduleSkeleton() {
       </div>
 
       {/* Spotlight Cards */}
-      <section className="schedule-spotlight" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "32px" }}>
+      <section className="schedule-spotlight sk-grid-3" style={{ marginBottom: "32px" }}>
         {repeat(3, (i) => (
           <div key={i} className="schedule-spotlight-card" style={{ height: "200px", borderRadius: "16px", position: "relative", overflow: "hidden" }}>
             <div className="skeleton" style={{ width: "100%", height: "100%" }} />
@@ -294,14 +294,14 @@ export function ScheduleSkeleton() {
       </section>
 
       {/* Jumpbar Shortcuts */}
-      <div className="schedule-jumpbar" style={{ display: "flex", gap: "8px", justifyContent: "center", marginBottom: "24px" }}>
+      <div className="schedule-jumpbar" style={{ display: "flex", flexWrap: "wrap", gap: "8px", justifyContent: "center", marginBottom: "24px" }}>
         {repeat(5, (i) => (
           <div key={i} className="skeleton" style={{ width: "100px", height: "36px", borderRadius: "999px" }} />
         ))}
       </div>
 
       {/* Week buttons */}
-      <div className="schedule-week" style={{ display: "flex", gap: "12px", justifyContent: "center", marginBottom: "32px", borderBottom: "1px solid var(--border-subtle)", paddingBottom: "16px" }}>
+      <div className="schedule-week" style={{ display: "flex", flexWrap: "wrap", gap: "12px", justifyContent: "center", marginBottom: "32px", borderBottom: "1px solid var(--border-subtle)", paddingBottom: "16px" }}>
         {repeat(7, (i) => (
           <div key={i} className="skeleton" style={{ width: "90px", height: "42px", borderRadius: "8px" }} />
         ))}
@@ -415,7 +415,7 @@ export function ProfileSkeleton() {
         {/* Stats Grid */}
         <section className="profile-section">
           <div className="skeleton-text" style={{ width: "100px", height: "22px", marginBottom: "20px" }} />
-          <div className="profile-stats-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "20px" }}>
+          <div className="profile-stats-grid sk-grid-3" style={{ gap: "20px" }}>
             {repeat(3, (i) => (
               <div key={i} className="profile-stats-card" style={{ padding: "20px", borderRadius: "16px", background: "var(--panel)" }}>
                 <div className="skeleton-text" style={{ width: "100px", height: "18px", marginBottom: "20px" }} />
@@ -442,7 +442,7 @@ export function NotificationsSkeleton() {
   return (
     <main className="notifications-page" aria-label="Loading notifications">
       {/* Header */}
-      <header className="notifications-head" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "32px" }}>
+      <header className="notifications-head" style={{ display: "flex", flexWrap: "wrap", gap: "16px", justifyContent: "space-between", alignItems: "flex-end", marginBottom: "32px" }}>
         <div>
           <div className="skeleton-text" style={{ width: "220px", height: "36px", marginBottom: "12px" }} />
           <div className="skeleton-text" style={{ width: "420px", height: "16px" }} />
