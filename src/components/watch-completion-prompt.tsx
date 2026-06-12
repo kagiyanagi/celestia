@@ -111,7 +111,7 @@ export function WatchCompletionPrompt({
       routerRef.current.push(pending.href);
     }
 
-    function markWatched() {
+    function saveWatched() {
       // Fire-and-forget: the viewer asked to leave, so don't block the exit on
       // the network. The save (and AniList mirror) finishes in the background.
       void fetch("/api/history", {
@@ -143,6 +143,12 @@ export function WatchCompletionPrompt({
         });
 
       resolvedRef.current = true;
+    }
+
+    // Used by the back-button guard, which holds the viewer on the page: save
+    // first, then carry them through to where they were headed.
+    function markWatchedAndExit() {
+      saveWatched();
       continueExit();
     }
 
@@ -157,7 +163,7 @@ export function WatchCompletionPrompt({
       }
     }
 
-    function openPrompt() {
+    function openPrompt(handlers: { onConfirm: () => void; onCancel?: () => void }) {
       promptOpenRef.current = true;
       const epLabel = episodeTitle ? ` — ${episodeTitle}` : "";
       const minutes = Math.floor(watchedRef.current / 60);
@@ -169,8 +175,8 @@ export function WatchCompletionPrompt({
         message: `Did you finish episode ${episode}${epLabel}?${timeNote} We'll only update your progress if you say so.`,
         confirmLabel: "Mark watched",
         cancelLabel: "Not yet",
-        onConfirm: markWatched,
-        onCancel: cancelExit,
+        onConfirm: handlers.onConfirm,
+        onCancel: handlers.onCancel,
       });
     }
 
@@ -217,13 +223,12 @@ export function WatchCompletionPrompt({
         return;
       }
 
-      event.preventDefault();
-      event.stopPropagation();
-      pendingRef.current = {
-        kind: "href",
-        href: url.pathname + url.search + url.hash,
-      };
-      openPrompt();
+      // Respect the click — let the navigation happen now. Swallowing the
+      // first click to ask first would hijack the viewer's intent to leave.
+      // The ToastProvider lives at the root layout, so this confirmation
+      // survives the in-app navigation and can be answered on the next page.
+      resolvedRef.current = true;
+      openPrompt({ onConfirm: saveWatched });
     }
 
     function onPopState() {
@@ -246,7 +251,7 @@ export function WatchCompletionPrompt({
       }
 
       pendingRef.current = { kind: "back" };
-      openPrompt();
+      openPrompt({ onConfirm: markWatchedAndExit, onCancel: cancelExit });
     }
 
     const interval = window.setInterval(() => {

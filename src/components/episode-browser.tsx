@@ -104,6 +104,11 @@ export function EpisodeBrowser({
       .filter((entry) => entry.animeId === anime.id)
       .map((entry) => [entry.episode, entry.progressPercent]),
   );
+  // Library-level progress ("watched up to episode N") synced from AniList or
+  // set via the tracking bar. Episodes at or below this number are treated as
+  // watched even when they have no individual history entry.
+  const libraryProgress =
+    user?.libraryEntries.find((entry) => entry.animeId === anime.id)?.progress ?? 0;
   const fillerEpisodes = new Set(anime.episodeFlags?.filler || []);
   const recapEpisodes = new Set(anime.episodeFlags?.recap || []);
   // Real dub coverage from AnimeSchedule; null = unknown, show nothing.
@@ -121,7 +126,9 @@ export function EpisodeBrowser({
   // First episode the viewer hasn't started yet, in release order — drives the
   // "jump to next unwatched" shortcut. Null when everything's been watched.
   const nextUnwatched =
-    episodes.find((ep) => !progressByEpisode.has(ep.number))?.number ?? null;
+    episodes.find(
+      (ep) => !progressByEpisode.has(ep.number) && ep.number > libraryProgress,
+    )?.number ?? null;
 
   const normalizedQuery = query.trim().toLowerCase();
   // Filter/sort/slice the full in-memory list.
@@ -366,7 +373,7 @@ export function EpisodeBrowser({
       <div className="episode-grid-new">
         {paged.map((ep) => {
           const progress = progressByEpisode.get(ep.number);
-          const watched = progress !== undefined;
+          const watched = progress !== undefined || ep.number <= libraryProgress;
           const cardClass = [
             "episode-card-new",
             watched ? "watched" : "",

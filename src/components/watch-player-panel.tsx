@@ -117,7 +117,7 @@ export function WatchPlayerPanel({
     [user, animeId],
   );
   const watchedCount = Math.max(watchedEpisodes.size, libraryEntry?.progress ?? 0);
-  const currentWatched = watchedEpisodes.has(episode);
+  const currentWatched = watchedEpisodes.has(episode) || episode <= (libraryEntry?.progress ?? 0);
 
   const showToast = useCallback((message: string) => {
     setToast(message);
