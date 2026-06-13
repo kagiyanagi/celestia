@@ -427,7 +427,7 @@ export function parseBrowseParams(
 
 /**
  * Builds a descriptive page title from the active filters for SEO / shareable
- * links, e.g. "Action Movies (2023)" or "naruto — Search".
+ * links, e.g. "Action Movies (2023)" or "naruto - Search".
  */
 export function buildBrowseMetaTitle(
   baseTitle: string,
@@ -435,7 +435,7 @@ export function buildBrowseMetaTitle(
 ): string {
   const query = filters.q.trim();
   if (query) {
-    return `${query} — Search`;
+    return `${query} - Search`;
   }
 
   const parts: string[] = [];

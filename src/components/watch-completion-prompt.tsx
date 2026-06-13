@@ -6,7 +6,7 @@ import type { AnimeSummary } from "@/types/anime";
 import { useToast } from "@/components/toast-provider";
 
 const TICK_MS = 5_000;
-// Don't nag if the viewer only glanced at the episode — they clearly didn't
+// Don't nag if the viewer only glanced at the episode - they clearly didn't
 // watch it. Below this, leaving is silent and nothing is recorded.
 const MIN_WATCH_SECONDS = 15;
 
@@ -18,8 +18,8 @@ type PendingExit =
  * Confirms whether an episode counts as watched *before* recording it, instead
  * of assuming a watch the moment the page opens. Watch time is measured while
  * the tab is visible (the player is a cross-origin embed, so true position is
- * unreadable). When the viewer leaves the episode — an in-app link, the browser
- * back button, switching episodes, going home — a small toast confirmation asks
+ * unreadable). When the viewer leaves the episode - an in-app link, the browser
+ * back button, switching episodes, going home - a small toast confirmation asks
  * whether to mark it watched. Only on confirmation does it post to /api/history,
  * which bumps the library and syncs AniList. Server/audio swaps stay on the same
  * episode and never prompt.
@@ -153,7 +153,7 @@ export function WatchCompletionPrompt({
     }
 
     function cancelExit() {
-      // The viewer wants to stay — drop the pending exit and re-arm the back
+      // The viewer wants to stay - drop the pending exit and re-arm the back
       // guard so a later back press is caught again.
       pendingRef.current = null;
       promptOpenRef.current = false;
@@ -165,7 +165,7 @@ export function WatchCompletionPrompt({
 
     function openPrompt(handlers: { onConfirm: () => void; onCancel?: () => void }) {
       promptOpenRef.current = true;
-      const epLabel = episodeTitle ? ` — ${episodeTitle}` : "";
+      const epLabel = episodeTitle ? ` - ${episodeTitle}` : "";
       const minutes = Math.floor(watchedRef.current / 60);
       const timeNote = minutes > 0 ? ` You've spent about ${minutes} min on it.` : "";
 
@@ -214,7 +214,7 @@ export function WatchCompletionPrompt({
       } catch {
         return;
       }
-      // External links (e.g. attribution) leave the app entirely — let them go.
+      // External links (e.g. attribution) leave the app entirely - let them go.
       if (url.origin !== window.location.origin) {
         return;
       }
@@ -223,7 +223,7 @@ export function WatchCompletionPrompt({
         return;
       }
 
-      // Respect the click — let the navigation happen now. Swallowing the
+      // Respect the click - let the navigation happen now. Swallowing the
       // first click to ask first would hijack the viewer's intent to leave.
       // The ToastProvider lives at the root layout, so this confirmation
       // survives the in-app navigation and can be answered on the next page.
@@ -244,7 +244,7 @@ export function WatchCompletionPrompt({
       armedRef.current = false;
 
       if (resolvedRef.current || watchedRef.current < MIN_WATCH_SECONDS) {
-        // Nothing to ask — carry the viewer through to the real previous page.
+        // Nothing to ask - carry the viewer through to the real previous page.
         bypassPopRef.current = true;
         window.history.back();
         return;
@@ -274,6 +274,6 @@ export function WatchCompletionPrompt({
     };
   }, [anime, episode, episodeTitle, episodeImage, durationLabel, hasSource]);
 
-  // This component is purely behavioural — it renders nothing of its own.
+  // This component is purely behavioural - it renders nothing of its own.
   return null;
 }

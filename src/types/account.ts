@@ -169,7 +169,7 @@ export type AppDatabase = {
 
 /**
  * The slim, stored view of a user: profile, preferences, auth, and derived
- * state — but NOT the library or watch history, which live in their own tables
+ * state - but NOT the library or watch history, which live in their own tables
  * and are read on demand. Session/auth reads return this, so the hot path never
  * transfers the (potentially large) tracking data.
  */

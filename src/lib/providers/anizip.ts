@@ -180,7 +180,7 @@ export async function getAniZipData(
     };
   } catch (error) {
     if (error instanceof ProviderFetchError && error.status === 404) {
-      // ani.zip simply has no entry for this title — expected, not an error.
+      // ani.zip simply has no entry for this title - expected, not an error.
       return null;
     }
 
@@ -205,7 +205,7 @@ export async function getAnimeMappings(
 
 // Wide artwork that works as a hero backdrop, best first. Fanart is 16:9
 // background art; the TVDB "Banner" is thin but still wide. Portrait posters
-// are intentionally excluded — they do not work as a banner.
+// are intentionally excluded - they do not work as a banner.
 const BANNER_COVER_PRIORITY = ["fanart", "banner"];
 
 /**

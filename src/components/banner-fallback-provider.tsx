@@ -14,7 +14,7 @@ import {
  * requests to `/api/banners`, off the server render path. Same pattern as
  * `DubBadgeProvider`: surfaces paint with whatever banner they have, register
  * the ids that are missing one, and swap in the resolved backdrop when it
- * arrives — so the home hero / airing board / schedule never block on the
+ * arrives - so the home hero / airing board / schedule never block on the
  * per-id ani.zip/TMDB walk.
  */
 
@@ -96,7 +96,7 @@ export function BannerFallbackProvider({
   );
 }
 
-/** Raw context — for components that render many banners in a map. */
+/** Raw context - for components that render many banners in a map. */
 export function useBannerContext() {
   return useContext(BannerContext);
 }

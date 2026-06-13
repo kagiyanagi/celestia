@@ -2,7 +2,7 @@ export type StreamAudioType = "sub" | "dub";
 
 // Per-source iframe referrer policy. Defaults to "no-referrer" everywhere; an
 // embed host that only resolves when it receives a Referer can opt into sending
-// one (the browser's normal behavior — still iframe-only, no proxying).
+// one (the browser's normal behavior - still iframe-only, no proxying).
 export type StreamReferrerPolicy =
   | "no-referrer"
   | "origin"
@@ -60,7 +60,7 @@ export type StreamingProvider = {
   isConfigured: boolean;
   // True for embed providers keyed by AniList id rather than a title search.
   // The orchestrator resolves these directly from the AniList id and skips
-  // title-guessing / episode-count verification — there is no wrong-season
+  // title-guessing / episode-count verification - there is no wrong-season
   // risk when the id is exact.
   keysByAnilistId?: boolean;
   findAvailability(

@@ -111,7 +111,7 @@ async function fetchPage(
  *
  * Kitsu is reached through ani.zip's per-AniList-entry `kitsu_id`, so its
  * numbering aligns with the catalog entry (unlike TMDB, which only models the
- * whole franchise) — but the caller still verifies alignment before trusting
+ * whole franchise) - but the caller still verifies alignment before trusting
  * the images. Pages are fetched in bounded parallel batches and we stop one
  * batch after thumbnails run out, since Kitsu backfills stills from the start
  * of a series. `maxNumber` (the highest still-less episode) keeps us from

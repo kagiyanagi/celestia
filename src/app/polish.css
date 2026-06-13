@@ -1,5 +1,5 @@
 /* ─────────────────────────────────────────────────────────────────────────
-   MiruCast Design Layer — monochrome, professional
+   MiruCast Design Layer - monochrome, professional
    Overrides globals.css where needed; does NOT duplicate base layout rules.
    ───────────────────────────────────────────────────────────────────────── */
 
@@ -29,7 +29,7 @@
     --success: #22c55e;
     --warning: #f59e0b;
 
-    /* Shadows — depth without color */
+    /* Shadows - depth without color */
     --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.4);
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
     --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.6);
@@ -63,7 +63,7 @@ a {
     border-radius: 4px;
 }
 
-/* ── Body — pure black, no warm gradients ───────────────────────────────── */
+/* ── Body - pure black, no warm gradients ───────────────────────────────── */
 
 html {
     background: #000000;
@@ -148,7 +148,7 @@ body {
     background: rgba(255, 255, 255, 0.06);
 }
 
-/* ── Buttons — unified white-on-black primary ───────────────────────────── */
+/* ── Buttons - unified white-on-black primary ───────────────────────────── */
 
 .mirucast-watch,
 .watch-button,
@@ -212,7 +212,7 @@ body {
     background: #ffffff;
 }
 
-/* ── Cards — clean hover with white glow ────────────────────────────────── */
+/* ── Cards - clean hover with white glow ────────────────────────────────── */
 
 .trending-card,
 .anime-card,
@@ -284,7 +284,7 @@ body {
     border-color: var(--border-subtle);
 }
 
-/* Plain label, not a pill — no background strip. */
+/* Plain label, not a pill - no background strip. */
 .upcoming-kicker {
     background: transparent;
     color: var(--text-secondary);
@@ -358,7 +358,7 @@ body {
     border: 1px solid rgba(34, 197, 94, 0.2);
 }
 
-/* ── Watch page — player controls & tracking ─────────────────────────────── */
+/* ── Watch page - player controls & tracking ─────────────────────────────── */
 
 .watch-player-top-actions {
     display: inline-flex;
@@ -617,7 +617,7 @@ body.watch-theater-active .watch-player-frame {
     cursor: default;
 }
 
-/* Overview — about-this-anime block */
+/* Overview - about-this-anime block */
 .watch-ep-show {
     margin-top: 18px;
     padding-top: 16px;
@@ -755,7 +755,7 @@ body.watch-theater-active .watch-player-frame {
     border-color: var(--border-subtle);
 }
 
-/* ── Scrollbar — thin, subtle, opt-in for overflow areas ─────────────────── */
+/* ── Scrollbar - thin, subtle, opt-in for overflow areas ─────────────────── */
 
 .search-modal-results,
 .watch-tabs,
@@ -839,12 +839,12 @@ body.watch-theater-active .watch-player-frame {
     }
 }
 
-/* ── Mobile: 640px — dense grids & panel padding ─────────────────────────── */
+/* ── Mobile: 640px - dense grids & panel padding ─────────────────────────── */
 
 @media (max-width: 640px) {
     /* The shared discovery/search/browse grid sits at 4 columns down to
      780px; on phones 3+ posters squeeze the card body text into broken
-     wraps, so step to 2 here — matching the width the same card renders
+     wraps, so step to 2 here - matching the width the same card renders
      at in the trending rail. */
     .anime-grid,
     .loader-grid {
@@ -930,11 +930,11 @@ body.watch-theater-active .watch-player-frame {
     }
 }
 
-/* ── Mobile: 480px — safeguard for small phones ──────────────────────────── */
+/* ── Mobile: 480px - safeguard for small phones ──────────────────────────── */
 
 @media (max-width: 480px) {
     .site-header {
-        padding: 16px 18px 16px 26px;
+        padding: 14px 16px;
     }
 
     .site-header-row {
@@ -942,14 +942,24 @@ body.watch-theater-active .watch-player-frame {
         gap: 8px;
     }
 
+    .site-header-brand,
+    .site-header-actions {
+        gap: 8px;
+    }
+
     .brand-mark {
-        font-size: 1.35rem;
+        font-size: 1.25rem;
     }
 
     .header-icon-button,
     .header-avatar {
-        width: 42px;
-        height: 42px;
+        width: 40px;
+        height: 40px;
+    }
+
+    .avatar-image {
+        width: 34px;
+        height: 34px;
     }
 
     main {
@@ -1072,7 +1082,38 @@ body.watch-theater-active .watch-player-frame {
     }
 }
 
-/* ── Press feedback — bouncy scale on click ──────────────────────────────── */
+@media (max-width: 360px) {
+    .site-header {
+        padding: 12px 12px;
+    }
+
+    .site-header-row {
+        gap: 6px;
+    }
+
+    .site-header-brand,
+    .site-header-actions {
+        gap: 6px;
+    }
+
+    .brand-mark {
+        font-size: 1.12rem;
+        letter-spacing: 0.05em;
+    }
+
+    .header-icon-button,
+    .header-avatar {
+        width: 36px;
+        height: 36px;
+    }
+
+    .avatar-image {
+        width: 30px;
+        height: 30px;
+    }
+}
+
+/* ── Press feedback - bouncy scale on click ──────────────────────────────── */
 
 /* Spring-back transition for interactive elements that don't already
    transition transform. */

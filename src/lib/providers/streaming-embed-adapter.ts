@@ -12,13 +12,13 @@ import type {
 //
 //   url = "https://<your-host>/<your-path>/{id}/{episode}/{audio}"
 //
-// The template — and the endpoint it points at — live entirely in the
+// The template - and the endpoint it points at - live entirely in the
 // deployer's own environment; nothing is hardcoded here. As long as the
 // template resolves to a genuinely iframe-able player page (not a raw stream),
 // it stays within the iframe-only, no-proxy streaming boundary. Because it is
 // keyed by the exact AniList id there is no wrong-season risk, so it skips the
 // title-guessing and episode-count verification the search adapter relies on
-// (see streaming.ts). It exposes no episode list or count — the watch page
+// (see streaming.ts). It exposes no episode list or count - the watch page
 // falls back to AniList metadata for those.
 
 const AUDIO_OPTIONS: StreamAudioType[] = ["sub", "dub"];
@@ -100,7 +100,7 @@ export function createEmbedAdapter(
       // Some embed hosts only resolve when the iframe sends a Referer; pass the
       // configured policy through (undefined => the player's no-referrer default).
       referrerPolicy: config.referrerPolicy,
-      // No episode catalog from this provider — the watch page uses AniList
+      // No episode catalog from this provider - the watch page uses AniList
       // metadata for the episode list.
       episodes: [],
     };

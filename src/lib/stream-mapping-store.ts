@@ -1,7 +1,7 @@
 import { getStore } from "@/lib/db";
 import type { StreamMappingRecord } from "@/types/account";
 
-// Verified provider matches are reusable for a long time — the provider's
+// Verified provider matches are reusable for a long time - the provider's
 // internal anime ID does not change as new episodes air.
 const MAPPING_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 

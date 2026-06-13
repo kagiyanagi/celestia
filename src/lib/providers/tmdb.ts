@@ -57,7 +57,7 @@ async function getTmdbJson<T>(path: string): Promise<T | null> {
 }
 
 /**
- * Returns a wide backdrop image for a TMDB id — a banner fallback for titles
+ * Returns a wide backdrop image for a TMDB id - a banner fallback for titles
  * AniList and ani.zip have no banner for. ani.zip's themoviedb_id is usually a
  * TV id, so we try the type indicated by the mapping first and cross-check the
  * other only when the first id 404s (wrong type), never when it merely lacks a
@@ -78,7 +78,7 @@ export async function getTmdbBackdrop(
       return `${TMDB_BACKDROP_BASE}${data.backdrop_path}`;
     }
     if (data) {
-      // Right media type, just no backdrop — don't probe the other type.
+      // Right media type, just no backdrop - don't probe the other type.
       return null;
     }
   }

@@ -94,8 +94,8 @@ export const MEDIA_CARD_FIELDS = `
   }
 `;
 
-// AniList treats `isAdult: null` as "match titles whose isAdult is null" — which
-// is none — rather than "no filter". So to include adult content we must OMIT
+// AniList treats `isAdult: null` as "match titles whose isAdult is null" - which
+// is none - rather than "no filter". So to include adult content we must OMIT
 // the argument entirely; the SFW filter is only present when hiding adult.
 const sfwFilter = (includeAdult: boolean) =>
   includeAdult ? "" : "isAdult: false,";
@@ -593,7 +593,7 @@ export async function getHomeCollections(
       }));
 
     // Banners AniList is missing for the hero/airing board now resolve
-    // client-side (BannerFallbackProvider, /api/banners), off the render path —
+    // client-side (BannerFallbackProvider, /api/banners), off the render path -
     // the home shell no longer blocks on a per-title ani.zip/TMDB walk.
     return {
       topAiring,
@@ -621,7 +621,7 @@ export async function getAiringSchedule(
   const maxPages = 4;
 
   try {
-    // Fetch the (bounded) pages concurrently rather than serially — they're
+    // Fetch the (bounded) pages concurrently rather than serially - they're
     // independent windows of the same airing query, so this turns ~4 serial
     // round trips into one. Empty/overflow pages just contribute nothing.
     const pages = await Promise.all(
@@ -648,7 +648,7 @@ export async function getAiringSchedule(
     }
 
     // Banners AniList is missing now resolve client-side (BannerFallbackProvider,
-    // /api/banners), off the render path — the board no longer blocks on a
+    // /api/banners), off the render path - the board no longer blocks on a
     // per-row ani.zip/TMDB walk.
     return enrichAiringScheduleWithAnimeSchedule(
       items.sort((a, b) => a.airingAt - b.airingAt),
@@ -998,7 +998,7 @@ export async function getBrowseCollection(
     );
 
     return {
-      // Dub badges hydrate client-side (see DubBadgeProvider) — keep the
+      // Dub badges hydrate client-side (see DubBadgeProvider) - keep the
       // listing render path free of the per-card AnimeSchedule fan-out.
       items: data.Page.media.map(transformAnimeSummary),
       pageInfo: {
@@ -1088,7 +1088,7 @@ const MAL_LOOKUP_QUERY = `
 
 /**
  * Resolves MAL ids (from an imported XML export) to AniList summaries. AniList
- * tracks MAL ids natively, so this is an exact mapping — no fuzzy title match.
+ * tracks MAL ids natively, so this is an exact mapping - no fuzzy title match.
  * Queried in chunks of 50 (AniList's per-page cap); unresolved ids are simply
  * absent from the result, preserving accuracy-over-fabrication.
  */
@@ -1330,7 +1330,7 @@ export async function getCharacterCreditsPage(
  * React cache() dedupes the generateMetadata + page call pair within one
  * request. Enrichments are soft-capped: a slow provider returns its fallback
  * for this render while the fetch finishes in the background and warms the
- * cache for the next one — bounded latency, progressively complete data.
+ * cache for the next one - bounded latency, progressively complete data.
  */
 export const getAnimeDetails = cache(async function getAnimeDetails(
   id: number,
@@ -1346,7 +1346,7 @@ export const getAnimeDetails = cache(async function getAnimeDetails(
 
     const anime = transformAnimeDetails(data.Media);
     const needsBanner = !anime.bannerImage;
-    // Enrichment providers are optional and independent — run them
+    // Enrichment providers are optional and independent - run them
     // concurrently and tolerate individual failures.
     const [episodeMetadata, malStats, dubInfo, episodeFlags, bannerFallback] =
       await Promise.all([
@@ -1401,7 +1401,7 @@ export const getAnimeDetails = cache(async function getAnimeDetails(
 
 /**
  * The merged episode list for one anime (AniList streaming episodes + AniZip and
- * Kitsu stills) WITHOUT the heavier detail enrichments — no Jikan ratings, no
+ * Kitsu stills) WITHOUT the heavier detail enrichments - no Jikan ratings, no
  * AnimeSchedule dub lookup (one-id-per-request), no episode flags, no banner
  * fallback. Powers the episodes API route behind Continue-Watching thumbnail
  * enrichment, which fires per anime on home mount; routing that through the full

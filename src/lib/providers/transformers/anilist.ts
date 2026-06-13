@@ -154,7 +154,7 @@ export function transformAnimeSummary(media: Partial<AniListMedia>): AnimeSummar
   const isFinished = m.status === "FINISHED";
   const isReleasing = m.status === "RELEASING";
 
-  // Episodes aired so far. Null means "unknown" — e.g. an unreleased, cancelled
+  // Episodes aired so far. Null means "unknown" - e.g. an unreleased, cancelled
   // or hiatus show, or a releasing one AniList has no airing schedule for. We
   // never substitute 0, which would read as a confident "no episodes yet".
   let airingCount: number | null = null;

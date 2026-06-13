@@ -26,7 +26,7 @@ export function DetailsTrackingBar({ anime }: { anime: AnimeDetails }) {
   }
 
   const total = anime.airingCount ?? anime.episodes ?? null;
-  // Only allow +1 while there's a known episode ahead — never fabricate a
+  // Only allow +1 while there's a known episode ahead - never fabricate a
   // count past what a provider verifies (accuracy-over-fabrication rule).
   const canIncrement =
     !saving && (total == null || entry.progress < total);

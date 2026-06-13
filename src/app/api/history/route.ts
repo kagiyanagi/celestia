@@ -62,7 +62,7 @@ export async function POST(request: Request) {
       episodeImage?: string | null;
       durationLabel: string | null;
       progressPercent: number;
-      /** Progress ticks only update the history entry — no library/AniList sync. */
+      /** Progress ticks only update the history entry - no library/AniList sync. */
       progressOnly?: boolean;
     };
 

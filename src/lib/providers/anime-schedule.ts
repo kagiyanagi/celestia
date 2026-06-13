@@ -49,7 +49,7 @@ type WeekKey = {
 // The /anime endpoint only filters by a SINGLE anilist-id (repeated/comma
 // params 404; the bracket form is silently ignored and returns the whole
 // catalog), so records are fetched one id per request. Bound how many of those
-// run at once — the API rate-limits and bursts cause connection timeouts.
+// run at once - the API rate-limits and bursts cause connection timeouts.
 const RECORD_CONCURRENCY = 5;
 // How far back/forward to scan the dub timetable for a title's current and
 // next dub episode.
@@ -65,7 +65,7 @@ type EpisodeOverride = {
  * The per-anime "Anime" object from `GET /anime?anilist-ids=...`. Unlike the
  * weekly timetable, this is the authoritative per-title record. `dubPremier`
  * is the canonical "does an English dub exist" signal: the `0001-01-01`
- * sentinel (or a missing value) means there is no dub — `dubTime` is populated
+ * sentinel (or a missing value) means there is no dub - `dubTime` is populated
  * regardless, so it must never be used to infer dub existence.
  */
 type AnimeScheduleRecord = {
@@ -140,7 +140,7 @@ function getWeekKeys(startAt: number, endAt: number): WeekKey[] {
   const end = Math.max(startAt, endAt - 1);
 
   // Walk a day at a time so every ISO week the range touches is covered, not
-  // just the first and last — a multi-week window (e.g. 30-day notifications)
+  // just the first and last - a multi-week window (e.g. 30-day notifications)
   // must not silently drop the weeks in between.
   for (let cursor = startAt; cursor <= end; cursor += 86_400) {
     const key = getIsoWeekKey(new Date(cursor * 1000));
@@ -336,7 +336,7 @@ function extractAnilistId(url: string | undefined): number | null {
 
 /**
  * Fetches the AnimeSchedule records for a single AniList id (one cour may
- * return several rows — e.g. the main entry plus a shared special). A 404 just
+ * return several rows - e.g. the main entry plus a shared special). A 404 just
  * means AnimeSchedule has no entry for this id, which is normal and quiet.
  */
 async function fetchAnimeRecord(
@@ -361,7 +361,7 @@ async function fetchAnimeRecord(
     return response?.anime || [];
   } catch (error) {
     if (error instanceof ProviderFetchError && error.status === 404) {
-      return []; // no AnimeSchedule entry for this id — expected, not an error
+      return []; // no AnimeSchedule entry for this id - expected, not an error
     }
     console.warn("AnimeSchedule record fetch failed", error);
     return [];
@@ -393,7 +393,7 @@ async function fetchAnimeRecordsByAnilistIds(
       const records = await fetchAnimeRecord(id);
       // The query is filtered by this id; keep only rows the API attributes to
       // it (records without a websites link still belong, since the API
-      // returned them for this id) — never let a stray result bleed in.
+      // returned them for this id) - never let a stray result bleed in.
       const kept = records.filter((record) => {
         const recordId = extractAnilistId(record.websites?.aniList);
         return recordId === null || recordId === id;
@@ -512,7 +512,7 @@ function deriveDubInfo(
  * data only covers ~2020+ simulcasts). AnimeSchedule's count always wins; only
  * when it has none do we consult MyDubList: a FINISHED show with a complete
  * English dub has every episode dubbed, so the count equals its episode total.
- * Ongoing shows are left alone — their live count isn't knowable this way.
+ * Ongoing shows are left alone - their live count isn't knowable this way.
  */
 function withDubListFallback(
   info: DubInfo | null,
@@ -595,7 +595,7 @@ export type RecentDubDrop = {
  * Returns dub episodes that aired on or after `sinceEpoch` for the given
  * library entries. Each entry is resolved to its AnimeSchedule record by
  * AniList id and gated on `dubPremier`; only titles with a real dub contribute,
- * and drops are taken from the dub timetable matched by the record's slug — no
+ * and drops are taken from the dub timetable matched by the record's slug - no
  * title guessing. Powers "new dub episode" notifications.
  */
 export async function getRecentDubDrops(
@@ -652,7 +652,7 @@ export async function getRecentDubDrops(
  * (gated on `dubPremier`), how many dubbed episodes have aired, and when the
  * next arrives. When AnimeSchedule has no data (older catalog titles), falls
  * back to MyDubList for finished shows with a complete dub. Returns null when
- * no dub can be verified — callers treat that as "unknown", not zero.
+ * no dub can be verified - callers treat that as "unknown", not zero.
  * `expectedEpisodes` disambiguates a cour vs its special sharing an AniList id,
  * and is the episode total used for the finished-dub fallback.
  */

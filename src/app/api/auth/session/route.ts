@@ -11,7 +11,7 @@ export async function GET() {
     return NextResponse.json({ user: null });
   }
 
-  // Return the local user immediately — this endpoint is hit on every home
+  // Return the local user immediately - this endpoint is hit on every home
   // mount and tab refocus, so it must never block on a remote AniList round
   // trip. The freshness-guarded pull runs in the background; its result lands
   // in the store and surfaces on the next refresh.

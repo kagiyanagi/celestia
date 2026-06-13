@@ -28,7 +28,7 @@ export async function resolveBannerFallback(
 /**
  * Resolves fallback banners for a set of AniList ids off the render path.
  * Backs `/api/banners`, which the client `BannerFallbackProvider` calls for
- * cards/rows that AniList has no banner for — so the home hero, airing board,
+ * cards/rows that AniList has no banner for - so the home hero, airing board,
  * and schedule paint immediately instead of blocking on a per-id ani.zip/TMDB
  * walk. Returns only ids that resolved to a banner.
  */

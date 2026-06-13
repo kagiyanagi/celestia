@@ -2,7 +2,7 @@
 
 ## Overview
 
-MiruCast is built around a strict **provider boundary**: no external API is ever called from a page or UI component. All integrations live in `src/lib/providers/` and return app-owned types from `src/types/`. This makes the UI resilient — a provider failure degrades gracefully without crashing unrelated pages.
+MiruCast is built around a strict **provider boundary**: no external API is ever called from a page or UI component. All integrations live in `src/lib/providers/` and return app-owned types from `src/types/`. This makes the UI resilient - a provider failure degrades gracefully without crashing unrelated pages.
 
 ---
 
@@ -45,13 +45,13 @@ UI components consume only `src/types/` shapes. Provider internals are never exp
 
 `src/lib/db.ts` exposes a `Store` interface with two implementations selected at runtime:
 
-- **Postgres** (when `DATABASE_URL` is set) — production. Normalized schema:
-  - `users` — slim profile, preferences, auth row (no tracking data)
-  - `sessions` — session id and metadata
-  - `library_entries` — one row per user+anime (status, progress, score, notes, dates, `aniListEntryId`)
-  - `history_entries` — one row per user+anime+episode, capped per user
-  - `stream_mappings` — verified provider id mappings with 30-day TTL
-- **JSON file** (`data/app-db.json`) — development fallback. Same logical shape; not suitable for production (not durable on serverless).
+- **Postgres** (when `DATABASE_URL` is set) - production. Normalized schema:
+  - `users` - slim profile, preferences, auth row (no tracking data)
+  - `sessions` - session id and metadata
+  - `library_entries` - one row per user+anime (status, progress, score, notes, dates, `aniListEntryId`)
+  - `history_entries` - one row per user+anime+episode, capped per user
+  - `stream_mappings` - verified provider id mappings with 30-day TTL
+- **JSON file** (`data/app-db.json`) - development fallback. Same logical shape; not suitable for production (not durable on serverless).
 
 Tracking data is never stored on the user row. The hot `getSessionUser()` auth path returns the slim `SessionUser` and transfers no tracking data.
 
@@ -65,7 +65,7 @@ Tracking data is never stored on the user row. The hot `getSessionUser()` auth p
 - Guest account creation
 - Device tracking
 
-Session reads return a `SessionUser` — a slim, redacted view with no library or history. The full `PublicUser` (slim user + library + history) is assembled only for client bootstrap and mutation responses.
+Session reads return a `SessionUser` - a slim, redacted view with no library or history. The full `PublicUser` (slim user + library + history) is assembled only for client bootstrap and mutation responses.
 
 OAuth tokens (AniList) are encrypted at rest with AES-256-GCM via `src/lib/crypto.ts`, keyed off `APP_SECRET`.
 
@@ -82,9 +82,9 @@ Library and history live in their own normalized tables, not on the user row. Ev
 - **Conflict resolution:** newest `updatedAt` wins. Local-only entries are preserved. Removals on AniList are not mirrored locally.
 
 **Merge semantics:**
-- `mergeLibraryEntries` — incoming always wins. Used for initial AniList connect and XML imports.
-- `mergeAniListPull` — newest-`updatedAt`-wins. Used for routine sync pulls.
-- `mergeAniListHistory` — AniList activity is re-derived from the current feed each sync (old `anilist-` prefixed entries replaced). Native MiruCast watches (UUID ids) are always kept.
+- `mergeLibraryEntries` - incoming always wins. Used for initial AniList connect and XML imports.
+- `mergeAniListPull` - newest-`updatedAt`-wins. Used for routine sync pulls.
+- `mergeAniListHistory` - AniList activity is re-derived from the current feed each sync (old `anilist-` prefixed entries replaced). Native MiruCast watches (UUID ids) are always kept.
 
 ---
 
@@ -94,13 +94,13 @@ Streaming is **outside the core domain model**. Rules:
 
 1. Playback data is fetched only when the user opens the watch page.
 2. All other pages stay fully functional if a provider fails.
-3. The app never restreams — iframes only, no proxy.
+3. The app never restreams - iframes only, no proxy.
 4. A wrong stream match is considered worse than no match. `findProviderAvailability` only serves count-verified matches.
 
 **Adapter kinds** (selected by `STREAMING_PROVIDER_KIND`):
 
-- `search` (default) — title-guessed lookup with episode-count alignment scoring. Verified matches are cached in `stream_mappings` with a 30-day TTL.
-- `embed` — deterministic AniList-id-keyed URL template. No title guessing, no verification needed, no wrong-season risk.
+- `search` (default) - title-guessed lookup with episode-count alignment scoring. Verified matches are cached in `stream_mappings` with a 30-day TTL.
+- `embed` - deterministic AniList-id-keyed URL template. No title guessing, no verification needed, no wrong-season risk.
 
 Multi-server configuration via `STREAMING_PROVIDERS` JSON array, tried in ascending `priority` order.
 
@@ -108,7 +108,7 @@ Multi-server configuration via `STREAMING_PROVIDERS` JSON array, tried in ascend
 
 ## Notifications
 
-Notifications are **derived on demand** from the user's tracked library — never stored. `src/lib/notifications.ts` fans out AniList airing lookups and AnimeSchedule dub data under `withSoftTimeout`, bounded for large libraries. Read state is a single `notificationsLastReadAt` timestamp on the user. "Mark all read" is one write.
+Notifications are **derived on demand** from the user's tracked library - never stored. `src/lib/notifications.ts` fans out AniList airing lookups and AnimeSchedule dub data under `withSoftTimeout`, bounded for large libraries. Read state is a single `notificationsLastReadAt` timestamp on the user. "Mark all read" is one write.
 
 ---
 

@@ -58,7 +58,7 @@ export type Store = {
   upsertStreamMapping(record: StreamMappingRecord): Promise<void>;
   deleteStreamMapping(anilistId: number, providerId: string): Promise<void>;
 
-  /* Library entries — one row per (user, anime), read/written in isolation so
+  /* Library entries - one row per (user, anime), read/written in isolation so
    * a tracking change never touches the user record or other entries. */
   listLibraryEntries(userId: string): Promise<LibraryEntry[]>;
   getLibraryEntry(
@@ -72,7 +72,7 @@ export type Store = {
     animeId: number,
   ): Promise<LibraryEntry | null>;
 
-  /* Watch history — one row per (user, anime, episode), capped per user. */
+  /* Watch history - one row per (user, anime, episode), capped per user. */
   listHistoryEntries(userId: string): Promise<HistoryEntry[]>;
   getHistoryEntry(
     userId: string,
@@ -204,7 +204,7 @@ async function migrateLegacyBlob(sql: Sql) {
 /**
  * One-time migration off the inline blob model: any user whose payload still
  * embeds libraryEntries/historyEntries has them moved into the dedicated tables
- * and stripped from the payload. Idempotent — once stripped, the guard query
+ * and stripped from the payload. Idempotent - once stripped, the guard query
  * matches nothing, so this is a no-op on every subsequent boot.
  */
 async function migrateEmbeddedEntries(sql: Sql) {

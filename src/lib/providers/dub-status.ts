@@ -1,12 +1,12 @@
 import { fetchJson } from "@/lib/http/client";
 import type { ProviderHealth } from "@/types/anime";
 
-// MyDubList — a daily-updated, multi-source cross-checked dataset (MAL, AniList,
+// MyDubList - a daily-updated, multi-source cross-checked dataset (MAL, AniList,
 // ANN, AnimeSchedule, Kitsu, aniSearch + manual review). It fills AnimeSchedule's
 // gap: AnimeSchedule only has dub data for ~2020+ simulcasts, while this knows
 // about older fully-dubbed catalog titles too. The "high" confidence tier
 // requires >=3 independent sources to agree, keeping false positives near zero
-// (accuracy over coverage). Keyed by MAL id. CC BY 4.0 — see ATTRIBUTION.
+// (accuracy over coverage). Keyed by MAL id. CC BY 4.0 - see ATTRIBUTION.
 const MYDUBLIST_ENGLISH_URL =
   "https://raw.githubusercontent.com/Joelis57/MyDubList/main/dubs/confidence/high/dubbed_english.json";
 

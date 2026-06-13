@@ -159,7 +159,7 @@ export function formatIsoDate(value: string | null | undefined): string | null {
 /**
  * Full ISO timestamp → "4 Oct 2024, 3:00 PM" in the viewer's locale; null when
  * unparseable. Use only for values that genuinely carry a time (e.g. ani.zip's
- * airDateUtc) — never for a date-only string, which would fabricate midnight.
+ * airDateUtc) - never for a date-only string, which would fabricate midnight.
  */
 export function formatIsoDateTime(
   value: string | null | undefined,

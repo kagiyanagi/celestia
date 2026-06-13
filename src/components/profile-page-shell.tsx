@@ -78,7 +78,7 @@ export function ProfilePageShell({
     [libraryEntries],
   );
 
-  // A guest IS a user (auto-created session), so this must also catch guests —
+  // A guest IS a user (auto-created session), so this must also catch guests -
   // otherwise the AuthPanel (which hosts the AniList connect + login/signup) is
   // unreachable and every "Sign in" CTA just loops back to the guest profile.
   if (!user || user.isGuest) {
@@ -389,7 +389,7 @@ export function ProfilePageShell({
                   }
                 />
                 <small>
-                  3–30 characters: letters, numbers, underscores, or hyphens.
+                  3-30 characters: letters, numbers, underscores, or hyphens.
                 </small>
               </label>
               <label>

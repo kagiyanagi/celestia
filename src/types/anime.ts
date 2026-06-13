@@ -251,7 +251,7 @@ export type AnimeNewsArticle = {
 export type AnimeDetails = AnimeSummary & {
   malStats?: MalStats | null;
   dubInfo?: DubInfo | null;
-  /** Null when MAL has no episode list — unknown, not "no fillers". */
+  /** Null when MAL has no episode list - unknown, not "no fillers". */
   episodeFlags?: EpisodeFlags | null;
   description?: string | null;
   source?: string | null;

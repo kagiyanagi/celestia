@@ -69,7 +69,7 @@ storage is **dual-mode**: a Postgres store (`DATABASE_URL` set) for production, 
 
 AniList sync is **two-way**: pushing local edits up (write-through) and pulling remote edits back on a 60-second TTL.
 
-see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full architecture and [`CLAUDE.md`](CLAUDE.md) for the deep provider-by-provider and pattern reference.
+see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full architecture, data flow, and provider conventions.
 
 ## project structure
 
@@ -141,6 +141,4 @@ GitHub Actions runs `pnpm install --frozen-lockfile`, `pnpm lint`, `pnpm typeche
 
 ## further reading
 
-- [`CLAUDE.md`](CLAUDE.md) — deep technical reference for the codebase: every provider, pattern, and convention explained
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — architecture decisions, data flow, sync model, and streaming rules
-- [`AGENTS.md`](AGENTS.md) — contributor guide for AI agents and human contributors alike
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) - architecture decisions, data flow, sync model, and streaming rules

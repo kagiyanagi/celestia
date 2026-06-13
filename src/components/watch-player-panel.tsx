@@ -149,7 +149,7 @@ export function WatchPlayerPanel({
           source?: StreamSource | null;
         };
 
-        // A newer switch superseded this one — drop the stale result.
+        // A newer switch superseded this one - drop the stale result.
         if (requestRef.current !== requestId) {
           return;
         }

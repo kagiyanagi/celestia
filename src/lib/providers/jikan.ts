@@ -7,7 +7,7 @@ import type {
 } from "@/types/anime";
 
 // Jikan is a free, keyless REST mirror of MyAnimeList data.
-// Public rate limit is 60 requests/minute — long revalidation keeps us
+// Public rate limit is 60 requests/minute - long revalidation keeps us
 // far below it.
 const JIKAN_ENDPOINT = "https://api.jikan.moe/v4";
 
@@ -49,7 +49,7 @@ export async function getMalStats(malId: number): Promise<MalStats | null> {
       {
         provider: "Jikan",
         // Jikan is heavily rate-limited and this is optional enrichment behind
-        // a soft timeout — fail fast instead of burning a retry delay (~1s) on
+        // a soft timeout - fail fast instead of burning a retry delay (~1s) on
         // a 429/down response.
         timeoutMs: 4_000,
         retries: 0,
@@ -122,7 +122,7 @@ async function fetchEpisodePage(
 
 /**
  * Filler/recap episode numbers from MAL via Jikan. Returns null when the
- * lookup fails or MAL has no episode list — absence of data is never
+ * lookup fails or MAL has no episode list - absence of data is never
  * presented as "not filler".
  */
 export async function getJikanEpisodeFlags(
@@ -139,7 +139,7 @@ export async function getJikanEpisodeFlags(
       firstPage.pagination?.last_visible_page || 1,
       MAX_EPISODE_PAGES,
     );
-    // Jikan allows ~3 req/s — batch instead of bursting every page at once,
+    // Jikan allows ~3 req/s - batch instead of bursting every page at once,
     // otherwise long shows trigger a 429/retry storm.
     const remainingPages: Array<JikanEpisodesResponse | null> = [];
 
@@ -204,7 +204,7 @@ function cleanExcerpt(value: string | null | undefined): string | null {
 
 /**
  * Recent news articles for an anime from MyAnimeList via Jikan, newest first.
- * Returns an empty list when MAL has no news or the lookup fails — absence of
+ * Returns an empty list when MAL has no news or the lookup fails - absence of
  * data is never presented as anything but "no news".
  */
 export async function getAnimeNews(
@@ -219,7 +219,7 @@ export async function getAnimeNews(
       },
       {
         provider: "Jikan",
-        // Optional enrichment behind a soft timeout on the route — fail fast
+        // Optional enrichment behind a soft timeout on the route - fail fast
         // rather than burning a retry delay on a 429/down response.
         timeoutMs: 5_000,
         retries: 0,

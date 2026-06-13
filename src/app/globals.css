@@ -577,7 +577,7 @@ main {
     filter: saturate(0.92) brightness(0.9);
 }
 
-/* Portrait cover used as backdrop when no banner exists — blur it into an
+/* Portrait cover used as backdrop when no banner exists - blur it into an
    ambient wash; the hero stage's overflow: hidden contains the scale-up. */
 .detail-backdrop.is-cover {
     object-position: center 30%;
@@ -2529,7 +2529,7 @@ b.schedule-tracked-tag.is-watched {
     background: rgba(255, 255, 255, 0.15);
 }
 
-/* Share + AniList + MAL on a single line — links shrink instead of wrapping. */
+/* Share + AniList + MAL on a single line - links shrink instead of wrapping. */
 .hero-links-row {
     flex-wrap: nowrap;
 }
@@ -7933,7 +7933,7 @@ button:disabled {
     }
 }
 
-/* `main` wraps every modal/overlay — keep it transform-free (fade only) so
+/* `main` wraps every modal/overlay - keep it transform-free (fade only) so
    position: fixed descendants stay anchored to the viewport. */
 main {
     animation: fade-in 650ms var(--ease-spring) both;
@@ -8055,7 +8055,7 @@ a:active .shelf-card {
     }
 
     .site-header {
-        padding: 16px 18px 16px 26px;
+        padding: 16px 20px;
     }
 
     .site-header-row {

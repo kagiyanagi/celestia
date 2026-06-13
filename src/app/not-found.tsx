@@ -39,7 +39,7 @@ export default function NotFound() {
         </div>
 
         <p className="notfound-egg" title="Roronoa Zoro, professionally lost since 1997">
-          Don&apos;t worry — even Zoro takes a few wrong turns. We&apos;ll point you back.
+          Don&apos;t worry - even Zoro takes a few wrong turns. We&apos;ll point you back.
         </p>
       </section>
     </div>
